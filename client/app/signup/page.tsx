@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
-import { UserPlus, User, Mail, Lock, Loader2, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, Loader2, ArrowRight, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
 
 export default function SignupPage() {
   const { signup, error, setError } = useAuth();
@@ -59,6 +59,17 @@ export default function SignupPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-black px-6 py-12">
+      {/* Back to Home Button */}
+      <div className="absolute top-6 left-6 z-20">
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white hover:border-zinc-700 transition duration-200 cursor-pointer"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
       {/* Background Neon Gradients */}
       <div className="absolute top-1/4 left-1/4 h-[350px] w-[350px] rounded-full bg-violet-600/10 blur-[100px]"></div>
       <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-indigo-600/10 blur-[100px]"></div>
