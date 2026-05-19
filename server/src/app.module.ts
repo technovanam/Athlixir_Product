@@ -8,6 +8,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
+import { AnalysisModule } from './modules/analysis/analysis.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { OnboardingModule } from './modules/onboarding/onboarding.module';
     AuthModule,
     UsersModule,
     OnboardingModule,
+    AnalysisModule,
   ],
   controllers: [AppController],
   providers: [

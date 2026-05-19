@@ -1,0 +1,168 @@
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  Res,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+} from '@nestjs/common';
+import type { Response } from 'express';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { AnalysisService } from '../services/analysis.service';
+import { FirebaseAuthGuard } from '../../../auth/guards/firebase-auth.guard';
+import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
+
+@ApiTags('Analysis')
+@Controller('analysis')
+export class AnalysisController {
+  constructor(private readonly analysisService: AnalysisService) {}
+
+  @Post('upload')
+  @UseGuards(FirebaseAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload athlete running video and trigger biomechanics processing' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  async uploadVideo(
+    @CurrentUser() user: any,
+    @UploadedFile() file: any,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No video file selected for analysis.');
+    }
+    return this.analysisService.uploadAndAnalyze(user.uid, file);
+  }
+
+  @Get('list')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiOperation({ summary: 'Retrieve historical running analysis records' })
+  async listAnalyses(@CurrentUser() user: any) {
+    return this.analysisService.listAnalyses(user.uid);
+  }
+
+  /** Must be registered before @Get(':id') so "overlay" is not treated as an id. */
+  @Post('overlay')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Internal AI endpoint to upload skeleton overlay video to Firebase Storage' })
+  @ApiConsumes('multipart/form-data')
+  async uploadOverlay(
+    @UploadedFile() file: any,
+    @Body('analysisId') analysisId: string,
+    @Body('userId') userId: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No overlay video file provided.');
+    }
+    if (!analysisId || !userId) {
+      throw new BadRequestException('Missing analysisId or userId.');
+    }
+    return this.analysisService.uploadSkeletonOverlay(analysisId, userId, file);
+  }
+
+  @Post('report')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Internal AI endpoint to upload HTML biomechanics report' })
+  @ApiConsumes('multipart/form-data')
+  async uploadReport(
+    @UploadedFile() file: any,
+    @Body('analysisId') analysisId: string,
+    @Body('userId') userId: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No report file provided.');
+    }
+    if (!analysisId || !userId) {
+      throw new BadRequestException('Missing analysisId or userId.');
+    }
+    return this.analysisService.uploadReport(analysisId, userId, file);
+  }
+
+  @Get(':id/report')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiOperation({ summary: 'Stream HTML biomechanics report' })
+  async streamReport(
+    @Param('id') analysisId: string,
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ) {
+    const { stream, contentType } = await this.analysisService.streamReport(
+      analysisId,
+      user,
+    );
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    stream.pipe(res);
+  }
+
+  @Get(':id/video/:type')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiOperation({ summary: 'Stream analysis video through API (avoids Firebase CORS)' })
+  async streamVideo(
+    @Param('id') analysisId: string,
+    @Param('type') type: string,
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ) {
+    if (type !== 'original' && type !== 'overlay') {
+      throw new BadRequestException('Video type must be original or overlay.');
+    }
+    const { stream, contentType } = await this.analysisService.streamVideo(
+      analysisId,
+      user,
+      type as 'original' | 'overlay',
+    );
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    stream.pipe(res);
+  }
+
+  @Get(':id')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiOperation({ summary: 'Retrieve detailed running biomechanics profile by ID' })
+  async getAnalysis(@Param('id') analysisId: string) {
+    return this.analysisService.getAnalysis(analysisId);
+  }
+
+  @Post('callback')
+  @ApiOperation({ summary: 'Internal AI callback endpoint to synchronize biomechanics results' })
+  async aiCallback(
+    @Body() body: {
+      analysisId: string;
+      status: string;
+      progress: number;
+      metrics?: any;
+      scores?: any;
+      injuryRisks?: any;
+      recommendations?: any;
+    },
+  ) {
+    const { analysisId, status, progress, ...payload } = body;
+    if (!analysisId || !status) {
+      throw new BadRequestException('Missing analysisId or status in payload.');
+    }
+    
+    // Save to Firestore and emit real-time WebSocket event
+    await this.analysisService.updateStatus(analysisId, status, progress, payload);
+    
+    return {
+      success: true,
+      message: 'State synced successfully',
+    };
+  }
+}
