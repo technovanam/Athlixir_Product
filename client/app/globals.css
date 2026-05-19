@@ -8,7 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-poppins);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -22,5 +22,61 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide scrollbars globally and aggressively across all elements */
+* {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* CRT Screen Scanline & Vignette Overlays */
+.crt-screen::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 6px 100%;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+
+
+/* Subtle Phosphor Glow effects for text and borders */
+.crt-glow-orange {
+  text-shadow: 0 0 6px rgba(255, 79, 33, 0.55), 0 0 15px rgba(255, 79, 33, 0.25);
+}
+
+.crt-glow-green {
+  text-shadow: 0 0 6px rgba(0, 223, 137, 0.55), 0 0 15px rgba(0, 223, 137, 0.25);
+}
+
+.crt-glow-white {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.4), 0 0 12px rgba(255, 255, 255, 0.15);
+}
+
+/* Subtle CRT phosphor screen flicker effect */
+@keyframes crt-flicker {
+  0% { opacity: 0.995; }
+  50% { opacity: 0.99; }
+  100% { opacity: 0.995; }
+}
+
+.crt-flicker {
+  animation: crt-flicker 0.2s infinite;
+}
+
