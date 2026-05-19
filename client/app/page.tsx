@@ -9,17 +9,6 @@ export default function Home() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
   
-  // Interactive states for Scouting Reach card toggles
-  const [manualActive, setManualActive] = useState(false);
-  const [athlixirActive, setAthlixirActive] = useState(true);
-  
-  // Interactive states for About slide / Injury Tracking card
-  const [injuryActive, setInjuryActive] = useState(false);
-  const [hrvActive, setHrvActive] = useState(true);
-
-  // Dynamic values that shift based on toggle state
-  const manualPercentage = manualActive ? '48%' : '12%';
-  const athlixirPercentage = athlixirActive ? '94%' : '38%';
 
   // Scroll snapping refs
   const homeRef = useRef<HTMLDivElement>(null);
@@ -92,8 +81,8 @@ export default function Home() {
       <div className="absolute bottom-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-emerald-950/10 blur-[150px] pointer-events-none"></div>
 
       {/* Header / Navbar - Fixed at the top of the screen */}
-      <header className="fixed top-0 left-0 w-full z-50 bg-zinc-950/40 backdrop-blur-md px-2 md:px-4 h-20 border-b border-zinc-900/10">
-        <div className="mx-auto flex h-full max-w-7xl items-center justify-between relative">
+      <header className="fixed top-0 left-0 w-full z-50 bg-zinc-950/40 backdrop-blur-md px-8 md:px-16 h-20 border-b border-zinc-900/10">
+        <div className="mx-auto flex h-full max-w-[96rem] items-center justify-between relative">
           
           {/* Logo Branding */}
           <Link href="/" className="flex items-center gap-3 group transition-transform duration-200 hover:scale-[1.02]">
@@ -131,10 +120,6 @@ export default function Home() {
                 }`}
               >
                 <span>{link.label}</span>
-                {activeTab === link.id && (
-                  /* Dynamic top border indicator matching mock spacing */
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-14 h-[3px] bg-[#FF4F21] rounded-b-sm shadow-md shadow-[#FF4F21]/40" />
-                )}
               </a>
             ))}
           </nav>
@@ -175,92 +160,14 @@ export default function Home() {
         {/* SECTION 1: HOME SECTION */}
         <div 
           ref={homeRef}
-          className="w-full h-screen snap-start shrink-0 px-2 md:px-4 relative flex items-center justify-center pt-20"
+          className="w-full h-screen snap-start shrink-0 px-8 md:px-16 relative flex items-center justify-center"
         >
-            
-            {/* Floating Widgets Grid Container */}
-            <div className="w-full grid lg:grid-cols-12 gap-4 items-center">
-              
-              {/* LEFT INTERACTIVE CARD (Scouting Reach) - Col span 3 */}
-              <div className="lg:col-span-3 order-2 lg:order-1 flex justify-center lg:justify-start">
-                <div className="w-full max-w-[260px] rounded-3xl bg-[#1b2512]/45 border border-[#3e502c]/40 backdrop-blur-xl shadow-2xl p-6 relative group overflow-hidden transition-all duration-300 hover:border-[#FF4F21]/40">
-                  
-                  {/* Card top border glow effect */}
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF4F21]/20 to-transparent"></div>
-                  
-                  {/* Header */}
-                  <div className="flex items-center gap-2 mb-8">
-                    <Compass className="h-4 w-4 text-[#FF4F21]" />
-                    <span className="text-[10px] tracking-[0.25em] font-extrabold text-zinc-400 uppercase">
-                      Scouting Reach
-                    </span>
-                  </div>
 
-                  {/* Stat 1: Manual Profile */}
-                  <div className="space-y-3 mb-6 transition-all duration-300">
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <div className="text-3xl font-black tracking-tight text-white transition-all duration-500">
-                          {manualPercentage}
-                        </div>
-                        <div className="text-[9px] tracking-wider font-extrabold text-zinc-500 uppercase mt-0.5">
-                          Manual Profile
-                        </div>
-                      </div>
-                      
-                      {/* Custom Toggle Switch */}
-                      <button 
-                        onClick={() => setManualActive(!manualActive)}
-                        className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-zinc-700/60 bg-zinc-900 transition-colors duration-300 ease-in-out focus:outline-none"
-                        style={{ backgroundColor: manualActive ? 'rgba(255, 79, 33, 0.9)' : 'rgba(20, 28, 14, 0.6)' }}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-zinc-400 shadow-md ring-0 transition duration-300 ease-in-out mt-[2px] ml-[2px] ${
-                            manualActive ? 'translate-x-4 bg-white' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
+            {/* Floating container: center hero content horizontally & vertically */}
+            <div className="w-full flex items-center justify-center">
 
-                  {/* Divider */}
-                  <div className="h-px bg-[#3e502c]/30 my-6"></div>
-
-                  {/* Stat 2: Athlixir Powered */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <div className="text-3xl font-black tracking-tight text-[#FF4F21] drop-shadow-[0_0_15px_rgba(255,79,33,0.15)] transition-all duration-500">
-                          {athlixirPercentage}
-                        </div>
-                        <div className="text-[9px] tracking-wider font-extrabold text-[#FF4F21]/80 uppercase mt-0.5">
-                          Athlixir Powered
-                        </div>
-                      </div>
-                      
-                      {/* Custom Toggle Switch */}
-                      <button 
-                        onClick={() => setAthlixirActive(!athlixirActive)}
-                        className="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-zinc-700/60 transition-colors duration-300 ease-in-out focus:outline-none"
-                        style={{ 
-                          backgroundColor: athlixirActive ? '#FF4F21' : 'rgba(20, 28, 14, 0.6)',
-                          borderColor: athlixirActive ? '#FF4F21' : 'rgba(62, 80, 44, 0.4)'
-                        }}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-zinc-400 shadow-md ring-0 transition duration-300 ease-in-out mt-[2px] ml-[2px] ${
-                            athlixirActive ? 'translate-x-4 bg-white' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* CENTER HERO SECTION - Col span 6 */}
-              <div className="lg:col-span-6 order-1 lg:order-2 text-center space-y-8 px-2 md:px-6">
+              {/* CENTER HERO SECTION */}
+              <div className="w-full max-w-4xl text-center space-y-8 px-2 md:px-6">
                 
                 {/* Pill Badge */}
                 <div className="inline-flex justify-center">
@@ -302,51 +209,7 @@ export default function Home() {
 
               </div>
 
-              {/* RIGHT FLOATING CARD (Verified Athlete ID) - Col span 3 */}
-              <div className="lg:col-span-3 order-3 flex justify-center lg:justify-end">
-                <div className="w-full max-w-[260px] rounded-3xl bg-[#1b2512]/45 border border-[#3e502c]/40 backdrop-blur-xl shadow-2xl p-6 relative group overflow-hidden transition-all duration-300 hover:border-[#FF4F21]/40">
-                  
-                  {/* Card top border glow effect */}
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF4F21]/20 to-transparent"></div>
-                  
-                  {/* Header */}
-                  <div className="flex items-center gap-2 mb-8">
-                    <div className="h-4 w-4 rounded-full bg-[#FF4F21]/20 flex items-center justify-center text-[#FF4F21]">
-                      <Check className="h-3 w-3" />
-                    </div>
-                    <span className="text-[10px] tracking-[0.25em] font-extrabold text-zinc-400 uppercase">
-                      Verified Athlete ID
-                    </span>
-                  </div>
-
-                  {/* Circular Glowing Shield Showcase */}
-                  <div className="flex flex-col items-center justify-center py-6">
-                    
-                    {/* Concentric pulse circles */}
-                    <div className="relative h-28 w-28 flex items-center justify-center">
-                      
-                      {/* Outer pulse */}
-                      <div className="absolute inset-0 rounded-full border border-[#FF4F21]/10 bg-[#FF4F21]/5 animate-ping opacity-60"></div>
-                      
-                      {/* Inner pulse */}
-                      <div className="absolute h-20 w-20 rounded-full border border-[#FF4F21]/20 bg-gradient-to-tr from-[#FF4F21]/5 to-transparent animate-pulse"></div>
-                      
-                      {/* Core glow */}
-                      <div className="absolute h-14 w-14 rounded-full bg-[#FF4F21] blur-md opacity-25 group-hover:opacity-40 transition-opacity duration-300"></div>
-                      
-                      {/* Shield badge container */}
-                      <div className="relative h-16 w-16 rounded-full bg-zinc-900 border border-[#3e502c]/40 flex items-center justify-center shadow-lg shadow-black group-hover:border-[#FF4F21]/30 transition-colors duration-300">
-                        <div className="h-12 w-12 rounded-full bg-[#FF4F21] flex items-center justify-center shadow-inner">
-                          <Shield className="h-6 w-6 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]" />
-                        </div>
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-              </div>
+              
 
             </div>
 
@@ -356,30 +219,29 @@ export default function Home() {
           {/* SECTION 2: ABOUT SECTION */}
           <div 
             ref={aboutRef}
-            className="w-full h-screen snap-start shrink-0 px-2 md:px-4 relative flex flex-col justify-between pt-24 pb-4"
+            className="w-full h-screen snap-start shrink-0 px-8 md:px-16 relative flex flex-col justify-between pt-24 pb-4"
           >
             
 
             {/* Centered Content Container */}
-            <div className="w-full flex-1 flex items-center justify-center max-w-7xl mx-auto">
+            <div className="w-full flex-1 flex items-center justify-center max-w-[96rem] mx-auto">
               
               {/* Floating Widgets Grid Container */}
               <div className="w-full grid lg:grid-cols-12 gap-8 items-center">
                 
                 {/* LEFT CONTENT COLUMN - Col span 7 */}
-                <div className="lg:col-span-7 space-y-6 text-left">
-                  
+                <div className="lg:col-span-7 space-y-6 text-left rounded-3xl p-8 bg-transparent">
                   {/* Badge */}
                   <div className="inline-flex">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-[#FF4F21]/30 bg-transparent px-4 py-1.5 text-[9px] font-black tracking-[0.2em] text-[#FF4F21] uppercase">
+                                        <span className="inline-flex items-center gap-2 rounded-full bg-[#FF4F21]/10 px-4 py-1.5 text-[9px] font-black tracking-[0.2em] text-[#FF4F21] uppercase">
                       ABOUT ATHLIXIR
                     </span>
                   </div>
 
                   {/* Headline Title */}
-                  <h2 className="text-3xl md:text-4xl lg:text-5xl crt-glow-white font-black tracking-tight leading-[1.1] text-white">
+                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] text-white crt-glow-white">
                     Bringing Trust,<br />
-                    Technology &<br />
+                    Technology &amp;<br />
                     <span className="text-zinc-500">Opportunity.</span>
                   </h2>
 
@@ -390,45 +252,32 @@ export default function Home() {
 
                   {/* Precision & Growth items */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8 max-w-xl">
-                    
-                    {/* Precision item */}
-                    <div className="flex gap-4 items-start font-sans">
-                      <div className="h-10 w-10 shrink-0 rounded-full bg-[#FF4F21]/10 border border-[#FF4F21]/20 flex items-center justify-center text-[#FF4F21]">
+                                        <div className="flex gap-4 items-start font-sans hover:shadow-lg transition-shadow duration-300">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-[#FF4F21]/10 flex items-center justify-center text-[#FF4F21]">
                         <Target className="h-5 w-5" />
                       </div>
                       <div>
                         <h4 className="text-xs font-black tracking-wider uppercase text-white">PRECISION</h4>
-                        <p className="text-[11px] text-zinc-500 leading-normal mt-1 font-semibold">
-                          Verified data that scouts and academies can actually trust.
-                        </p>
+                        <p className="text-[11px] text-zinc-500 leading-normal mt-1 font-semibold">Verified data that scouts and academies can actually trust.</p>
                       </div>
                     </div>
-
-                    {/* Growth item */}
-                    <div className="flex gap-4 items-start font-sans">
-                      <div className="h-10 w-10 shrink-0 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#FF4F21]">
+                                        <div className="flex gap-4 items-start font-sans hover:shadow-lg transition-shadow duration-300">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-zinc-900 flex items-center justify-center text-[#FF4F21]">
                         <TrendingUp className="h-5 w-5" />
                       </div>
                       <div>
                         <h4 className="text-xs font-black tracking-wider uppercase text-white">GROWTH</h4>
-                        <p className="text-[11px] text-zinc-500 leading-normal mt-1 font-semibold">
-                          AI-driven analytics to identify and fix performance gaps.
-                        </p>
+                        <p className="text-[11px] text-zinc-500 leading-normal mt-1 font-semibold">AI-driven analytics to identify and fix performance gaps.</p>
                       </div>
                     </div>
-
                   </div>
 
                   {/* Action CTA */}
                   <div className="pt-4">
-                    <Link
-                      href="/signup"
-                      className="inline-flex items-center justify-center rounded-full bg-[#FF4F21] px-10 py-3.5 text-xs font-extrabold tracking-wider text-white shadow-lg shadow-[#FF4F21]/20 hover:brightness-110 hover:shadow-[#FF4F21]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-                    >
+                    <Link href="/signup" className="inline-flex items-center justify-center rounded-full bg-[#FF4F21] px-10 py-3.5 text-xs font-extrabold tracking-wider text-white shadow-lg shadow-[#FF4F21]/20 hover:brightness-110 hover:shadow-[#FF4F21]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                       LEARN MORE
                     </Link>
                   </div>
-
                 </div>
 
                 {/* RIGHT COLUMN (Overlapping graphics and community) - Col span 5 */}
@@ -511,11 +360,11 @@ export default function Home() {
         {/* SECTION 3: FEATURES SECTION */}
         <div 
           ref={featuresRef}
-          className="w-full h-screen snap-start shrink-0 px-2 md:px-4 relative flex flex-col justify-between pt-24 pb-4"
+          className="w-full h-screen snap-start shrink-0 px-8 md:px-16 relative flex flex-col justify-between pt-24 pb-4"
         >
           
           {/* Centered Content Container */}
-          <div className="w-full flex-1 flex items-center justify-center max-w-7xl mx-auto">
+            <div className="w-full flex-1 flex items-center justify-center max-w-[96rem] mx-auto">
             
             {/* Grid Container */}
             <div className="w-full grid lg:grid-cols-12 gap-8 items-center">
@@ -756,11 +605,11 @@ export default function Home() {
         {/* SECTION 4: RESEARCH SECTION (ATHLIXIR ADVANTAGE SLIDER) */}
         <div 
           ref={researchRef}
-          className="w-full h-screen snap-start shrink-0 relative flex flex-col justify-between pt-24 pb-4"
+          className="w-full h-screen snap-start shrink-0 px-8 md:px-16 relative flex flex-col justify-between pt-24 pb-4"
         >
           
           {/* Centered Content Container for Header */}
-          <div className="w-full max-w-7xl mx-auto px-2 md:px-4 mb-4">
+          <div className="w-full max-w-[96rem] mx-auto px-8 md:px-16 mb-4">
             {/* Header Text */}
             <div className="text-left">
               <h2 className="text-3xl md:text-4xl lg:text-5xl crt-glow-white font-black tracking-tight leading-[1.1] text-white">
@@ -864,11 +713,11 @@ export default function Home() {
         {/* SECTION 5: FOR WHOM SECTION */}
         <div 
           ref={forWhomRef}
-          className="w-full h-screen snap-start shrink-0 px-2 md:px-4 relative flex flex-col justify-between pt-24 pb-4"
+          className="w-full h-screen snap-start shrink-0 px-8 md:px-16 relative flex flex-col justify-between pt-24 pb-4"
         >
           
           {/* Centered Content Container */}
-          <div className="w-full flex-1 flex flex-col justify-center max-w-7xl mx-auto space-y-8">
+          <div className="w-full flex-1 flex flex-col justify-center max-w-[96rem] mx-auto space-y-8">
             
             {/* Header Title Grid */}
             <div className="text-left space-y-3">
@@ -975,10 +824,10 @@ export default function Home() {
         </div>
 
         {/* HIGH-FIDELITY snapped MULTI-COLUMN FOOTER */}
-        <footer className="snap-start w-full bg-zinc-950 border-t border-zinc-900/40 px-4 md:px-8 py-16 flex flex-col justify-between backdrop-blur-md relative z-10">
+        <footer className="snap-start w-full bg-zinc-950 border-t border-zinc-900/40 px-8 md:px-16 py-16 flex flex-col justify-between backdrop-blur-md relative z-10">
           
           {/* Main Footer Directory Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 max-w-7xl mx-auto w-full pb-12 border-b border-zinc-900/40">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 max-w-[96rem] mx-auto w-full pb-12 border-b border-zinc-900/40">
             
             {/* Left Column (Brand info and socials) - Col span 4 */}
             <div className="lg:col-span-4 space-y-6 text-left">
@@ -1111,7 +960,7 @@ export default function Home() {
           </div>
 
           {/* Bottom Copyright & Terms Directory */}
-          <div className="flex flex-col sm:flex-row justify-between items-center pt-8 text-[11px] font-bold text-zinc-500 uppercase tracking-wider max-w-7xl mx-auto w-full gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center pt-8 text-[11px] font-bold text-zinc-500 uppercase tracking-wider max-w-[96rem] mx-auto w-full gap-4">
             <div>
               © 2026 Athlixir | Built with purpose.
             </div>
