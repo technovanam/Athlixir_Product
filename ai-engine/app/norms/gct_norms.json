@@ -1,0 +1,8 @@
+{
+  "description": "Standard Ground Contact Time (GCT) bounds in milliseconds.",
+  "ranges": {
+    "optimal": [180, 220],
+    "acceptable": [221, 260],
+    "suboptimal": [261, 320]
+  }
+}

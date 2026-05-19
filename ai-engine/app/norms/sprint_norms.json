@@ -1,0 +1,20 @@
+{
+  "elite": {
+    "cadence_min": 190,
+    "gct_max_ms": 130,
+    "asymmetry_max_percent": 1.5,
+    "vertical_oscillation_cm_max": 6.0
+  },
+  "advanced": {
+    "cadence_min": 180,
+    "gct_max_ms": 180,
+    "asymmetry_max_percent": 3.0,
+    "vertical_oscillation_cm_max": 8.0
+  },
+  "intermediate": {
+    "cadence_min": 165,
+    "gct_max_ms": 230,
+    "asymmetry_max_percent": 5.0,
+    "vertical_oscillation_cm_max": 10.0
+  }
+}
