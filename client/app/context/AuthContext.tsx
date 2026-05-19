@@ -59,7 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const response = await api.get('/auth/me');
-      if (response.data && response.data.data && response.data.data.user) {
+      if (response.data && response.data.user) {
+        setUser(response.data.user);
+      } else if (response.data && response.data.data && response.data.data.user) {
         setUser(response.data.data.user);
       } else {
         setUser(null);
@@ -80,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const response = await api.post('/auth/signup', { username, email, password });
-      const userData = response.data?.user;
+      const userData = response.data?.data?.user || response.data?.user;
       setUser(userData);
       
       // Since it's a new signup, onboardingCompleted is false -> Go to onboarding
@@ -99,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', { email, password });
-      const userData = response.data?.user;
+      const userData = response.data?.data?.user || response.data?.user;
       setUser(userData);
 
       // Decides routing based on backend database state
