@@ -1,0 +1,50 @@
+{
+  "default_profile": "u18_male_100m",
+  "profiles": {
+    "u18_male_100m": {
+      "label": "U18 Male 100m Sprint",
+      "event": "100m",
+      "age_group": "u18",
+      "gender": "male",
+      "cadence": { "district": 170, "state": 175, "national": 180, "elite": 185 },
+      "gct": { "district": 240, "state": 210, "national": 180, "elite": 150 },
+      "stride_length": { "district": 1.75, "state": 1.9, "national": 2.05, "elite": 2.2 }
+    },
+    "u18_female_100m": {
+      "label": "U18 Female 100m Sprint",
+      "event": "100m",
+      "age_group": "u18",
+      "gender": "female",
+      "cadence": { "district": 168, "state": 173, "national": 178, "elite": 183 },
+      "gct": { "district": 250, "state": 220, "national": 190, "elite": 160 },
+      "stride_length": { "district": 1.65, "state": 1.8, "national": 1.95, "elite": 2.1 }
+    },
+    "open_male_100m": {
+      "label": "Open Male 100m Sprint",
+      "event": "100m",
+      "age_group": "open",
+      "gender": "male",
+      "cadence": { "district": 172, "state": 178, "national": 183, "elite": 190 },
+      "gct": { "district": 230, "state": 200, "national": 170, "elite": 140 },
+      "stride_length": { "district": 1.8, "state": 2.0, "national": 2.15, "elite": 2.3 }
+    },
+    "open_male_400m": {
+      "label": "Open Male 400m",
+      "event": "400m",
+      "age_group": "open",
+      "gender": "male",
+      "cadence": { "district": 165, "state": 170, "national": 175, "elite": 180 },
+      "gct": { "district": 260, "state": 240, "national": 220, "elite": 200 },
+      "stride_length": { "district": 1.7, "state": 1.85, "national": 2.0, "elite": 2.15 }
+    },
+    "open_male_800m": {
+      "label": "Open Male 800m",
+      "event": "800m",
+      "age_group": "open",
+      "gender": "male",
+      "cadence": { "district": 160, "state": 168, "national": 175, "elite": 182 },
+      "gct": { "district": 280, "state": 260, "national": 240, "elite": 220 },
+      "stride_length": { "district": 1.55, "state": 1.7, "national": 1.85, "elite": 2.0 }
+    }
+  }
+}
