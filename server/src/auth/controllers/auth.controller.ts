@@ -31,11 +31,20 @@ export class AuthController {
 
     const sessionCookie = await this.authService.createSessionCookie(loginResult.idToken);
 
-    // Set HttpOnly cookie
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+
+    // Set secure HttpOnly session cookie
     response.cookie('session', sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    // Set non-HttpOnly, client-readable indicator cookie to avoid redundant auth/me checks
+    response.cookie('athlixir_logged_in', 'true', {
+      maxAge: expiresIn,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
@@ -57,11 +66,20 @@ export class AuthController {
     const { idToken, userProfile } = await this.authService.login(loginDto);
     const sessionCookie = await this.authService.createSessionCookie(idToken);
 
-    // Set HttpOnly cookie
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+
+    // Set secure HttpOnly session cookie
     response.cookie('session', sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    // Set non-HttpOnly, client-readable indicator cookie to avoid redundant auth/me checks
+    response.cookie('athlixir_logged_in', 'true', {
+      maxAge: expiresIn,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
@@ -83,6 +101,7 @@ export class AuthController {
       await this.authService.revokeSession(sessionCookie);
     }
     response.clearCookie('session');
+    response.clearCookie('athlixir_logged_in');
     return { message: 'Logged out successfully' };
   }
 

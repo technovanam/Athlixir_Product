@@ -48,6 +48,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const refreshUser = async () => {
+    // Check if companion non-HttpOnly cookie is set before calling /auth/me
+    const hasLoggedInCookie = typeof document !== 'undefined' && document.cookie.includes('athlixir_logged_in=true');
+    
+    if (!hasLoggedInCookie) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.get('/auth/me');
       if (response.data && response.data.data && response.data.data.user) {
@@ -71,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const response = await api.post('/auth/signup', { username, email, password });
-      const userData = response.data?.data?.user;
+      const userData = response.data?.user;
       setUser(userData);
       
       // Since it's a new signup, onboardingCompleted is false -> Go to onboarding
@@ -90,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', { email, password });
-      const userData = response.data?.data?.user;
+      const userData = response.data?.user;
       setUser(userData);
 
       // Decides routing based on backend database state
