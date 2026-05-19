@@ -25,13 +25,13 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       // Authenticated users
       if (!user.onboardingCompleted) {
         // Must complete onboarding before accessing anything else
-        if (pathname !== '/onboarding') {
+        if (!pathname.startsWith('/onboarding')) {
           router.replace('/onboarding');
         }
       } else {
         // Onboarding is completed
         // If logged in, they can stay on home page '/' or get redirected from login/signup/onboarding to dashboard
-        if (pathname === '/login' || pathname === '/signup' || pathname === '/onboarding') {
+        if (pathname === '/login' || pathname === '/signup' || pathname.startsWith('/onboarding')) {
           router.replace('/dashboard');
         }
       }
@@ -50,10 +50,10 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (user) {
-    if (!user.onboardingCompleted && pathname !== '/onboarding') {
+    if (!user.onboardingCompleted && !pathname.startsWith('/onboarding')) {
       return null; 
     }
-    if (user.onboardingCompleted && (pathname === '/login' || pathname === '/signup' || pathname === '/onboarding')) {
+    if (user.onboardingCompleted && (pathname === '/login' || pathname === '/signup' || pathname.startsWith('/onboarding'))) {
       return null; 
     }
   }
