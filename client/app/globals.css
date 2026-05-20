@@ -37,23 +37,6 @@ body {
   background: transparent !important;
 }
 
-/* CRT Screen Scanline & Vignette Overlays */
-.crt-screen::before {
-  content: " ";
-  display: block;
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
-              linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-  background-size: 100% 3px, 6px 100%;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.85;
-}
-
 
 
 /* Subtle Phosphor Glow effects for text and borders */
