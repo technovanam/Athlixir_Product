@@ -1,13 +1,44 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Home, User, Settings, FolderKanban, ShieldCheck, Activity, Users, PlusCircle, CheckCircle, RefreshCcw } from 'lucide-react';
+import BiomechanicsPanel from './BiomechanicsPanel';
+import { LogOut, Home, User, FolderKanban, ShieldCheck, Activity, Users, CheckCircle, RefreshCcw, ChevronRight, Video } from 'lucide-react';
 
-export default function DashboardPage() {
+const DASHBOARD_TABS = ['overview', 'biomechanics', 'workspace', 'account', 'security'] as const;
+type DashboardTab = (typeof DASHBOARD_TABS)[number];
+
+function isDashboardTab(value: string | null): value is DashboardTab {
+  return DASHBOARD_TABS.includes(value as DashboardTab);
+}
+
+function DashboardPageContent() {
   const { user, logout, refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<DashboardTab>(
+    isDashboardTab(tabFromUrl) ? tabFromUrl : 'overview',
+  );
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (isDashboardTab(tabFromUrl) && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl, activeTab]);
+
+  const setTab = useCallback(
+    (id: DashboardTab) => {
+      setActiveTab(id);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('tab', id);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -40,6 +71,7 @@ export default function DashboardPage() {
           <nav className="space-y-1.5">
             {[
               { id: 'overview', label: 'Overview', icon: Home },
+              { id: 'biomechanics', label: 'AI Biomechanics', icon: Activity },
               { id: 'workspace', label: 'Workspace Info', icon: FolderKanban },
               { id: 'account', label: 'Account Profile', icon: User },
               { id: 'security', label: 'Security & Auth', icon: ShieldCheck },
@@ -49,7 +81,7 @@ export default function DashboardPage() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => setTab(item.id as DashboardTab)}
                   className={`flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition duration-200 cursor-pointer ${
                     isActive
                       ? 'bg-violet-600/10 text-violet-400 border border-violet-500/20'
@@ -95,10 +127,12 @@ export default function DashboardPage() {
         <div className="flex justify-between items-center mb-10 relative z-10">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-white">
-              Enterprise Dashboard
+              {activeTab === 'biomechanics' ? 'Running Biomechanics' : 'Enterprise Dashboard'}
             </h1>
             <p className="text-sm text-zinc-400 mt-1">
-              Gateway security session is healthy and active.
+              {activeTab === 'biomechanics'
+                ? 'Upload video, view skeleton overlay, and core metrics.'
+                : 'Gateway security session is healthy and active.'}
             </p>
           </div>
 
@@ -133,6 +167,30 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setTab('biomechanics')}
+                className="w-full rounded-2xl border border-violet-500/30 bg-gradient-to-r from-violet-950/50 to-zinc-950/50 p-6 text-left transition hover:border-violet-400/50 hover:bg-violet-950/60 cursor-pointer group"
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-violet-600/20 flex items-center justify-center shrink-0 border border-violet-500/30">
+                      <Video className="h-6 w-6 text-violet-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">AI Running Biomechanics</h3>
+                      <p className="text-sm text-zinc-400 mt-1 max-w-xl">
+                        Upload sprint or running video, view skeleton overlay, performance scores, injury risk, insights, and progress vs prior sessions.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-violet-400 group-hover:text-violet-300 shrink-0">
+                    Open panel
+                    <ChevronRight className="h-4 w-4" />
+                  </span>
+                </div>
+              </button>
 
               {/* Stats Section */}
               <div className="grid gap-6 sm:grid-cols-3">
@@ -192,6 +250,8 @@ export default function DashboardPage() {
 
             </div>
           )}
+
+          {activeTab === 'biomechanics' && <BiomechanicsPanel />}
 
           {activeTab === 'workspace' && (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-8 space-y-8 animate-fadeIn">
@@ -280,5 +340,21 @@ export default function DashboardPage() {
       </main>
 
     </div>
+  );
+}
+
+function DashboardLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-black text-zinc-400 text-sm">
+      Loading dashboard…
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardPageContent />
+    </Suspense>
   );
 }

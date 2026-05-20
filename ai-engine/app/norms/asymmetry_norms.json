@@ -1,0 +1,9 @@
+{
+  "description": "Left/Right biomechanical asymmetry percentage benchmarks.",
+  "ranges": {
+    "optimal": [0.0, 2.5],
+    "acceptable": [2.6, 5.0],
+    "suboptimal": [5.1, 10.0],
+    "high_risk": [10.1, 25.0]
+  }
+}

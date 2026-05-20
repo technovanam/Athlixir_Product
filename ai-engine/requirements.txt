@@ -1,0 +1,13 @@
+mediapipe==0.10.9
+opencv-python
+numpy==1.26.4
+scipy
+fastapi
+uvicorn
+pandas==2.2.1
+firebase-admin==6.5.0
+requests==2.31.0
+python-multipart==0.0.9
+# mediapipe==0.10.9 requires protobuf<4 at import time.
+# Set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python in environment to allow
+# coexistence with firebase-admin which requires protobuf>=4.

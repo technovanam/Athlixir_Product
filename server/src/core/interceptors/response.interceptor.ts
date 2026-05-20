@@ -22,6 +22,11 @@ export class ResponseInterceptor<T>
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<StandardResponse<T>> {
+    const request = context.switchToHttp().getRequest<{ url?: string }>();
+    if (request.url?.includes('/video/') || request.url?.includes('/report')) {
+      return next.handle();
+    }
+
     return next.handle().pipe(
       map((data) => ({
         success: true,

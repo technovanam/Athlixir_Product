@@ -1,0 +1,9 @@
+{
+  "description": "Standard steps-per-minute (SPM) bounds for elite, advanced, and intermediate distance/sprint athletes.",
+  "ranges": {
+    "optimal": [170, 185],
+    "acceptable": [160, 195],
+    "suboptimal": [140, 159],
+    "high_impact_overload": [196, 220]
+  }
+}
