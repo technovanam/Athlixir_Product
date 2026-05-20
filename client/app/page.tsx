@@ -119,6 +119,9 @@ export default function Home() {
                     : 'text-zinc-300 hover:text-white'
                 }`}
               >
+                {activeTab === link.id && (
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-[#FF4F21] rounded-b-sm"></div>
+                )}
                 <span>{link.label}</span>
               </a>
             ))}
@@ -167,7 +170,7 @@ export default function Home() {
             <div className="w-full flex items-center justify-center">
 
               {/* CENTER HERO SECTION */}
-              <div className="w-full max-w-4xl text-center space-y-8 px-2 md:px-6">
+              <div className="w-full max-w-4xl text-center space-y-8">
                 
                 {/* Pill Badge */}
                 <div className="inline-flex justify-center">
@@ -177,7 +180,7 @@ export default function Home() {
                 </div>
 
                 {/* Headline Title */}
-                <h1 className="text-3xl md:text-5xl lg:text-6xl crt-glow-white font-extrabold tracking-tight leading-[1.1] text-white">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl crt-glow-white font-extrabold tracking-tight leading-[1.1] text-white">
                   <span className="whitespace-nowrap">Your Talent. <span className="text-zinc-400/80">Your Data.</span></span>
                   <br />
                   <span className="text-[#FF4F21] crt-glow-orange drop-shadow-[0_4px_24px_rgba(255,79,33,0.25)] mt-1 block">
@@ -186,7 +189,7 @@ export default function Home() {
                 </h1>
 
                 {/* Description Subtitle */}
-                <p className="text-zinc-300/80 text-sm md:text-base max-w-xl mx-auto leading-relaxed font-semibold">
+                <p className="text-zinc-300/80 text-sm md:text-base max-w-2xl mx-auto leading-relaxed font-regular">
                   Empowering grassroots athletes with verified digital profiles, injury tracking, performance analytics, and real career opportunities.
                 </p>
 
@@ -444,7 +447,7 @@ export default function Home() {
                 
                 {/* Badge */}
                 <div className="inline-flex">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/5 px-4 py-1.5 text-[9px] font-black tracking-[0.2em] text-sky-400 uppercase">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[#FF4F21]/30 bg-[#FF4F21]/5 px-4 py-1.5 text-[9px] font-black tracking-[0.2em] text-[#FF4F21] uppercase">
                     THE FUTURE
                   </span>
                 </div>
@@ -478,7 +481,7 @@ export default function Home() {
                   {/* Header */}
                   <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-1.5 text-[9px] font-black text-zinc-400 tracking-wider uppercase">
-                      <span>USERS: LAST 7 DAYS USING MEDIAN</span>
+                      <span>TEAM ATHLETES: LAST 7 DAYS USING MEDIAN</span>
                       <ChevronDown className="h-3 w-3" />
                     </div>
                     <div className="flex gap-2">
@@ -491,10 +494,10 @@ export default function Home() {
                   {/* Chart columns */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                     
-                    {/* Left graph panel: LOAD TIME VS BOUNCE RATE */}
+                    {/* Left graph panel: HEART RATE VS FATIGUE */}
                     <div className="rounded-2xl border border-zinc-900/50 bg-[#0f0f0c]/60 p-4 relative">
                       <div className="flex justify-between items-center mb-4">
-                        <span className="text-[8px] font-black text-zinc-500 tracking-wider uppercase">LOAD TIME VS BOUNCE RATE</span>
+                        <span className="text-[8px] font-black text-zinc-500 tracking-wider uppercase">HEART RATE VS FATIGUE</span>
                         <span className="text-[8px] font-black text-zinc-400 tracking-widest">OPTIONS</span>
                       </div>
 
@@ -503,15 +506,15 @@ export default function Home() {
                         
                         {/* Tooltip block floating on the peak bar */}
                         <div className="absolute top-0 left-[35%] rounded bg-zinc-900 border border-zinc-800 p-2 shadow-xl z-20 flex flex-col items-center">
-                          <span className="text-[7px] font-bold text-zinc-500 uppercase leading-none">Bounce Rate %</span>
-                          <span className="text-[10px] font-black text-white mt-0.5 leading-none">57.1%</span>
+                          <span className="text-[7px] font-bold text-zinc-500 uppercase leading-none">Fatigue Level</span>
+                          <span className="text-[10px] font-black text-white mt-0.5 leading-none">84%</span>
                         </div>
 
                         {/* Bars */}
                         {[25, 45, 60, 85, 95, 65, 40, 20, 15, 8].map((height, i) => (
                           <div key={i} className="flex-1 flex flex-col justify-end h-full">
                             <div 
-                              className="w-full rounded-t-sm bg-sky-500/80 transition-all duration-300 hover:bg-sky-400"
+                              className="w-full rounded-t-sm bg-[#FF4F21]/80 transition-all duration-300 hover:bg-[#FF4F21]"
                               style={{ height: `${height}%` }}
                             ></div>
                           </div>
@@ -519,10 +522,10 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Right graph panel: START RENDER VS BOUNCE RATE */}
+                    {/* Right graph panel: SPRINT SPEED VS STAMINA */}
                     <div className="rounded-2xl border border-zinc-900/50 bg-[#0f0f0c]/60 p-4">
                       <div className="flex justify-between items-center mb-4">
-                        <span className="text-[8px] font-black text-zinc-500 tracking-wider uppercase">START RENDER VS BOUNCE RATE</span>
+                        <span className="text-[8px] font-black text-zinc-500 tracking-wider uppercase">SPRINT SPEED VS STAMINA</span>
                         <span className="text-[8px] font-black text-zinc-400 tracking-widest">OPTIONS</span>
                       </div>
 
@@ -551,7 +554,7 @@ export default function Home() {
                         {[15, 30, 75, 90, 80, 50, 30, 25, 45, 60].map((height, i) => (
                           <div key={i} className="flex-1 flex flex-col justify-end h-full z-10 opacity-30">
                             <div 
-                              className="w-full rounded-t-sm bg-teal-500"
+                              className="w-full rounded-t-sm bg-zinc-700"
                               style={{ height: `${height}%` }}
                             ></div>
                           </div>
@@ -605,7 +608,7 @@ export default function Home() {
         {/* SECTION 4: RESEARCH SECTION (ATHLIXIR ADVANTAGE SLIDER) */}
         <div 
           ref={researchRef}
-          className="w-full h-screen snap-start shrink-0 px-8 md:px-16 relative flex flex-col justify-between pt-24 pb-4"
+          className="w-full h-screen snap-start shrink-0 relative flex flex-col justify-between pt-24 pb-4"
         >
           
           {/* Centered Content Container for Header */}
@@ -623,12 +626,8 @@ export default function Home() {
           <div className="w-full flex-1 flex items-center relative overflow-hidden">
             <div className="w-full relative">
               
-              {/* Fade masks for visual depth in slider edges */}
-              <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-zinc-950 via-zinc-950/60 to-transparent z-20 pointer-events-none"></div>
-              <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-zinc-950 via-zinc-950/60 to-transparent z-20 pointer-events-none"></div>
-
               {/* Cards Container */}
-              <div className="flex gap-6 overflow-x-auto pb-6 pt-2 no-scrollbar scroll-smooth snap-x snap-mandatory px-4 md:px-12 lg:px-24">
+              <div className="flex gap-6 overflow-x-auto pb-6 pt-2 no-scrollbar scroll-smooth snap-x snap-mandatory px-8 md:px-16">
                 
                 {[
                   {
@@ -654,7 +653,17 @@ export default function Home() {
                   {
                     index: '05',
                     title: 'Academy\nLocator',
-                    image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=600&q=80',
+                    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=600&q=80',
+                  },
+                  {
+                    index: '06',
+                    title: 'Injury\nPrevention',
+                    image: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=600&q=80',
+                  },
+                  {
+                    index: '07',
+                    title: 'Sponsorship\nMatching',
+                    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=600&q=80',
                   },
                 ].map((card, i) => (
                   <div 
@@ -924,7 +933,7 @@ export default function Home() {
                 ECOSYSTEM
               </h4>
               <ul className="space-y-2.5 font-semibold text-xs text-zinc-300">
-                {['For Athletes', 'For Coaches', 'For Academies'].map((item) => (
+                {['For Whom', 'For Coaches', 'For Academies'].map((item) => (
                   <li key={item}>
                     <a href="#" className="hover:text-[#FF4F21] transition-colors duration-200 block">
                       {item}
