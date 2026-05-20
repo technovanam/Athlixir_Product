@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
-import { LogIn, Mail, Lock, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, error, setError } = useAuth();
@@ -38,55 +38,60 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-black px-6 py-12">
+    <div 
+      className="relative flex min-h-screen items-center justify-center bg-black bg-cover bg-center bg-no-repeat px-6 py-12 font-sans"
+      style={{ backgroundImage: `url('/stadium_grass_bg.png')` }}
+    >
+      {/* Dark overlay for background image */}
+      <div className="absolute inset-0 bg-[#0a0f1c]/80 backdrop-blur-[1px]"></div>
+
       {/* Back to Home Button */}
-      <div className="absolute top-6 left-6 z-20">
+      <div className="absolute top-8 left-8 z-20">
         <Link
           href="/"
-          className="flex items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/40 px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white hover:border-zinc-700 transition duration-200 cursor-pointer"
+          className="flex items-center gap-2 text-[11px] font-bold tracking-[0.15em] text-white uppercase hover:text-[#FF5722] transition duration-200 cursor-pointer"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Back to Home</span>
+          <ArrowLeft className="h-4 w-4 text-[#FF5722]" />
+          <span>BACK TO HOME</span>
         </Link>
       </div>
 
-      {/* Background Neon Gradients */}
-      <div className="absolute top-1/4 left-1/4 h-[350px] w-[350px] rounded-full bg-violet-600/10 blur-[100px]"></div>
-      <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-indigo-600/10 blur-[100px]"></div>
-
-      <div className="relative w-full max-w-md">
-        {/* Logo Icon */}
-        <div className="flex flex-col items-center gap-2 mb-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20">
-            <LogIn className="h-6 w-6 text-white" />
+      <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center">
+        {/* Logo and Title */}
+        <div className="flex flex-col items-center mb-8 text-center">
+          {/* Logo SVG */}
+          <div className="mb-4">
+            <svg width="44" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF5722" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter">
+              <path d="M4 22L12 4L20 22" />
+            </svg>
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Welcome back
+          <h2 className="text-[32px] font-black tracking-tight text-white mb-2" style={{ textShadow: 'none' }}>
+            ACCESS PORTAL
           </h2>
-          <p className="text-sm text-zinc-400">
-            Sign in to access your secure Athlixir dashboard
+          <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
+            Secured Athlixir <span className="text-[#FF5722]">Data Gate</span>
           </p>
         </div>
 
         {/* Form Container */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 backdrop-blur-xl shadow-2xl">
+        <div className="w-full rounded-[28px] border border-white/5 bg-[#121212]/95 p-8 shadow-2xl backdrop-blur-md">
           <form onSubmit={handleSubmit} className="space-y-6">
             
             {/* Error Notifications */}
             {(error || validationError) && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-400">
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400">
                 <span className="font-semibold">Error:</span> {validationError || error}
               </div>
             )}
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
-                Email Address
+              <label htmlFor="email" className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
+                Athlete ID / Email
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500">
-                  <Mail className="h-4.5 w-4.5" />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600">
+                  <Mail className="h-4 w-4" />
                 </div>
                 <input
                   type="email"
@@ -98,8 +103,8 @@ export default function LoginPage() {
                     setError(null);
                     setValidationError(null);
                   }}
-                  className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-11 pr-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                  placeholder="name@company.com"
+                  className="block w-full rounded-xl border border-transparent bg-[#1c1c1c] pl-11 pr-4 py-3.5 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF5722]/50 focus:ring-1 focus:ring-[#FF5722]/50"
+                  placeholder="name@email.com"
                 />
               </div>
             </div>
@@ -107,13 +112,16 @@ export default function LoginPage() {
             {/* Password Field */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label htmlFor="password" className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                  Password
+                <label htmlFor="password" className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  Key Access
                 </label>
+                <Link href="#" className="text-[10px] font-bold uppercase tracking-wider text-[#FF5722] hover:opacity-80 transition-opacity">
+                  Reset Key?
+                </Link>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500">
-                  <Lock className="h-4.5 w-4.5" />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600">
+                  <Lock className="h-4 w-4" />
                 </div>
                 <input
                   type="password"
@@ -125,8 +133,8 @@ export default function LoginPage() {
                     setError(null);
                     setValidationError(null);
                   }}
-                  className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/50 pl-11 pr-4 py-3 text-sm text-white placeholder-zinc-500 outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                  placeholder="••••••••••••"
+                  className="block w-full rounded-xl border border-transparent bg-[#1c1c1c] pl-11 pr-4 py-3.5 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF5722]/50 focus:ring-1 focus:ring-[#FF5722]/50 tracking-[0.2em]"
+                  placeholder="........"
                 />
               </div>
             </div>
@@ -135,29 +143,29 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 hover:from-violet-500 hover:to-indigo-500 transition duration-200 outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF5722] py-4 text-[13px] font-bold uppercase tracking-wide text-white hover:opacity-90 transition-opacity duration-200 outline-none focus:ring-2 focus:ring-[#FF5722] focus:ring-offset-2 focus:ring-offset-[#121212] disabled:opacity-70 disabled:cursor-not-allowed group cursor-pointer"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                  <span>Authenticating...</span>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Verifying...</span>
                 </>
               ) : (
                 <>
-                  <span>Sign In</span>
+                  <span>Verify Identity</span>
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </>
               )}
             </button>
           </form>
+        </div>
 
-          {/* Footer Info */}
-          <div className="mt-8 text-center text-xs text-zinc-500 border-t border-zinc-800/80 pt-6">
-            New to Athlixir?{' '}
-            <Link href="/signup" className="font-semibold text-violet-400 hover:underline">
-              Create an account
-            </Link>
-          </div>
+        {/* Footer Info */}
+        <div className="mt-8 text-center text-[11px] font-medium text-zinc-500 tracking-wide">
+          New Athlete?{' '}
+          <Link href="/signup" className="font-bold text-[#FF5722] hover:opacity-80 transition-opacity uppercase">
+            Build Profile
+          </Link>
         </div>
       </div>
     </div>
