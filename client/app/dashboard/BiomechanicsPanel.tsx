@@ -62,7 +62,7 @@ type AnalysisRecord = {
     observations?: string[];
   };
   recommendations?: string[];
-  progress?: {
+  progressData?: {
     hasPrevious?: boolean;
     cadenceProgress?: string | null;
     gctProgress?: string | null;
@@ -104,6 +104,9 @@ export default function BiomechanicsPanel() {
   const localPreviewForId = useRef<string | null>(null);
   const analysisId =
     currentAnalysis?.analysisId || currentAnalysis?.id || '';
+  const effectiveStatus = currentAnalysis?.status || socketStatus;
+  const isProcessing =
+    Boolean(effectiveStatus && !['COMPLETED', 'FAILED'].includes(effectiveStatus));
 
   const fetchAnalyses = useCallback(async () => {
     try {
@@ -224,24 +227,58 @@ export default function BiomechanicsPanel() {
     loadVideoBlob,
   ]);
 
+  // Robust polling fallback for state recovery if websocket fails or disconnects
   useEffect(() => {
-    if (
-      !analysisId ||
-      currentAnalysis?.skeletonOverlayReady ||
-      overlayBlobUrl ||
-      currentAnalysis?.status !== 'COMPLETED'
-    ) {
-      return;
-    }
+    if (!analysisId || !isProcessing) return;
 
-    const timer = setInterval(() => fetchSingleAnalysis(analysisId), 4000);
+    const timer = setInterval(async () => {
+      try {
+        const response = await api.get(`/analysis/${analysisId}`);
+        const data = response.data?.data ?? response.data;
+        if (data) {
+          // If the status has changed on backend, update both current and history sidebar state!
+          if (
+            data.status !== effectiveStatus ||
+            data.progress !== (currentAnalysis?.progress ?? 0)
+          ) {
+            setCurrentAnalysis((prev) => {
+              if (!prev || (prev.analysisId || prev.id) !== analysisId) return prev;
+              return {
+                ...prev,
+                ...data,
+              };
+            });
+
+            setAnalysesList((prevList) => {
+              const index = prevList.findIndex(
+                (item) => (item.analysisId || item.id) === analysisId
+              );
+              if (index === -1) return prevList;
+              const updatedList = [...prevList];
+              updatedList[index] = {
+                ...updatedList[index],
+                ...data,
+              };
+              return updatedList;
+            });
+
+            if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+              fetchAnalyses();
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Polling status fallback error:', err);
+      }
+    }, 4000);
+
     return () => clearInterval(timer);
   }, [
     analysisId,
-    currentAnalysis?.status,
-    currentAnalysis?.skeletonOverlayReady,
-    overlayBlobUrl,
-    fetchSingleAnalysis,
+    isProcessing,
+    effectiveStatus,
+    currentAnalysis?.progress,
+    fetchAnalyses,
   ]);
 
   useEffect(() => {
@@ -295,7 +332,7 @@ export default function BiomechanicsPanel() {
           metrics: payload.data?.metrics ?? prev?.metrics,
           insights: payload.data?.insights ?? prev?.insights,
           recommendations: payload.data?.recommendations ?? prev?.recommendations,
-          progress: payload.data?.progress ?? prev?.progress,
+          progressData: payload.data?.progressData ?? prev?.progressData,
           reportReady: payload.data?.reportReady ?? prev?.reportReady,
         }));
       } else {
@@ -305,6 +342,25 @@ export default function BiomechanicsPanel() {
             : prev,
         );
       }
+
+      // Sync WebSocket updates to the history sidebar list in real time
+      setAnalysesList((prevList) => {
+        const index = prevList.findIndex(
+          (item) => (item.analysisId || item.id) === analysisId
+        );
+        if (index === -1) {
+          fetchAnalyses();
+          return prevList;
+        }
+        const updatedList = [...prevList];
+        updatedList[index] = {
+          ...updatedList[index],
+          status: payload.status,
+          progress: payload.progress,
+          ...(payload.data || {}),
+        };
+        return updatedList;
+      });
 
       if (
         payload.status === 'COMPLETED' ||
@@ -345,6 +401,9 @@ export default function BiomechanicsPanel() {
         throw new Error('No analysis ID returned from server');
       }
 
+      // Populate sidebar history list immediately so the new upload shows up as active
+      await fetchAnalyses();
+
       const localPreview = URL.createObjectURL(selectedFile);
       localPreviewForId.current = analysisId;
       setOriginalBlobUrl((prev) => {
@@ -381,9 +440,6 @@ export default function BiomechanicsPanel() {
     setErrorMsg(null);
   };
 
-  const effectiveStatus = currentAnalysis?.status || socketStatus;
-  const isProcessing =
-    effectiveStatus && !['COMPLETED', 'FAILED'].includes(effectiveStatus);
 
   const displayVideoUrl =
     videoTab === 'overlay' ? overlayBlobUrl : originalBlobUrl;
@@ -671,7 +727,7 @@ export default function BiomechanicsPanel() {
                 </div>
               )}
 
-              {currentAnalysis.progress?.hasPrevious && (
+              {currentAnalysis.progressData?.hasPrevious && (
                 <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3">
                     Progress vs last scan
@@ -680,19 +736,19 @@ export default function BiomechanicsPanel() {
                     <div className="rounded-lg bg-zinc-900/50 px-3 py-2">
                       <span className="text-zinc-500 text-[10px] block">Cadence</span>
                       <span className="font-bold text-white">
-                        {currentAnalysis.progress.cadenceProgress ?? '—'}
+                        {currentAnalysis.progressData.cadenceProgress ?? '—'}
                       </span>
                     </div>
                     <div className="rounded-lg bg-zinc-900/50 px-3 py-2">
                       <span className="text-zinc-500 text-[10px] block">GCT</span>
                       <span className="font-bold text-white">
-                        {currentAnalysis.progress.gctProgress ?? '—'}
+                        {currentAnalysis.progressData.gctProgress ?? '—'}
                       </span>
                     </div>
                     <div className="rounded-lg bg-zinc-900/50 px-3 py-2">
                       <span className="text-zinc-500 text-[10px] block">Stride</span>
                       <span className="font-bold text-white">
-                        {currentAnalysis.progress.strideProgress ?? '—'}
+                        {currentAnalysis.progressData.strideProgress ?? '—'}
                       </span>
                     </div>
                   </div>

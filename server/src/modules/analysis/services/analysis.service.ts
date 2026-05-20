@@ -59,10 +59,22 @@ export class AnalysisService {
       .set({
         analysisId,
         userId,
+        athleteId: userId,
         originalVideoPath: storagePath,
-        status: 'PENDING',
+        status: 'UPLOADING',
         progress: 0,
         videoReady: false,
+        videoUrl: '',
+        skeletonOverlayPath: '',
+        skeletonOverlayReady: false,
+        metrics: null,
+        scores: null,
+        benchmarks: null,
+        injuryRisk: null,
+        injuryRisks: null,
+        insights: null,
+        recommendations: null,
+        progressData: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
@@ -98,8 +110,8 @@ export class AnalysisService {
           videoUrl: signedUrl,
           storageBucket,
           videoReady: true,
-          status: 'PROCESSING_POSE',
-          progress: 10,
+          status: 'QUEUED',
+          progress: 5,
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
@@ -112,8 +124,8 @@ export class AnalysisService {
     return {
       success: true,
       analysisId,
-      status: 'PROCESSING_POSE',
-      progress: 10,
+      status: 'QUEUED',
+      progress: 5,
       videoReady: true,
     };
   }
@@ -217,8 +229,16 @@ export class AnalysisService {
     const copy = { ...data };
     delete copy.videoUrl;
     delete copy.overlayVideoUrl;
+
+    let progressData: any = null;
+    if (copy.progress && typeof copy.progress === 'object') {
+      progressData = copy.progress;
+    }
+
     return {
       ...copy,
+      progressData: progressData || copy.progressData || null,
+      progress: typeof copy.progress === 'number' ? copy.progress : 100,
       videoReady: Boolean(copy.videoReady ?? copy.originalVideoPath),
       hasOverlay: Boolean(
         copy.skeletonOverlayReady ?? copy.skeletonOverlayPath,
@@ -537,6 +557,24 @@ export class AnalysisService {
       throw new NotFoundException('Video not available.');
     }
 
+    if (storagePath.startsWith('http://') || storagePath.startsWith('https://')) {
+      this.logger.log(`Streaming ${type} from URL: ${storagePath}`);
+      try {
+        const response = await fetch(storagePath);
+        if (!response.ok) {
+          throw new NotFoundException(`Video URL is not accessible: status ${response.status}`);
+        }
+        return {
+          stream: Readable.fromWeb(response.body as any),
+          contentType: response.headers.get('content-type') || 'video/mp4',
+        };
+      } catch (err: any) {
+        this.logger.error(`Error streaming from URL ${storagePath}: ${err.message}`);
+        throw new NotFoundException(`Video URL streaming failed: ${err.message}`);
+      }
+    }
+
+
     const buckets = analysis.storageBucket
       ? [
           analysis.storageBucket as string,
@@ -608,10 +646,12 @@ export class AnalysisService {
 
   private simulateAnalysisPipeline(analysisId: string) {
     const stages = [
+      { status: 'QUEUED', progress: 5 },
       { status: 'PROCESSING_POSE', progress: 20 },
-      { status: 'LANDMARK_TRACKING', progress: 45 },
-      { status: 'BIOMECHANICS_EXTRACTION', progress: 65 },
-      { status: 'SCORING', progress: 85 },
+      { status: 'TRACKING_LANDMARKS', progress: 40 },
+      { status: 'DETECTING_FOOT_STRIKES', progress: 55 },
+      { status: 'CALCULATING_METRICS', progress: 70 },
+      { status: 'GENERATING_OVERLAY', progress: 85 },
       {
         status: 'COMPLETED',
         progress: 100,
@@ -684,6 +724,8 @@ export class AnalysisService {
             gctProgress: null,
           },
           reportReady: false,
+          skeletonOverlayReady: true,
+          skeletonOverlayPath: `http://127.0.0.1:8000/outputs/${analysisId}_overlay.mp4`,
         },
       },
     ];

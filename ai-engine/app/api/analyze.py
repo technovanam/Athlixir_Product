@@ -77,26 +77,34 @@ def _upload_report(analysis_id: str, user_id: str, html: str) -> bool:
 
 
 def _overlay_worker(analysis_id: str, user_id: str, video_path: str):
-    overlay_dir = tempfile.mkdtemp(prefix="athlixir_overlay_")
-    overlay_path = os.path.join(overlay_dir, "skeleton_overlay.mp4")
+    os.makedirs("outputs", exist_ok=True)
+    overlay_path = f"outputs/{analysis_id}_overlay.mp4"
     try:
         render_skeleton_overlay_video(video_path, overlay_path)
-        if _upload_overlay(analysis_id, user_id, overlay_path):
-            _send_update(
-                analysis_id,
-                "COMPLETED",
-                100,
-                {"skeletonOverlayReady": True},
-            )
+        
+        # Build public HTTP URL
+        overlay_url = f"http://127.0.0.1:8000/outputs/{analysis_id}_overlay.mp4"
+        
+        # Report COMPLETED immediately with the proper static HTTP URL
+        _send_update(
+            analysis_id,
+            "COMPLETED",
+            100,
+            {
+                "skeletonOverlayReady": True,
+                "skeletonOverlayPath": overlay_url,
+            },
+        )
+        
+        # Safe Firebase background upload fallback
+        try:
+            _upload_overlay(analysis_id, user_id, overlay_path)
+        except Exception as upload_err:
+            print(f"[AI OVERLAY UPLOAD BACKUP ERR] {upload_err}")
+            
     except Exception as e:
         print(f"[AI OVERLAY WORKER ERR] {e}")
-    finally:
-        if os.path.exists(overlay_path):
-            try:
-                os.remove(overlay_path)
-                os.rmdir(overlay_dir)
-            except OSError:
-                pass
+
 
 
 def _run_intelligence(
@@ -127,18 +135,19 @@ def run_analysis_from_path(
     print(f"[AI PIPELINE] Processing file for {analysis_id}")
 
     try:
-        _send_update(analysis_id, "PROCESSING_POSE", 15)
-        _send_update(analysis_id, "LANDMARK_TRACKING", 40)
+        _send_update(analysis_id, "QUEUED", 5)
+        _send_update(analysis_id, "PROCESSING_POSE", 20)
+        _send_update(analysis_id, "TRACKING_LANDMARKS", 40)
 
         result = run_biomechanics_extraction_pipeline(video_path)
         result.pop("landmarkHistory", None)
         result.pop("footStrikes", None)
         metrics = result.get("metrics", {})
 
-        _send_update(analysis_id, "BIOMECHANICS_EXTRACTION", 60)
-        print(f"[AI PIPELINE] Biomechanics ready in {time.perf_counter() - t0:.2f}s")
+        _send_update(analysis_id, "DETECTING_FOOT_STRIKES", 55)
+        time.sleep(0.5)
 
-        _send_update(analysis_id, "SCORING", 80)
+        _send_update(analysis_id, "CALCULATING_METRICS", 70)
         intelligence = _run_intelligence(
             metrics, analysis_id, athlete_context, previous_metrics
         )
@@ -146,6 +155,26 @@ def run_analysis_from_path(
 
         if intelligence.get("reportHtml"):
             _upload_report(analysis_id, user_id, intelligence["reportHtml"])
+
+        _send_update(analysis_id, "GENERATING_OVERLAY", 85)
+
+        os.makedirs("outputs", exist_ok=True)
+        overlay_path = f"outputs/{analysis_id}_overlay.mp4"
+        try:
+            render_skeleton_overlay_video(video_path, overlay_path)
+            overlay_url = f"http://127.0.0.1:8000/outputs/{analysis_id}_overlay.mp4"
+            skeleton_overlay_ready = True
+
+            # Safe Firebase background upload fallback
+            threading.Thread(
+                target=_upload_overlay,
+                args=(analysis_id, user_id, overlay_path),
+                daemon=True,
+            ).start()
+        except Exception as e:
+            print(f"[AI OVERLAY ERR] {e}")
+            overlay_url = ""
+            skeleton_overlay_ready = False
 
         payload = {
             "metrics": intelligence["metrics"],
@@ -161,16 +190,13 @@ def run_analysis_from_path(
             "fps": result.get("fps"),
             "durationSec": result.get("durationSec"),
             "landmarkFrameCount": result.get("landmarkFrameCount"),
+            "skeletonOverlayReady": skeleton_overlay_ready,
+            "skeletonOverlayPath": overlay_url,
         }
         payload = {k: v for k, v in payload.items() if v is not None}
 
+        # ONLY emit completion AFTER overlay is saved and URL is built
         _send_update(analysis_id, "COMPLETED", 100, payload)
-
-        threading.Thread(
-            target=_overlay_worker,
-            args=(analysis_id, user_id, video_path),
-            daemon=True,
-        ).start()
 
     except Exception as err:
         print(f"[AI PIPELINE ERR] {err}")
@@ -186,7 +212,7 @@ def run_analysis_pipeline(
 ):
     temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     try:
-        _send_update(analysis_id, "PROCESSING_POSE", 10)
+        _send_update(analysis_id, "QUEUED", 5)
         response = requests.get(video_url, stream=True, timeout=60)
         response.raise_for_status()
         for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):

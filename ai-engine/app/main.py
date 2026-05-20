@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.api.analyze import router as analyze_router
 
 app = FastAPI(
@@ -17,11 +19,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Ensure outputs directory exists at runtime
+os.makedirs("outputs", exist_ok=True)
+
+# Mount outputs folder to serve media static content
+app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+
 # Register endpoints
 app.include_router(analyze_router, prefix="/api")
 
 @app.get("/health")
 def health_check():
+
     return {"status": "healthy", "service": "athlixir-ai-engine"}
 
 if __name__ == "__main__":
