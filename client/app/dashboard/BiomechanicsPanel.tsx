@@ -62,11 +62,7 @@ type AnalysisRecord = {
     observations?: string[];
   };
   recommendations?: string[];
-<<<<<<< HEAD
   progressData?: {
-=======
-  progressDetails?: {
->>>>>>> 08bce8b5242de5d4025fa4467db51188b7b26767
     hasPrevious?: boolean;
     cadenceProgress?: string | null;
     gctProgress?: string | null;
@@ -335,11 +331,8 @@ export default function BiomechanicsPanel() {
           metrics: payload.data?.metrics ?? prev?.metrics,
           insights: payload.data?.insights ?? prev?.insights,
           recommendations: payload.data?.recommendations ?? prev?.recommendations,
-<<<<<<< HEAD
           progressData: payload.data?.progressData ?? prev?.progressData,
-=======
           progress: payload.data?.progress ?? payload.progress ?? prev?.progress,
->>>>>>> 08bce8b5242de5d4025fa4467db51188b7b26767
           reportReady: payload.data?.reportReady ?? prev?.reportReady,
         }));
       } else {
@@ -734,11 +727,7 @@ export default function BiomechanicsPanel() {
                 </div>
               )}
 
-<<<<<<< HEAD
               {currentAnalysis.progressData?.hasPrevious && (
-=======
-              {currentAnalysis.progressDetails?.hasPrevious && (
->>>>>>> 08bce8b5242de5d4025fa4467db51188b7b26767
                 <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3">
                     Progress vs last scan
@@ -747,31 +736,19 @@ export default function BiomechanicsPanel() {
                     <div className="rounded-lg bg-zinc-900/50 px-3 py-2">
                       <span className="text-zinc-500 text-[10px] block">Cadence</span>
                       <span className="font-bold text-white">
-<<<<<<< HEAD
                         {currentAnalysis.progressData.cadenceProgress ?? '—'}
-=======
-                        {currentAnalysis.progressDetails?.cadenceProgress ?? '—'}
->>>>>>> 08bce8b5242de5d4025fa4467db51188b7b26767
                       </span>
                     </div>
                     <div className="rounded-lg bg-zinc-900/50 px-3 py-2">
                       <span className="text-zinc-500 text-[10px] block">GCT</span>
                       <span className="font-bold text-white">
-<<<<<<< HEAD
                         {currentAnalysis.progressData.gctProgress ?? '—'}
-=======
-                        {currentAnalysis.progressDetails?.gctProgress ?? '—'}
->>>>>>> 08bce8b5242de5d4025fa4467db51188b7b26767
                       </span>
                     </div>
                     <div className="rounded-lg bg-zinc-900/50 px-3 py-2">
                       <span className="text-zinc-500 text-[10px] block">Stride</span>
                       <span className="font-bold text-white">
-<<<<<<< HEAD
                         {currentAnalysis.progressData.strideProgress ?? '—'}
-=======
-                        {currentAnalysis.progressDetails?.strideProgress ?? '—'}
->>>>>>> 08bce8b5242de5d4025fa4467db51188b7b26767
                       </span>
                     </div>
                   </div>
