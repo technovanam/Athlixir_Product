@@ -28,40 +28,41 @@ def evaluate_injury_risk(metrics: dict[str, Any]) -> dict[str, Any]:
         risk_points += 30 if asymmetry > 8 else 18
         primary_area = "Knee"
 
-    if gct > 240:
-        flags.append({
-            "category": "Prolonged Ground Contact",
-            "detected": True,
-            "severity": "medium" if gct < 280 else "high",
-            "riskArea": "Fatigue",
-            "detail": f"GCT {int(gct)}ms suggests fatigue or inefficient contact",
-        })
-        risk_points += 22 if gct >= 280 else 14
-        if primary_area == "None":
-            primary_area = "Fatigue"
-
     if overstride > 6.0:
         flags.append({
             "category": "Overstriding",
             "detected": True,
             "severity": "high" if overstride > 8 else "medium",
             "riskArea": "Hamstring",
-            "detail": f"Overstride angle {overstride}° detected",
+            "detail": f"Overstride detected, increased hamstring load",
         })
         risk_points += 28 if overstride > 8 else 16
-        primary_area = "Hamstring"
+        if primary_area == "None":
+            primary_area = "Hamstring"
 
-    if oscillation > 9.0:
+    if gct > 150:  # User defined realistic GCT is 70-150ms. High GCT -> fatigue
+        flags.append({
+            "category": "Prolonged Ground Contact",
+            "detected": True,
+            "severity": "medium" if gct < 180 else "high",
+            "riskArea": "Fatigue",
+            "detail": f"High GCT ({int(gct)}ms) suggests fatigue risk",
+        })
+        risk_points += 22 if gct >= 180 else 14
+        if primary_area == "None":
+            primary_area = "Fatigue"
+
+    if oscillation > 10.0:
         flags.append({
             "category": "Excessive Vertical Oscillation",
             "detected": True,
-            "severity": "low" if oscillation < 11 else "medium",
-            "riskArea": "Efficiency",
-            "detail": f"Vertical oscillation {oscillation}cm above optimal range",
+            "severity": "medium",
+            "riskArea": "Shin Splints",
+            "detail": f"High impact vertical oscillation ({oscillation}cm)",
         })
-        risk_points += 12
+        risk_points += 15
         if primary_area == "None":
-            primary_area = "Efficiency"
+            primary_area = "Lower Leg"
 
     if not flags:
         flags.append({
