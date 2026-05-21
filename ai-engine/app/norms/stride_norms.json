@@ -1,0 +1,15 @@
+{
+  "description": "Stride length performance tiers in meters.",
+  "ranges": {
+    "elite": {
+      "min": 2.0
+    },
+    "advanced": {
+      "min": 1.6,
+      "max": 2.0
+    },
+    "intermediate": {
+      "max": 1.6
+    }
+  }
+}
