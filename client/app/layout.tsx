@@ -3,6 +3,9 @@ import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SmoothScrollProvider from "./components/SmoothScrollProvider";
+import CommandPalette from "./components/CommandPalette";
+import { DateFilterProvider } from "./context/DateFilterContext";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -26,9 +29,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${poppins.variable} ${geistMono.variable} h-full antialiased dark`}>
       <body className="min-h-full flex flex-col bg-black font-sans text-zinc-100 antialiased">
-        <AuthProvider>
-          <ProtectedRoute>{children}</ProtectedRoute>
-        </AuthProvider>
+        <SmoothScrollProvider>
+          <AuthProvider>
+            <DateFilterProvider>
+              <ProtectedRoute>{children}</ProtectedRoute>
+              <CommandPalette />
+            </DateFilterProvider>
+          </AuthProvider>
+        </SmoothScrollProvider>
       </body>
     </html>
   );
