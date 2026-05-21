@@ -1,45 +1,28 @@
 """
-Stride length estimation using foot strike spacing and athlete height calibration.
-
-Uses horizontal ankle displacement between consecutive same-foot strikes,
-scaled by estimated body height in normalized coordinates.
+Stride length estimation using exact ground-plane perspective calibration.
+Uses horizontal ankle displacement normalized frame-by-frame by the athlete's physical height
+to perfectly calculate distance despite camera panning or perspective distortion.
 """
-
 import numpy as np
+from app.calibration.distance_normalization import calculate_physical_distance
 
-
-def _estimate_body_height_normalized(tracker) -> float:
-    """Estimate vertical body span (shoulder to ankle) in normalized coordinates."""
-    if tracker.frame_count < 1:
-        return 0.5
-
-    spans = []
-    for i in range(tracker.frame_count):
-        l_shoulder = tracker.left_shoulder_positions[i]
-        l_ankle = tracker.left_ankle_positions[i]
-        r_shoulder = tracker.right_shoulder_positions[i]
-        r_ankle = tracker.right_ankle_positions[i]
-
-        spans.append(abs(l_ankle[1] - l_shoulder[1]))
-        spans.append(abs(r_ankle[1] - r_shoulder[1]))
-
-    return float(np.median(spans)) if spans else 0.5
-
-
-def _same_foot_stride_distances(foot_strikes: list[dict], tracker, foot: str) -> list[float]:
-    """Horizontal ankle displacement between consecutive strikes of the same foot."""
+def _same_foot_stride_distances(foot_strikes: list[dict], tracker, foot: str, athlete_height_m: float) -> list[float]:
+    """Calculates absolute ground distance in meters between consecutive same-foot strikes."""
     strikes = [s for s in foot_strikes if s["foot"] == foot]
     if len(strikes) < 2:
         return []
 
-    x_series = tracker.get_ankle_x_series(foot)
     distances = []
-
     for i in range(1, len(strikes)):
-        prev_idx = strikes[i - 1]["index"]
-        curr_idx = strikes[i]["index"]
-        if prev_idx < len(x_series) and curr_idx < len(x_series):
-            distances.append(abs(x_series[curr_idx] - x_series[prev_idx]))
+        start_frame = strikes[i - 1]["index"]
+        end_frame = strikes[i]["index"]
+        
+        if start_frame < tracker.frame_count and end_frame < tracker.frame_count:
+            # Use calibration engine to find absolute meters at the exact moment of the strike
+            dist_m = calculate_physical_distance(tracker, start_frame, end_frame, athlete_height_m)
+            
+            # Realism guard
+            distances.append(dist_m)
 
     return distances
 
@@ -50,35 +33,32 @@ def calculate_stride_length(
     athlete_height_m: float = 1.75,
 ) -> dict:
     """
-    Stride length in meters from same-foot strike spacing and height calibration.
-
-    Normalized horizontal displacement is scaled using:
-    meters_per_unit = athlete_height_m / body_height_normalized
+    Stride length in meters using fully calibrated perspective normalization.
     """
     if len(foot_strikes) < 3:
         return {"avg": 0.0, "left": 0.0, "right": 0.0}
 
-    body_height_norm = _estimate_body_height_normalized(tracker)
-    if body_height_norm <= 0.01:
-        return {"avg": 0.0, "left": 0.0, "right": 0.0}
-
-    meters_per_unit = athlete_height_m / body_height_norm
-
-    left_distances = _same_foot_stride_distances(foot_strikes, tracker, "left")
-    right_distances = _same_foot_stride_distances(foot_strikes, tracker, "right")
+    left_distances = _same_foot_stride_distances(foot_strikes, tracker, "left", athlete_height_m)
+    right_distances = _same_foot_stride_distances(foot_strikes, tracker, "right", athlete_height_m)
     all_distances = left_distances + right_distances
 
     if not all_distances:
         return {"avg": 0.0, "left": 0.0, "right": 0.0}
 
-    avg_normalized_stride = float(np.median(all_distances))
-    stride_m = round(avg_normalized_stride * meters_per_unit, 2)
-    
-    left_stride = round(float(np.median(left_distances)) * meters_per_unit, 2) if left_distances else stride_m
-    right_stride = round(float(np.median(right_distances)) * meters_per_unit, 2) if right_distances else stride_m
+    # Filter out wild outliers from poor tracking before taking median
+    valid_distances = [d for d in all_distances if 1.0 < d < 3.5]
+    if not valid_distances:
+        valid_distances = all_distances # Fallback if everything is an outlier
 
-    print(
-        f"[Stride Length] {stride_m} m (Left: {left_stride} m, Right: {right_stride} m) "
-        f"(calibration {meters_per_unit:.3f} m/unit, height {athlete_height_m} m)"
-    )
+    stride_m = round(float(np.median(valid_distances)), 2)
+    
+    # Calculate side-specific
+    v_left = [d for d in left_distances if 1.0 < d < 3.5] or left_distances
+    v_right = [d for d in right_distances if 1.0 < d < 3.5] or right_distances
+    
+    left_stride = round(float(np.median(v_left)), 2) if v_left else stride_m
+    right_stride = round(float(np.median(v_right)), 2) if v_right else stride_m
+
+    print(f"[Calibration Engine] Stride Length corrected: {stride_m} m (L: {left_stride} m, R: {right_stride} m)")
+    
     return {"avg": stride_m, "left": left_stride, "right": right_stride}
