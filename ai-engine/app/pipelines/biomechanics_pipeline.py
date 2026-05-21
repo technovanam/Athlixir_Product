@@ -21,6 +21,9 @@ def run_biomechanics_extraction_pipeline(
 ) -> dict:
     landmark_history, tracker, fps, total_frames = run_pose_extraction_pipeline(video_path)
 
+    # Smooth all joint coordinates to eliminate tracking jitter and noise
+    tracker.smooth_all_trajectories()
+
     duration_sec = min(total_frames / fps if fps > 0 else 0, MAX_ANALYSIS_SECONDS)
 
     foot_strikes = detect_foot_strikes(tracker)
@@ -32,16 +35,14 @@ def run_biomechanics_extraction_pipeline(
         )
 
     cadence = calculate_cadence(foot_strikes, duration_sec)
-    gct = calculate_gct(foot_strikes, tracker, fps)
-    stride_length = calculate_stride_length(
+    gct_data = calculate_gct(foot_strikes, tracker, fps)
+    stride_data = calculate_stride_length(
         foot_strikes, tracker, athlete_height_m=athlete_height_m
     )
 
-    left_strikes = sum(1 for s in foot_strikes if s.get("foot") == "left")
-    right_strikes = sum(1 for s in foot_strikes if s.get("foot") == "right")
-    asymmetry_index = calculate_symmetry_index(
-        float(left_strikes), float(right_strikes)
-    )
+    gct_asymmetry = calculate_symmetry_index(float(gct_data["left"]), float(gct_data["right"]))
+    stride_asymmetry = calculate_symmetry_index(float(stride_data["left"]), float(stride_data["right"]))
+    asymmetry_index = round((gct_asymmetry + stride_asymmetry) / 2, 1)
 
     hip_y = [p[1] for p in tracker.left_hip_positions]
     shoulder_x = [p[0] for p in tracker.left_shoulder_positions]
@@ -56,13 +57,17 @@ def run_biomechanics_extraction_pipeline(
     return {
         "metrics": {
             "cadence": cadence,
-            "gct": gct,
-            "strideLength": round(stride_length, 2),
+            "gct": gct_data["avg"],
+            "strideLength": round(stride_data["avg"], 2),
             "asymmetryIndex": asymmetry_index,
-            "symmetry": round(max(0, 100 - asymmetry_index * 4), 1),
+            "symmetry": round(max(0.0, 100.0 - asymmetry_index * 4.0), 1),
             "oscillation": oscillation,
             "overstrideAngle": overstride_angle,
             "postureAngle": posture_angle,
+            "leftGct": gct_data["left"],
+            "rightGct": gct_data["right"],
+            "leftStride": stride_data["left"],
+            "rightStride": stride_data["right"],
         },
         "footStrikes": foot_strikes,
         "landmarkFrameCount": tracker.frame_count,
