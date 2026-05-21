@@ -15,7 +15,12 @@ import {
   Shield,
   Activity,
   Target,
+  CheckCircle,
+  ExternalLink,
+  BookOpen,
+  ChevronRight,
 } from 'lucide-react';
+import Link from 'next/link';
 
 type AnalysisRecord = {
   id?: string;
@@ -453,7 +458,7 @@ export default function BiomechanicsPanel() {
           <div
             className={`rounded-2xl border-2 border-dashed p-8 text-center transition ${
               dragOver
-                ? 'border-violet-500 bg-violet-500/5'
+                ? 'border-[#FF4F21] bg-[#FF4F21]/5'
                 : 'border-zinc-700 bg-zinc-950/40'
             }`}
             onDragOver={(e) => {
@@ -475,7 +480,7 @@ export default function BiomechanicsPanel() {
               className="hidden"
               onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
             />
-            <UploadCloud className="h-10 w-10 text-violet-500 mx-auto mb-4" />
+            <UploadCloud className="h-10 w-10 text-[#FF4F21] mx-auto mb-4" />
             <p className="text-sm font-semibold text-white mb-1">
               Upload running video
             </p>
@@ -483,7 +488,7 @@ export default function BiomechanicsPanel() {
               Side-view sprint · MP4/MOV · 60+ FPS recommended
             </p>
             {selectedFile ? (
-              <p className="text-xs text-violet-400 mb-3 truncate">
+              <p className="text-xs text-[#FF4F21] mb-3 truncate">
                 {selectedFile.name}
               </p>
             ) : null}
@@ -498,7 +503,7 @@ export default function BiomechanicsPanel() {
               type="button"
               disabled={!selectedFile || uploading}
               onClick={handleUpload}
-              className="w-full rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed py-2.5 text-xs font-bold text-white transition"
+              className="w-full rounded-xl bg-[#FF4F21] hover:bg-[#FF4F21]/80 disabled:opacity-40 disabled:cursor-not-allowed py-2.5 text-xs font-bold text-white transition"
             >
               {uploading ? 'Uploading…' : 'Analyze biomechanics'}
             </button>
@@ -538,7 +543,7 @@ export default function BiomechanicsPanel() {
                       }}
                       className={`w-full text-left rounded-lg px-3 py-2.5 text-xs transition ${
                         isSelected
-                          ? 'bg-violet-600/20 border border-violet-500/30 text-white'
+                          ? 'bg-[#FF4F21]/20 border border-[#FF4F21]/30 text-white'
                           : 'bg-zinc-900/50 border border-transparent text-zinc-400 hover:text-white hover:bg-zinc-900'
                       }`}
                     >
@@ -582,12 +587,12 @@ export default function BiomechanicsPanel() {
           ) : isProcessing || (socketStatus && !['COMPLETED', 'FAILED'].includes(socketStatus)) ? (
             <div className="space-y-6">
               <div className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-8 text-center space-y-4">
-                <TrendingUp className="h-10 w-10 text-violet-500 mx-auto animate-pulse" />
+                <TrendingUp className="h-10 w-10 text-[#FF4F21] mx-auto animate-pulse" />
                 <h3 className="text-sm font-bold text-white">Processing biomechanics</h3>
                 <p className="text-xs text-zinc-500">{socketStatus || currentAnalysis.status}</p>
                 <div className="w-full max-w-xs mx-auto h-2 bg-zinc-800 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-violet-500 transition-all duration-500"
+                    className="h-full bg-[#FF4F21] transition-all duration-500"
                     style={{ width: `${socketProgress || currentAnalysis.progress || 0}%` }}
                   />
                 </div>
@@ -617,15 +622,15 @@ export default function BiomechanicsPanel() {
             <>
               {currentAnalysis.scores && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="rounded-2xl border border-violet-500/30 bg-violet-500/5 p-5">
+                  <div className="rounded-2xl border border-[#FF4F21]/30 bg-[#FF4F21]/5 p-5">
                     <div className="flex items-center justify-between text-zinc-500 mb-2">
                       <span className="text-[10px] font-bold uppercase">Performance</span>
-                      <Trophy className="h-4 w-4 text-violet-400" />
+                      <Trophy className="h-4 w-4 text-[#FF4F21]" />
                     </div>
                     <span className="text-3xl font-black text-white">
                       {currentAnalysis.scores.performanceScore ?? '—'}
                     </span>
-                    <p className="text-[10px] text-violet-400 mt-2">
+                    <p className="text-[10px] text-[#FF4F21] mt-2">
                       {currentAnalysis.classification?.athleteLevel ||
                         currentAnalysis.scores.athleteLevel ||
                         '—'}
@@ -643,7 +648,7 @@ export default function BiomechanicsPanel() {
                   <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
                     <div className="flex items-center justify-between text-zinc-500 mb-2">
                       <span className="text-[10px] font-bold uppercase">Biomechanics</span>
-                      <Target className="h-4 w-4 text-violet-500" />
+                      <Target className="h-4 w-4 text-[#FF4F21]" />
                     </div>
                     <span className="text-3xl font-black text-white">
                       {currentAnalysis.scores.biomechanicsScore ?? '—'}
@@ -680,19 +685,19 @@ export default function BiomechanicsPanel() {
                   <div className="grid gap-3 sm:grid-cols-3 text-sm">
                     <div className="flex justify-between rounded-lg bg-zinc-900/60 px-3 py-2">
                       <span className="text-zinc-400">Cadence</span>
-                      <span className="font-bold text-violet-400">
+                      <span className="font-bold text-[#FF4F21]">
                         {currentAnalysis.benchmarks.cadenceLevel ?? '—'}
                       </span>
                     </div>
                     <div className="flex justify-between rounded-lg bg-zinc-900/60 px-3 py-2">
                       <span className="text-zinc-400">Ground contact</span>
-                      <span className="font-bold text-violet-400">
+                      <span className="font-bold text-[#FF4F21]">
                         {currentAnalysis.benchmarks.gctLevel ?? '—'}
                       </span>
                     </div>
                     <div className="flex justify-between rounded-lg bg-zinc-900/60 px-3 py-2">
                       <span className="text-zinc-400">Stride length</span>
-                      <span className="font-bold text-violet-400">
+                      <span className="font-bold text-[#FF4F21]">
                         {currentAnalysis.benchmarks.strideLevel ?? '—'}
                       </span>
                     </div>
@@ -755,65 +760,103 @@ export default function BiomechanicsPanel() {
                 </div>
               )}
 
+              {/* ── AI INSIGHTS ── */}
               {currentAnalysis.insights && (
-                <div className="grid gap-4 lg:grid-cols-3">
-                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                    <h3 className="text-[10px] font-bold uppercase text-emerald-400 mb-2">Strengths</h3>
-                    <ul className="text-xs text-zinc-300 space-y-1.5 list-disc pl-4">
-                      {(currentAnalysis.insights.strengths ?? []).map((s, i) => (
-                        <li key={i}>{s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
-                    <h3 className="text-[10px] font-bold uppercase text-amber-400 mb-2">Weaknesses</h3>
-                    <ul className="text-xs text-zinc-300 space-y-1.5 list-disc pl-4">
-                      {(currentAnalysis.insights.weaknesses ?? []).map((s, i) => (
-                        <li key={i}>{s}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-700 bg-zinc-900/40 p-4">
-                    <h3 className="text-[10px] font-bold uppercase text-zinc-400 mb-2">Observations</h3>
-                    <ul className="text-xs text-zinc-400 space-y-1.5 list-disc pl-4">
-                      {(currentAnalysis.insights.observations ?? []).map((s, i) => (
-                        <li key={i}>{s}</li>
-                      ))}
-                    </ul>
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">AI Insights</h3>
+                  <div className="grid gap-3 lg:grid-cols-3">
+                    {/* Strengths */}
+                    <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Strengths</h4>
+                      </div>
+                      <ul className="space-y-2">
+                        {(currentAnalysis.insights.strengths ?? []).map((s, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-zinc-300">
+                            <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {/* Weaknesses */}
+                    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-400">Areas to Improve</h4>
+                      </div>
+                      <ul className="space-y-2">
+                        {(currentAnalysis.insights.weaknesses ?? []).map((s, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-zinc-300">
+                            <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {/* Observations */}
+                    <div className="rounded-2xl border border-zinc-700/50 bg-zinc-900/40 p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BookOpen className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Observations</h4>
+                      </div>
+                      <ul className="space-y-2">
+                        {(currentAnalysis.insights.observations ?? []).map((s, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-zinc-400">
+                            <span className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600" />
+                            {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
               )}
 
+              {/* ── TRAINING RECOMMENDATIONS ── */}
               {currentAnalysis.recommendations && currentAnalysis.recommendations.length > 0 && (
-                <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-violet-400 mb-3">
-                    Training recommendations
-                  </h3>
-                  <ul className="text-xs text-zinc-300 space-y-2 list-disc pl-4">
+                <div className="rounded-2xl border border-[#FF4F21]/20 bg-[#FF4F21]/5 p-5">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#FF4F21] mb-4">Training Recommendations</h3>
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {currentAnalysis.recommendations.map((rec, i) => (
-                      <li key={i}>{rec}</li>
+                      <div key={i} className="flex items-start gap-2.5 rounded-xl bg-black/20 border border-[#FF4F21]/10 px-3 py-2.5">
+                        <ChevronRight className="h-3.5 w-3.5 text-[#FF4F21] shrink-0 mt-0.5" />
+                        <span className="text-xs text-zinc-300 leading-relaxed">{rec}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
-              {currentAnalysis.reportReady && analysisId && (
-                <a
-                  href={`http://localhost:3001/api/analysis/${analysisId}/report`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex text-xs font-bold text-violet-400 hover:text-violet-300 underline"
+              {/* ── REPORT + HISTORY ACTIONS ── */}
+              <div className="flex flex-wrap gap-3">
+                {currentAnalysis.reportReady && analysisId && (
+                  <a
+                    href={`http://localhost:3001/api/analysis/${analysisId}/report`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#FF4F21] px-4 py-2.5 text-xs font-bold text-white hover:brightness-110 transition shadow-lg shadow-[#FF4F21]/20"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    View Full Report
+                  </a>
+                )}
+                <Link
+                  href="/dashboard/history"
+                  className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-bold text-zinc-300 hover:text-white hover:border-zinc-600 transition"
                 >
-                  View full HTML report →
-                </a>
-              )}
+                  <Activity className="h-3.5 w-3.5" />
+                  View History
+                </Link>
+              </div>
 
               {/* Metrics */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
                   <div className="flex items-center justify-between text-zinc-500 mb-2">
                     <span className="text-[10px] font-bold uppercase">Cadence</span>
-                    <Gauge className="h-4 w-4 text-violet-500" />
+                    <Gauge className="h-4 w-4 text-[#FF4F21]" />
                   </div>
                   <span className="text-3xl font-black text-white">
                     {currentAnalysis.metrics?.cadence ?? '—'}
@@ -824,7 +867,7 @@ export default function BiomechanicsPanel() {
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
                   <div className="flex items-center justify-between text-zinc-500 mb-2">
                     <span className="text-[10px] font-bold uppercase">Ground contact</span>
-                    <Zap className="h-4 w-4 text-violet-500" />
+                    <Zap className="h-4 w-4 text-[#FF4F21]" />
                   </div>
                   <span className="text-3xl font-black text-white">
                     {currentAnalysis.metrics?.gct ?? '—'}
@@ -834,7 +877,7 @@ export default function BiomechanicsPanel() {
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
                   <div className="flex items-center justify-between text-zinc-500 mb-2">
                     <span className="text-[10px] font-bold uppercase">Stride length</span>
-                    <Compass className="h-4 w-4 text-violet-500" />
+                    <Compass className="h-4 w-4 text-[#FF4F21]" />
                   </div>
                   <span className="text-3xl font-black text-white">
                     {currentAnalysis.metrics?.strideLength ?? '—'}
@@ -844,7 +887,7 @@ export default function BiomechanicsPanel() {
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
                   <div className="flex items-center justify-between text-zinc-500 mb-2">
                     <span className="text-[10px] font-bold uppercase">Symmetry</span>
-                    <Activity className="h-4 w-4 text-violet-500" />
+                    <Activity className="h-4 w-4 text-[#FF4F21]" />
                   </div>
                   <span className="text-3xl font-black text-white">
                     {currentAnalysis.metrics?.symmetry ?? '—'}
@@ -854,7 +897,7 @@ export default function BiomechanicsPanel() {
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
                   <div className="flex items-center justify-between text-zinc-500 mb-2">
                     <span className="text-[10px] font-bold uppercase">Oscillation</span>
-                    <TrendingUp className="h-4 w-4 text-violet-500" />
+                    <TrendingUp className="h-4 w-4 text-[#FF4F21]" />
                   </div>
                   <span className="text-3xl font-black text-white">
                     {currentAnalysis.metrics?.oscillation ?? '—'}
@@ -871,7 +914,7 @@ export default function BiomechanicsPanel() {
                     onClick={() => setVideoTab('original')}
                     className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition ${
                       videoTab === 'original'
-                        ? 'bg-violet-600/10 text-violet-400'
+                        ? 'bg-[#FF4F21]/10 text-[#FF4F21]'
                         : 'text-zinc-500 hover:text-white'
                     }`}
                   >
@@ -882,7 +925,7 @@ export default function BiomechanicsPanel() {
                     onClick={() => setVideoTab('overlay')}
                     className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition ${
                       videoTab === 'overlay'
-                        ? 'bg-violet-600/10 text-violet-400'
+                        ? 'bg-[#FF4F21]/10 text-[#FF4F21]'
                         : 'text-zinc-500 hover:text-white'
                     }`}
                   >
