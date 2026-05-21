@@ -25,14 +25,9 @@ def run_intelligence_pipeline(
     event: str | None = None,
     previous_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    benchmarks = compare_against_norms(
-        metrics,
-        age_group=age_group,
-        gender=gender,
-        event=event,
-    )
+    benchmarks = compare_against_norms(metrics)
 
-    scores = calculate_performance_scores(metrics)
+    scores = calculate_performance_scores(metrics, benchmarks.get("percentiles", {}))
     classification = classify_athlete(scores, benchmarks)
     injury = evaluate_injury_risk(metrics)
 
