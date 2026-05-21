@@ -275,3 +275,35 @@ def trigger_analysis(payload: AnalysisRequest, background_tasks: BackgroundTasks
         payload.previousMetrics,
     )
     return {"success": True, "status": "PROCESSING_POSE"}
+
+
+class IntelligenceRequest(BaseModel):
+    analyses: list[dict[str, Any]]
+
+@router.post("/analyze/intelligence")
+def generate_intelligence(payload: IntelligenceRequest):
+    from app.scoring.evolution_engine import compute_athlete_evolution
+    from app.scoring.consistency_engine import calculate_consistency
+    from app.scoring.adaptation_engine import calculate_adaptation
+    from app.scoring.advanced_injury_engine import calculate_advanced_injury_risk
+    from app.scoring.forecast_engine import calculate_forecast
+    from app.scoring.talent_engine import evaluate_talent
+    from app.scoring.timeline_engine import generate_timeline
+
+    evolution = compute_athlete_evolution(payload.analyses)
+    consistency = calculate_consistency(payload.analyses)
+    adaptation = calculate_adaptation(payload.analyses)
+    injury_insights = calculate_advanced_injury_risk(payload.analyses)
+    forecast = calculate_forecast(payload.analyses)
+    talent_flags = evaluate_talent(payload.analyses, adaptation.get("adaptation_score", 0))
+    timeline = generate_timeline(payload.analyses)
+
+    return {
+        "evolution": evolution,
+        "consistency": consistency,
+        "adaptation": adaptation,
+        "advanced_injury": injury_insights,
+        "forecast": forecast,
+        "talent": talent_flags,
+        "timeline": timeline,
+    }

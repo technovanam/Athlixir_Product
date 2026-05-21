@@ -55,6 +55,13 @@ export class AnalysisController {
     return this.analysisService.listAnalyses(user.uid);
   }
 
+  @Get('evolution')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiOperation({ summary: 'Retrieve athlete multi-session evolution and progression trends' })
+  async getEvolution(@CurrentUser() user: any) {
+    return this.analysisService.getAthleteEvolution(user.uid);
+  }
+
   /** Must be registered before @Get(':id') so "overlay" is not treated as an id. */
   @Post('overlay')
   @UseInterceptors(FileInterceptor('file'))

@@ -267,6 +267,74 @@ export class AnalysisService {
     }
   }
 
+  async getAthleteEvolution(userId: string) {
+    try {
+      const snapshot = await this.firebaseService.firestore
+        .collection(this.collectionName)
+        .where('userId', '==', userId)
+        .get();
+
+      const all = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Record<string, unknown>));
+
+      const completed = all
+        .filter((a: any) => a.status === 'COMPLETED' && a.metrics)
+        .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+      if (completed.length === 0) {
+        return {
+          hasHistory: false,
+          sessionCount: 0,
+          trend: 'stable',
+          bestPerformanceScore: null,
+          latestPerformanceScore: null,
+          consistencyIndex: null,
+          cadenceTrend: 'stable',
+          gctTrend: 'stable',
+          symmetryTrend: 'stable',
+          firstScan: null,
+          latestScan: null,
+          overallProgress: null,
+          cadenceSeries: [],
+          gctSeries: [],
+          symmetrySeries: [],
+          performanceSeries: [],
+        };
+      }
+
+      // Call the AI Engine for full intelligence processing
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/analyze/intelligence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analyses: all })
+        });
+        
+        if (response.ok) {
+          const intelligenceData = await response.json();
+          return intelligenceData;
+        } else {
+          this.logger.warn(`AI engine returned ${response.status} for intelligence calculation. Fallback to empty.`);
+        }
+      } catch (err) {
+        this.logger.error(`Failed to reach AI engine for intelligence: ${err.message}`);
+      }
+
+      // Return empty format if AI engine fails
+      return {
+        evolution: { hasHistory: false },
+        consistency: {},
+        adaptation: {},
+        advanced_injury: [],
+        forecast: {},
+        talent: [],
+        timeline: []
+      };
+    } catch (err) {
+      this.logger.error(`Error computing evolution for ${userId}`, err);
+      return { hasHistory: false, sessionCount: 0, error: true };
+    }
+  }
+
   async getAnalysis(analysisId: string) {
     const doc = await this.firebaseService.firestore
       .collection(this.collectionName)
