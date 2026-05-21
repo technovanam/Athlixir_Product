@@ -53,7 +53,7 @@ export default function ConsentStep() {
     <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
       <div>
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <ShieldCheck className="h-6 w-6 text-violet-500" />
+          <ShieldCheck className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 7: Legal Consent & Data Policy</span>
         </h2>
         <p className="text-zinc-400 text-xs mt-1">
@@ -73,13 +73,13 @@ export default function ConsentStep() {
           
           {/* Terms Acceptance */}
           <label className={`flex items-start gap-4 p-4 rounded-xl border transition duration-200 outline-none cursor-pointer ${
-            termsAccepted ? 'border-violet-500/40 bg-violet-600/5' : 'border-zinc-900 bg-zinc-950/20 hover:border-zinc-800'
+            termsAccepted ? 'border-[#FF4F21]/40 bg-[#FF4F21]/5' : 'border-zinc-900 bg-zinc-950/20 hover:border-zinc-800'
           }`}>
             <input
               type="checkbox"
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-zinc-800 text-violet-600 focus:ring-violet-500 cursor-pointer accent-violet-600 bg-zinc-950"
+              className="mt-1 h-4 w-4 rounded border-zinc-800 text-[#FF4F21] focus:ring-[#FF4F21] cursor-pointer accent-[#FF4F21] bg-zinc-950"
             />
             <div className="space-y-1">
               <span className="block text-xs font-bold text-white">Terms of Service & Privacy Agreements</span>
@@ -91,13 +91,13 @@ export default function ConsentStep() {
 
           {/* AI Analysis Consent */}
           <label className={`flex items-start gap-4 p-4 rounded-xl border transition duration-200 outline-none cursor-pointer ${
-            aiAnalysisConsent ? 'border-violet-500/40 bg-violet-600/5' : 'border-zinc-900 bg-zinc-950/20 hover:border-zinc-800'
+            aiAnalysisConsent ? 'border-[#FF4F21]/40 bg-[#FF4F21]/5' : 'border-zinc-900 bg-zinc-950/20 hover:border-zinc-800'
           }`}>
             <input
               type="checkbox"
               checked={aiAnalysisConsent}
               onChange={(e) => setAiAnalysisConsent(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-zinc-800 text-violet-600 focus:ring-violet-500 cursor-pointer accent-violet-600 bg-zinc-950"
+              className="mt-1 h-4 w-4 rounded border-zinc-800 text-[#FF4F21] focus:ring-[#FF4F21] cursor-pointer accent-[#FF4F21] bg-zinc-950"
             />
             <div className="space-y-1">
               <span className="block text-xs font-bold text-white">AI Metric Analysis Consent</span>
@@ -109,13 +109,13 @@ export default function ConsentStep() {
 
           {/* Data Storage Consent */}
           <label className={`flex items-start gap-4 p-4 rounded-xl border transition duration-200 outline-none cursor-pointer ${
-            dataStorageConsent ? 'border-violet-500/40 bg-violet-600/5' : 'border-zinc-900 bg-zinc-950/20 hover:border-zinc-800'
+            dataStorageConsent ? 'border-[#FF4F21]/40 bg-[#FF4F21]/5' : 'border-zinc-900 bg-zinc-950/20 hover:border-zinc-800'
           }`}>
             <input
               type="checkbox"
               checked={dataStorageConsent}
               onChange={(e) => setDataStorageConsent(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-zinc-800 text-violet-600 focus:ring-violet-500 cursor-pointer accent-violet-600 bg-zinc-950"
+              className="mt-1 h-4 w-4 rounded border-zinc-800 text-[#FF4F21] focus:ring-[#FF4F21] cursor-pointer accent-[#FF4F21] bg-zinc-950"
             />
             <div className="space-y-1">
               <span className="block text-xs font-bold text-white">Secure Data Storage Consent</span>
@@ -141,7 +141,7 @@ export default function ConsentStep() {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] hover:from-[#FF8433] hover:to-[#FF4F21] text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>

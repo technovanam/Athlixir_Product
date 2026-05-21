@@ -46,7 +46,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
     return (
       <div className="flex min-h-screen items-center justify-center bg-black text-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-violet-500 border-t-transparent"></div>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#FF4F21] border-t-transparent"></div>
           <span className="text-sm font-semibold tracking-wider text-zinc-400">Loading Athlete Session...</span>
         </div>
       </div>
@@ -56,16 +56,16 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
   const progressPercent = Math.round(((currentStepIndex + 1) / STEPS.length) * 100);
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-black text-white selection:bg-violet-500/30 overflow-x-hidden">
+    <div className="relative flex min-h-screen flex-col bg-black text-white selection:bg-[#FF4F21]/30 selection:text-white overflow-x-hidden">
       {/* Background neon blurs */}
-      <div className="absolute -top-40 right-1/4 h-[500px] w-[500px] rounded-full bg-violet-600/10 blur-[150px] pointer-events-none"></div>
-      <div className="absolute -bottom-40 left-1/4 h-[500px] w-[500px] rounded-full bg-indigo-600/10 blur-[150px] pointer-events-none"></div>
+      <div className="absolute -top-40 right-1/4 h-[500px] w-[500px] rounded-full bg-[#FF4F21]/10 blur-[150px] pointer-events-none"></div>
+      <div className="absolute -bottom-40 left-1/4 h-[500px] w-[500px] rounded-full bg-[#FF8433]/5 blur-[150px] pointer-events-none"></div>
 
       {/* Modern Header */}
       <header className="relative z-10 border-b border-zinc-900 bg-zinc-950/40 px-6 py-4 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center font-bold text-sm tracking-wider shadow-lg shadow-violet-500/10">
+            <div className="h-8 w-8 rounded-lg bg-[#FF4F21] flex items-center justify-center font-bold text-sm tracking-wider shadow-lg shadow-[#FF4F21]/20 text-white">
               Α
             </div>
             <span className="font-extrabold tracking-wider text-xs uppercase text-zinc-200">ATHLIXIR</span>
@@ -95,7 +95,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
           {/* Custom Stepper Wizard */}
           <div className="mb-10 rounded-2xl border border-zinc-900 bg-zinc-950/40 p-4 backdrop-blur-xl shadow-xl">
             <div className="flex justify-between items-center mb-4">
-              <span className="text-xs font-bold text-violet-400 tracking-wider uppercase">Onboarding Setup Progress</span>
+              <span className="text-xs font-bold text-[#FF4F21] tracking-wider uppercase">Onboarding Setup Progress</span>
               <span className="text-xs font-bold text-zinc-400">{progressPercent}% Completed</span>
             </div>
 
@@ -103,7 +103,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
             <div className="relative flex justify-between items-center px-2">
               <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-zinc-800 -translate-y-1/2 z-0"></div>
               <div
-                className="absolute left-0 top-1/2 h-0.5 bg-gradient-to-r from-violet-600 to-indigo-500 -translate-y-1/2 z-0 transition-all duration-500"
+                className="absolute left-0 top-1/2 h-0.5 bg-gradient-to-r from-[#FF4F21] to-[#FF8433] -translate-y-1/2 z-0 transition-all duration-500"
                 style={{ width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%` }}
               ></div>
 
@@ -118,9 +118,9 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
                       disabled
                       className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 ${
                         isPassed
-                          ? 'border-violet-500 bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                          ? 'border-[#FF4F21] bg-[#FF4F21] text-white shadow-lg shadow-[#FF4F21]/20'
                           : isActive
-                          ? 'border-violet-400 bg-black text-violet-400 ring-4 ring-violet-500/10'
+                          ? 'border-[#FF4F21] bg-black text-[#FF4F21] ring-4 ring-[#FF4F21]/15'
                           : 'border-zinc-800 bg-zinc-950 text-zinc-500'
                       }`}
                     >
@@ -128,7 +128,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
                     </button>
                     <span
                       className={`hidden md:block text-[10px] font-semibold uppercase tracking-wider mt-1.5 transition-all ${
-                        isActive ? 'text-violet-400 font-bold' : isPassed ? 'text-zinc-400' : 'text-zinc-600'
+                        isActive ? 'text-[#FF4F21] font-bold' : isPassed ? 'text-zinc-400' : 'text-zinc-600'
                       }`}
                     >
                       {s.label}

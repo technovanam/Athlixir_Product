@@ -90,7 +90,7 @@ export default function InjuryHistoryStep() {
     <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
       <div>
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Heart className="h-6 w-6 text-violet-500" />
+          <Heart className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 6: Injury & Recovery History</span>
         </h2>
         <p className="text-zinc-400 text-xs mt-1">
@@ -121,7 +121,7 @@ export default function InjuryHistoryStep() {
                   onClick={() => toggleInjury(item.id)}
                   className={`p-4 rounded-xl border text-center transition duration-200 outline-none cursor-pointer text-xs font-bold ${
                     active
-                      ? 'border-violet-500 bg-violet-600/10 text-white ring-1 ring-violet-500'
+                      ? 'border-[#FF4F21] bg-[#FF4F21]/10 text-white ring-1 ring-[#FF4F21]'
                       : 'border-zinc-900 hover:border-zinc-800 bg-zinc-950/30 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
@@ -148,7 +148,7 @@ export default function InjuryHistoryStep() {
                   if (currentPain) setSeverity(0);
                 }}
                 className={`h-6 w-11 rounded-full p-0.5 transition-colors duration-200 focus:outline-none cursor-pointer ${
-                  currentPain ? 'bg-violet-600' : 'bg-zinc-800'
+                  currentPain ? 'bg-[#FF4F21]' : 'bg-zinc-800'
                 }`}
               >
                 <div
@@ -164,10 +164,10 @@ export default function InjuryHistoryStep() {
               <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-6 space-y-4 animate-fadeIn">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <AlertTriangle className="h-4 w-4 text-[#FF4F21]" />
                     <span>Subjective Pain Severity</span>
                   </span>
-                  <span className="text-xl font-black text-amber-500">
+                  <span className="text-xl font-black text-[#FF4F21]">
                     {severity} <span className="text-xs text-zinc-500">/ 10</span>
                   </span>
                 </div>
@@ -177,7 +177,7 @@ export default function InjuryHistoryStep() {
                   max="10"
                   value={severity}
                   onChange={(e) => setSeverity(Number(e.target.value))}
-                  className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#FF4F21]"
                 />
                 <div className="flex justify-between text-[10px] text-zinc-600">
                   <span>Mild pain (1-3)</span>
@@ -203,7 +203,7 @@ export default function InjuryHistoryStep() {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[#FF4F21] hover:bg-[#FF4F21]/80 text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>

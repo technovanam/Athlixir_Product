@@ -93,7 +93,7 @@ export default function ClassificationStep() {
     <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
       <div>
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Activity className="h-6 w-6 text-violet-500" />
+          <Activity className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 2: Athlete Classification</span>
         </h2>
         <p className="text-zinc-400 text-xs mt-1">
@@ -122,7 +122,7 @@ export default function ClassificationStep() {
                   onClick={() => handleRunningTypeChange(t.id)}
                   className={`flex flex-col items-start p-4 rounded-xl border text-left transition duration-200 outline-none cursor-pointer ${
                     active
-                      ? 'border-violet-500 bg-violet-600/10 ring-1 ring-violet-500'
+                      ? 'border-[#FF4F21] bg-[#FF4F21]/5 ring-1 ring-[#FF4F21]/30'
                       : 'border-zinc-900 hover:border-zinc-800 bg-zinc-950/30'
                   }`}
                 >
@@ -141,7 +141,7 @@ export default function ClassificationStep() {
             <select
               value={primaryEvent}
               onChange={(e) => setPrimaryEvent(e.target.value)}
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 cursor-pointer"
+              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 cursor-pointer"
             >
               {(EVENTS_BY_TYPE[runningType] || []).map((ev) => (
                 <option key={ev} value={ev}>
@@ -156,7 +156,7 @@ export default function ClassificationStep() {
             <select
               value={secondaryEvent}
               onChange={(e) => setSecondaryEvent(e.target.value)}
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 cursor-pointer"
+              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 cursor-pointer"
             >
               {(EVENTS_BY_TYPE[runningType] || []).map((ev) => (
                 <option key={ev} value={ev}>
@@ -180,7 +180,7 @@ export default function ClassificationStep() {
                   onClick={() => setCompetitionLevel(lvl.id)}
                   className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-center transition duration-200 outline-none cursor-pointer ${
                     active
-                      ? 'border-violet-500 bg-violet-600/10 ring-1 ring-violet-500'
+                      ? 'border-[#FF4F21] bg-[#FF4F21]/5 ring-1 ring-[#FF4F21]/30'
                       : 'border-zinc-900 hover:border-zinc-800 bg-zinc-950/30'
                   }`}
                 >
@@ -206,7 +206,7 @@ export default function ClassificationStep() {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[#FF4F21] hover:brightness-110 text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>

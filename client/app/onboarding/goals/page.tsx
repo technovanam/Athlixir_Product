@@ -71,7 +71,7 @@ export default function GoalsStep() {
     <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
       <div>
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Target className="h-6 w-6 text-violet-500" />
+          <Target className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 5: Primary Athlete Goals</span>
         </h2>
         <p className="text-zinc-400 text-xs mt-1">
@@ -97,12 +97,12 @@ export default function GoalsStep() {
                 onClick={() => toggleGoal(goal.id)}
                 className={`flex flex-col items-start p-5 rounded-2xl border text-left transition duration-200 outline-none cursor-pointer relative overflow-hidden group ${
                   isSelected
-                    ? 'border-violet-500 bg-violet-600/10 ring-1 ring-violet-500'
+                    ? 'border-[#FF4F21] bg-[#FF4F21]/5 ring-1 ring-[#FF4F21]/30'
                     : 'border-zinc-900 hover:border-zinc-800 bg-zinc-950/30'
                 }`}
               >
                 {isSelected && (
-                  <span className="absolute top-3 right-3 h-5 w-5 rounded-full bg-violet-500 flex items-center justify-center text-white">
+                  <span className="absolute top-3 right-3 h-5 w-5 rounded-full bg-[#FF4F21] flex items-center justify-center text-white">
                     <Check className="h-3 w-3" />
                   </span>
                 )}
@@ -127,7 +127,7 @@ export default function GoalsStep() {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[#FF4F21] hover:brightness-110 text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>

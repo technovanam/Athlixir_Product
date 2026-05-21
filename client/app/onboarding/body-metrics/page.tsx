@@ -51,7 +51,7 @@ export default function BodyMetricsStep() {
     <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
       <div>
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Ruler className="h-6 w-6 text-violet-500" />
+          <Ruler className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 3: Body Metrics</span>
         </h2>
         <p className="text-zinc-400 text-xs mt-1">
@@ -72,7 +72,7 @@ export default function BodyMetricsStep() {
           <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-6 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Height</span>
-              <span className="text-xl font-black text-violet-400">{heightCm} <span className="text-xs text-zinc-500">cm</span></span>
+              <span className="text-xl font-black text-[#FF4F21]">{heightCm} <span className="text-xs text-zinc-500">cm</span></span>
             </div>
             <input
               type="range"
@@ -80,7 +80,7 @@ export default function BodyMetricsStep() {
               max="250"
               value={heightCm}
               onChange={(e) => setHeightCm(Number(e.target.value))}
-              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-violet-500"
+              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#FF4F21]"
             />
             <div className="flex justify-between text-[10px] text-zinc-600 font-medium">
               <span>100 cm</span>
@@ -93,7 +93,7 @@ export default function BodyMetricsStep() {
           <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-6 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Weight</span>
-              <span className="text-xl font-black text-violet-400">{weightKg} <span className="text-xs text-zinc-500">kg</span></span>
+              <span className="text-xl font-black text-[#FF4F21]">{weightKg} <span className="text-xs text-zinc-500">kg</span></span>
             </div>
             <input
               type="range"
@@ -101,7 +101,7 @@ export default function BodyMetricsStep() {
               max="200"
               value={weightKg}
               onChange={(e) => setWeightKg(Number(e.target.value))}
-              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-violet-500"
+              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#FF4F21]"
             />
             <div className="flex justify-between text-[10px] text-zinc-600 font-medium">
               <span>30 kg</span>
@@ -125,7 +125,7 @@ export default function BodyMetricsStep() {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[#FF4F21] hover:brightness-110 text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>

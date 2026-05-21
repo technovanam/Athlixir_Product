@@ -57,7 +57,7 @@ export default function TrainingProfileStep() {
     <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
       <div>
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <BarChart2 className="h-6 w-6 text-violet-500" />
+          <BarChart2 className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 4: Athlete Training Profile</span>
         </h2>
         <p className="text-zinc-400 text-xs mt-1">
@@ -78,7 +78,7 @@ export default function TrainingProfileStep() {
           <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-6 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Training Frequency</span>
-              <span className="text-sm font-black text-violet-400">{trainingDays} days/week</span>
+              <span className="text-sm font-black text-[#FF4F21]">{trainingDays} days/week</span>
             </div>
             <input
               type="range"
@@ -86,7 +86,7 @@ export default function TrainingProfileStep() {
               max="7"
               value={trainingDays}
               onChange={(e) => setTrainingDays(Number(e.target.value))}
-              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-violet-500"
+              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#FF4F21]"
             />
             <div className="flex justify-between text-[10px] text-zinc-600">
               <span>1 day</span>
@@ -99,7 +99,7 @@ export default function TrainingProfileStep() {
           <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-6 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Avg Session Duration</span>
-              <span className="text-sm font-black text-violet-400">{trainingDuration} minutes</span>
+              <span className="text-sm font-black text-[#FF4F21]">{trainingDuration} minutes</span>
             </div>
             <input
               type="range"
@@ -108,7 +108,7 @@ export default function TrainingProfileStep() {
               step="5"
               value={trainingDuration}
               onChange={(e) => setTrainingDuration(Number(e.target.value))}
-              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-violet-500"
+              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#FF4F21]"
             />
             <div className="flex justify-between text-[10px] text-zinc-600">
               <span>10m</span>
@@ -121,7 +121,7 @@ export default function TrainingProfileStep() {
           <div className="rounded-2xl border border-zinc-900 bg-zinc-950/40 p-6 space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Running Experience</span>
-              <span className="text-sm font-black text-violet-400">{experienceYears} {experienceYears === 1 ? 'year' : 'years'}</span>
+              <span className="text-sm font-black text-[#FF4F21]">{experienceYears} {experienceYears === 1 ? 'year' : 'years'}</span>
             </div>
             <input
               type="range"
@@ -129,7 +129,7 @@ export default function TrainingProfileStep() {
               max="20"
               value={experienceYears}
               onChange={(e) => setExperienceYears(Number(e.target.value))}
-              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-violet-500"
+              className="w-full h-1.5 bg-zinc-900 rounded-lg appearance-none cursor-pointer accent-[#FF4F21]"
             />
             <div className="flex justify-between text-[10px] text-zinc-600">
               <span>Fresh beginner</span>
@@ -150,7 +150,7 @@ export default function TrainingProfileStep() {
                   value={personalBest}
                   onChange={(e) => setPersonalBest(e.target.value)}
                   placeholder="e.g. 100m -> 12.4s"
-                  className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                  className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
                 />
                 <Clock className="absolute right-4 h-4 w-4 text-zinc-700" />
               </div>
@@ -175,7 +175,7 @@ export default function TrainingProfileStep() {
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[#FF4F21] hover:brightness-110 text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>

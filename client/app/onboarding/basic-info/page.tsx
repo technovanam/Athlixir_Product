@@ -96,7 +96,7 @@ export default function BasicInfoStep() {
     <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
       <div>
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <User className="h-6 w-6 text-violet-500" />
+          <User className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 1: Athlete Basic Information</span>
         </h2>
         <p className="text-zinc-400 text-xs mt-1">
@@ -118,7 +118,7 @@ export default function BasicInfoStep() {
             {profilePhoto ? (
               <img src={profilePhoto} alt="Profile" className="h-full w-full object-cover" />
             ) : uploading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-[#FF4F21]" />
             ) : (
               <User className="h-8 w-8 text-zinc-600" />
             )}
@@ -144,7 +144,7 @@ export default function BasicInfoStep() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="e.g. John Doe"
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
             />
           </div>
 
@@ -170,7 +170,7 @@ export default function BasicInfoStep() {
               required
               value={dob}
               onChange={(e) => setDob(e.target.value)}
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
             />
           </div>
 
@@ -180,7 +180,7 @@ export default function BasicInfoStep() {
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 cursor-pointer"
+              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 cursor-pointer"
             >
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -197,7 +197,7 @@ export default function BasicInfoStep() {
               value={state}
               onChange={(e) => setState(e.target.value)}
               placeholder="e.g. California"
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
             />
           </div>
 
@@ -210,7 +210,7 @@ export default function BasicInfoStep() {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="e.g. Los Angeles"
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
             />
           </div>
         </div>
@@ -220,7 +220,7 @@ export default function BasicInfoStep() {
           <button
             type="submit"
             disabled={loading || uploading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[#FF4F21] hover:brightness-110 text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>
