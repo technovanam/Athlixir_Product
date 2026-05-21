@@ -370,29 +370,21 @@ export default function HistoryPage() {
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-1 border-t border-zinc-800/50 mt-auto">
-                      {(item.hasOverlay || item.skeletonOverlayReady) && (
-                        <button
-                          onClick={() => loadOverlay(id)}
-                          disabled={overlayLoading === id}
-                          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 py-2 text-[10px] font-bold text-zinc-300 hover:text-white transition disabled:opacity-50"
-                        >
-                          {overlayLoading === id ? (
-                            <span className="animate-pulse">Loading…</span>
-                          ) : (
-                            <><Play className="h-3 w-3" />Overlay</>
-                          )}
-                        </button>
-                      )}
+                      <Link
+                        href={`/dashboard/analysis/${id}`}
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 py-2 text-[10px] font-bold text-zinc-300 hover:text-white transition"
+                      >
+                        <Play className="h-3 w-3" />
+                        View Analysis
+                      </Link>
                       {item.reportReady && (
-                        <a
-                          href={`http://localhost:3001/api/analysis/${id}/report`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <Link
+                          href={`/dashboard/report/${id}`}
                           className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-[#FF4F21]/10 hover:bg-[#FF4F21]/20 border border-[#FF4F21]/20 py-2 text-[10px] font-bold text-[#FF4F21] transition"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Report
-                        </a>
+                        </Link>
                       )}
                       {!item.hasOverlay && !item.skeletonOverlayReady && !item.reportReady && (
                         <span className="text-[10px] text-zinc-600 italic py-2">No media available</span>
