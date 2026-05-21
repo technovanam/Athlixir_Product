@@ -69,3 +69,5 @@ venv/
 ai-engine/outputs/
 ai-engine/outputs/debug/
 test-videos/
+outputs/
+
