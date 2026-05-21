@@ -48,7 +48,7 @@ def calculate_stride_length(
     foot_strikes: list[dict],
     tracker,
     athlete_height_m: float = 1.75,
-) -> float:
+) -> dict:
     """
     Stride length in meters from same-foot strike spacing and height calibration.
 
@@ -56,11 +56,11 @@ def calculate_stride_length(
     meters_per_unit = athlete_height_m / body_height_normalized
     """
     if len(foot_strikes) < 3:
-        return 0.0
+        return {"avg": 0.0, "left": 0.0, "right": 0.0}
 
     body_height_norm = _estimate_body_height_normalized(tracker)
     if body_height_norm <= 0.01:
-        return 0.0
+        return {"avg": 0.0, "left": 0.0, "right": 0.0}
 
     meters_per_unit = athlete_height_m / body_height_norm
 
@@ -69,13 +69,16 @@ def calculate_stride_length(
     all_distances = left_distances + right_distances
 
     if not all_distances:
-        return 0.0
+        return {"avg": 0.0, "left": 0.0, "right": 0.0}
 
     avg_normalized_stride = float(np.median(all_distances))
     stride_m = round(avg_normalized_stride * meters_per_unit, 2)
+    
+    left_stride = round(float(np.median(left_distances)) * meters_per_unit, 2) if left_distances else stride_m
+    right_stride = round(float(np.median(right_distances)) * meters_per_unit, 2) if right_distances else stride_m
 
     print(
-        f"[Stride Length] {stride_m} m "
+        f"[Stride Length] {stride_m} m (Left: {left_stride} m, Right: {right_stride} m) "
         f"(calibration {meters_per_unit:.3f} m/unit, height {athlete_height_m} m)"
     )
-    return stride_m
+    return {"avg": stride_m, "left": left_stride, "right": right_stride}
