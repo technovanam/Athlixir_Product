@@ -71,7 +71,10 @@ def run_validation(video_path: str, iterations: int = 20):
 
 if __name__ == "__main__":
     test_video = "../test-videos/sprint.mp4"
+    iters = 20
     if len(sys.argv) > 1:
         test_video = sys.argv[1]
+    if len(sys.argv) > 2:
+        iters = int(sys.argv[2])
     
-    run_validation(test_video, iterations=20)
+    run_validation(test_video, iterations=iters)
