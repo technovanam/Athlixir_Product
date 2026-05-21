@@ -19,7 +19,7 @@ export class AnalysisService {
   private readonly logger = new Logger(AnalysisService.name);
   private readonly collectionName = 'analyses';
   private readonly athleteProfilesCollection = 'athlete_profiles';
-  private readonly fastapiUrl = 'http://127.0.0.1:8000/api/analyze';
+  private readonly fastapiUrl = process.env.FASTAPI_URL || 'http://127.0.0.1:8000/api/analyze';
   private readonly localVideoDir = join(tmpdir(), 'athlixir-videos');
   private readonly pendingVideos = new Map<string, PendingVideo>();
 
@@ -303,7 +303,8 @@ export class AnalysisService {
 
       // Call the AI Engine for full intelligence processing
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/analyze/intelligence', {
+        const fastapiIntelUrl = process.env.FASTAPI_INTEL_URL || 'http://127.0.0.1:8000/api/analyze/intelligence';
+        const response = await fetch(fastapiIntelUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ analyses: all })
@@ -793,7 +794,7 @@ export class AnalysisService {
           },
           reportReady: false,
           skeletonOverlayReady: true,
-          skeletonOverlayPath: `http://127.0.0.1:8000/outputs/${analysisId}_overlay.mp4`,
+          skeletonOverlayPath: `${process.env.FASTAPI_PUBLIC_URL || 'http://127.0.0.1:8000'}/outputs/${analysisId}_overlay.mp4`,
         },
       },
     ];

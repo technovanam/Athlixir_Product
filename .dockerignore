@@ -1,0 +1,39 @@
+# Node/Pnpm dependencies and outputs
+node_modules/
+.next/
+dist/
+build/
+*.log
+pnpm-debug.log*
+
+# Python virtual environment and outputs
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+ai-engine/venv/
+ai-engine/.venv/
+ai-engine/outputs/
+outputs/
+
+# Environment configurations and keys
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.p12
+
+# Playwright & testing outputs
+playwright-report/
+test-results/
+.playwright/
+playwright/.cache/
+
+# OS specific files
+.DS_Store
+Thumbs.db
