@@ -2,135 +2,230 @@
 
 import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, api } from '../context/AuthContext';
 import BiomechanicsPanel from './BiomechanicsPanel';
-import { LogOut, Activity, RefreshCcw, Clock, User, FileText, Lightbulb, Settings } from 'lucide-react';
+import { 
+  Activity, Zap, Target, Shield, UploadCloud, 
+  FileText, TrendingUp, Compass, ArrowRight, PlayCircle, Trophy
+} from 'lucide-react';
+import InsightsWidget from './components/InsightsWidget';
+import BenchmarkWidget from './components/BenchmarkWidget';
+import ProgressWidget from './components/ProgressWidget';
+import InjuryIntelligence from './components/InjuryIntelligence';
+import EvolutionTimeline from './components/EvolutionTimeline';
+import AchievementsWidget from './components/AchievementsWidget';
 
 function DashboardPageContent() {
-  const { user, logout, refreshUser } = useAuth();
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'upload' | 'history'>('upload');
+  const { user } = useAuth();
+  const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
+  const [historyList, setHistoryList] = useState<any[]>([]);
 
-  // We load fresh user data if needed
   useEffect(() => {
-    refreshUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const fetchLatest = async () => {
+      try {
+        const res = await api.get('/analysis/list');
+        const list = res.data?.data ?? res.data ?? [];
+        if (Array.isArray(list) && list.length > 0) {
+          const completed = list.filter((a: any) => a.status === 'COMPLETED');
+          setHistoryList(completed);
+          if (completed.length > 0) {
+            completed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setLatestAnalysis(completed[0]);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load analysis for hero', err);
+      }
+    };
+    fetchLatest();
   }, []);
 
-  const handleLogout = async () => {
-    await logout();
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refreshUser();
-    setTimeout(() => setRefreshing(false), 800);
-  };
-
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-[#FF4F21]/30 flex flex-col md:flex-row">
+    <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-10 animate-fadeIn">
       
-      {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-zinc-800/80 bg-zinc-950 p-6 relative z-10">
-        <div className="flex-1 space-y-8">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] flex items-center justify-center font-bold shadow-lg shadow-[#FF4F21]/25">
-              A
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold tracking-wider text-sm text-white leading-tight">ATHLIXIR</span>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">Workspace Enterprise</span>
-            </div>
-          </div>
- 
-          {/* Navigation Links */}
-          <nav className="space-y-1.5 flex-1">
-            <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3 px-2">Core</div>
-            <Link href="/dashboard" className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold bg-[#FF4F21]/10 text-[#FF4F21] border border-[#FF4F21]/20">
-              <Activity className="h-4 w-4" />
-              <span>AI Biomechanics</span>
-            </Link>
-            <Link href="/dashboard/history" className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition">
-              <Clock className="h-4 w-4" />
-              <span>Analysis History</span>
-            </Link>
-            <Link href="/dashboard/athlete/profile" className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition">
-              <User className="h-4 w-4" />
-              <span>Athlete Profile</span>
-            </Link>
-            
-            <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mt-6 mb-3 px-2">Intelligence</div>
-            <Link href="/dashboard/reports" className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition">
-              <FileText className="h-4 w-4" />
-              <span>Professional Reports</span>
-            </Link>
-            <Link href="/dashboard/recommendations" className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition">
-              <Lightbulb className="h-4 w-4" />
-              <span>Recommendations</span>
-            </Link>
-          </nav>
-
-          <nav className="space-y-1.5 mt-auto pt-4">
-            <Link href="/dashboard/settings" className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-zinc-400 hover:text-white hover:bg-zinc-900/60 transition">
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </Link>
-          </nav>
-        </div>
- 
-        {/* User context footer */}
-        <div className="border-t border-zinc-800/80 pt-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-[#FF4F21] uppercase border border-zinc-700">
-              {user?.username?.substring(0, 2) || 'US'}
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-white truncate">{user?.username}</span>
-              <span className="text-[10px] text-zinc-500 truncate">{user?.email}</span>
-            </div>
-          </div>
- 
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 hover:border-red-500/30 hover:bg-red-500/5 py-2.5 text-xs font-semibold text-zinc-400 hover:text-red-400 transition duration-200 cursor-pointer"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>Sign Out Session</span>
-          </button>
-        </div>
-      </aside>
- 
-      {/* DASHBOARD CONTENT DASHBOARD */}
-      <main className="flex-1 overflow-y-auto px-10 py-12 relative">
-        {/* Background Neon Blurs */}
-        <div className="absolute top-0 right-1/4 h-[350px] w-[350px] rounded-full bg-[#FF4F21]/5 blur-[100px] pointer-events-none"></div>
+      {/* 1. HERO ATHLETE OVERVIEW */}
+      <section className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
-        {/* TOP STATUS BAR */}
-        <div className="flex justify-between items-center mb-10 relative z-10">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">
-              Running Biomechanics
-            </h1>
-            <p className="text-sm text-zinc-400 mt-1">
-              Upload video, view skeleton overlay, and core metrics.
-            </p>
+        {/* Athlete Identity & AI Summary */}
+        <div className="lg:col-span-1 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 relative overflow-hidden group hover:border-zinc-700 transition">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF4F21]/10 rounded-full blur-[50px] pointer-events-none group-hover:bg-[#FF4F21]/20 transition duration-700" />
+          
+          <h2 className="text-2xl font-black text-white mb-1 tracking-tight">{user?.name || user?.username || 'Athlete'}</h2>
+          <div className="flex flex-col gap-1 mb-6">
+            <span className="text-xs font-bold text-[#FF4F21] uppercase tracking-widest">{user?.classification?.primaryEvent || '100m Sprint'}</span>
+            <span className="text-xs font-semibold text-zinc-500">{user?.classification?.athleteLevel || 'U18 District Level'}</span>
           </div>
 
-          <button
-            onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900/20 hover:bg-zinc-900/40 text-xs font-semibold text-zinc-300 hover:text-white transition cursor-pointer"
-          >
-            <RefreshCcw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Sync Profile</span>
-          </button>
+          <div className="border-t border-zinc-800/80 pt-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                <Compass className="h-3 w-3 text-blue-400" /> AI Summary
+              </span>
+              <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+            </div>
+            
+            {latestAnalysis ? (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center bg-black/40 px-3 py-2 rounded-lg border border-zinc-800/50">
+                  <span className="text-xs text-zinc-400">Sprint Efficiency</span>
+                  <span className="text-xs font-bold text-white">{latestAnalysis.scores?.efficiencyScore || 'N/A'}%</span>
+                </div>
+                <div className="flex justify-between items-center bg-black/40 px-3 py-2 rounded-lg border border-zinc-800/50">
+                  <span className="text-xs text-zinc-400">Main Weakness</span>
+                  <span className="text-[10px] font-bold text-amber-400 uppercase">{latestAnalysis.insights?.weaknesses?.[0]?.substring(0, 15) || 'OVERSTRIDE'}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-zinc-500 italic">No completed analysis yet. Upload a video to generate your AI profile.</p>
+            )}
+          </div>
         </div>
 
-        {/* TAB RENDERING */}
-        <div className="relative z-10 space-y-8">
+        {/* Big KPI Cards */}
+        <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+          
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5 flex flex-col justify-between relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition duration-500">
+              <Trophy className="h-32 w-32" />
+            </div>
+            <div className="flex items-center gap-2 text-zinc-500 mb-4">
+              <Trophy className="h-4 w-4 text-[#FF4F21]" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Perf Score</span>
+            </div>
+            <div>
+              <div className="text-4xl font-black text-white tracking-tighter">{latestAnalysis?.scores?.performanceScore || '—'}</div>
+              <div className="flex items-center gap-1.5 mt-2">
+                <TrendingUp className="h-3 w-3 text-emerald-400" />
+                <span className="text-[10px] font-bold text-emerald-400">+2 from last</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5 flex flex-col justify-between relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition duration-500">
+              <Target className="h-32 w-32" />
+            </div>
+            <div className="flex items-center gap-2 text-zinc-500 mb-4">
+              <Target className="h-4 w-4 text-blue-400" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Biomechanics</span>
+            </div>
+            <div>
+              <div className="text-4xl font-black text-white tracking-tighter">{latestAnalysis?.scores?.biomechanicsScore || '—'}</div>
+              <div className="text-[10px] font-bold text-zinc-500 mt-2">State Level Average</div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5 flex flex-col justify-between relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition duration-500">
+              <Activity className="h-32 w-32" />
+            </div>
+            <div className="flex items-center gap-2 text-zinc-500 mb-4">
+              <Activity className="h-4 w-4 text-emerald-400" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Efficiency</span>
+            </div>
+            <div>
+              <div className="text-4xl font-black text-white tracking-tighter">{latestAnalysis?.scores?.efficiencyScore || '—'}</div>
+              <div className="text-[10px] font-bold text-zinc-500 mt-2">Optimal range</div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5 flex flex-col justify-between relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition duration-500">
+              <Shield className="h-32 w-32" />
+            </div>
+            <div className="flex items-center gap-2 text-zinc-500 mb-4">
+              <Shield className="h-4 w-4 text-amber-500" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Injury Risk</span>
+            </div>
+            <div>
+              <div className="text-3xl font-black text-white tracking-tighter uppercase">{latestAnalysis?.injuryRisk?.level || 'LOW'}</div>
+              <div className="text-[10px] font-bold text-amber-500 mt-2 truncate">
+                {latestAnalysis?.injuryRisk?.riskArea !== 'None' ? `Watch: ${latestAnalysis?.injuryRisk?.riskArea}` : 'Stable mechanics'}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 2. QUICK ACTIONS */}
+      <section>
+        <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <Zap className="h-3 w-3" /> Quick Actions
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button className="flex items-center gap-3 p-4 rounded-xl border border-[#FF4F21]/30 bg-[#FF4F21]/10 hover:bg-[#FF4F21]/20 transition group">
+            <div className="h-8 w-8 rounded-lg bg-[#FF4F21] flex items-center justify-center">
+              <UploadCloud className="h-4 w-4 text-white" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-bold text-white group-hover:text-[#FF4F21] transition">Upload New</div>
+              <div className="text-[10px] text-zinc-400">Analyze sprint</div>
+            </div>
+          </button>
+
+          <Link href="/dashboard/reports" className="flex items-center gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-900 transition group">
+            <div className="h-8 w-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-zinc-400 group-hover:text-white transition" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-bold text-white">View Reports</div>
+              <div className="text-[10px] text-zinc-500">PDF summaries</div>
+            </div>
+          </Link>
+
+          <Link href="/dashboard/recommendations" className="flex items-center gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-900 transition group">
+            <div className="h-8 w-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <Target className="h-4 w-4 text-zinc-400 group-hover:text-emerald-400 transition" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-bold text-white">AI Drills</div>
+              <div className="text-[10px] text-zinc-500">Corrections</div>
+            </div>
+          </Link>
+
+          <Link href="/dashboard/history" className="flex items-center gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-900 transition group">
+            <div className="h-8 w-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-zinc-400 group-hover:text-blue-400 transition" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-bold text-white">Compare</div>
+              <div className="text-[10px] text-zinc-500">History graphs</div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      {/* 3. LATEST ANALYSIS PANEL (Biomechanics Engine) */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest flex items-center gap-2">
+            <PlayCircle className="h-3 w-3" /> Latest Analysis Feed
+          </h3>
+          <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1.5 border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-widest">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Telemetry
+          </span>
+        </div>
+        
+        {/* We use the existing BiomechanicsPanel component here. It acts as our Video Player + Metrics system. */}
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-1">
           <BiomechanicsPanel />
         </div>
-      </main>
+      </section>
+
+      {/* 4. INTELLIGENCE & BENCHMARKING (Phase 2) */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <InsightsWidget analysis={latestAnalysis} />
+        <BenchmarkWidget analysis={latestAnalysis} />
+        <ProgressWidget />
+      </section>
+
+      {/* 5. PREMIUM EXPERIENCE & LONG-TERM EVOLUTION (Phase 3) */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <InjuryIntelligence analysis={latestAnalysis} />
+        <EvolutionTimeline history={historyList} />
+        <AchievementsWidget historyCount={historyList.length} />
+      </section>
 
     </div>
   );
@@ -138,8 +233,8 @@ function DashboardPageContent() {
 
 function DashboardLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black text-zinc-400 text-sm">
-      Loading dashboard…
+    <div className="flex min-h-screen items-center justify-center bg-black text-zinc-400 text-sm font-mono uppercase tracking-widest">
+      <Activity className="h-4 w-4 animate-spin mr-3 text-[#FF4F21]" /> Loading Telemetry...
     </div>
   );
 }

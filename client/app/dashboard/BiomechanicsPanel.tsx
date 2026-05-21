@@ -620,6 +620,13 @@ export default function BiomechanicsPanel() {
             </div>
           ) : (
             <>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-black text-white">Live Telemetry Overview</h2>
+                <Link href={`/dashboard/analysis/${currentAnalysis.analysisId || currentAnalysis.id}`} className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#FF4F21] hover:text-[#FF4F21] text-xs font-bold text-white transition flex items-center gap-2 group">
+                  View Full Analysis <ExternalLink className="h-3 w-3 group-hover:translate-x-1 transition" />
+                </Link>
+              </div>
+
               {currentAnalysis.scores && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="rounded-2xl border border-[#FF4F21]/30 bg-[#FF4F21]/5 p-5">
