@@ -140,6 +140,7 @@ def run_analysis_from_path(
         _send_update(analysis_id, "TRACKING_LANDMARKS", 40)
 
         result = run_biomechanics_extraction_pipeline(video_path)
+        foot_strikes = result.get("footStrikes")
         result.pop("landmarkHistory", None)
         result.pop("footStrikes", None)
         metrics = result.get("metrics", {})
@@ -161,7 +162,7 @@ def run_analysis_from_path(
         os.makedirs("outputs", exist_ok=True)
         overlay_path = f"outputs/{analysis_id}_overlay.mp4"
         try:
-            render_skeleton_overlay_video(video_path, overlay_path)
+            render_skeleton_overlay_video(video_path, overlay_path, foot_strikes=foot_strikes)
             overlay_url = f"http://127.0.0.1:8000/outputs/{analysis_id}_overlay.mp4"
             skeleton_overlay_ready = True
 

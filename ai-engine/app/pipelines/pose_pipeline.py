@@ -26,14 +26,14 @@ def process_landmarks(landmarks, frame_index: int, fps: float, tracker: Landmark
     frame_data = {
         "frame": frame_index,
         "timestamp": round(frame_index / fps, 4),
-        "left_ankle": [landmarks[_LEFT_ANKLE].x, landmarks[_LEFT_ANKLE].y],
-        "right_ankle": [landmarks[_RIGHT_ANKLE].x, landmarks[_RIGHT_ANKLE].y],
-        "left_knee": [landmarks[_LEFT_KNEE].x, landmarks[_LEFT_KNEE].y],
-        "right_knee": [landmarks[_RIGHT_KNEE].x, landmarks[_RIGHT_KNEE].y],
-        "left_hip": [landmarks[_LEFT_HIP].x, landmarks[_LEFT_HIP].y],
-        "right_hip": [landmarks[_RIGHT_HIP].x, landmarks[_RIGHT_HIP].y],
-        "left_shoulder": [landmarks[_LEFT_SHOULDER].x, landmarks[_LEFT_SHOULDER].y],
-        "right_shoulder": [landmarks[_RIGHT_SHOULDER].x, landmarks[_RIGHT_SHOULDER].y],
+        "left_ankle": [landmarks[_LEFT_ANKLE].x, landmarks[_LEFT_ANKLE].y, landmarks[_LEFT_ANKLE].visibility],
+        "right_ankle": [landmarks[_RIGHT_ANKLE].x, landmarks[_RIGHT_ANKLE].y, landmarks[_RIGHT_ANKLE].visibility],
+        "left_knee": [landmarks[_LEFT_KNEE].x, landmarks[_LEFT_KNEE].y, landmarks[_LEFT_KNEE].visibility],
+        "right_knee": [landmarks[_RIGHT_KNEE].x, landmarks[_RIGHT_KNEE].y, landmarks[_RIGHT_KNEE].visibility],
+        "left_hip": [landmarks[_LEFT_HIP].x, landmarks[_LEFT_HIP].y, landmarks[_LEFT_HIP].visibility],
+        "right_hip": [landmarks[_RIGHT_HIP].x, landmarks[_RIGHT_HIP].y, landmarks[_RIGHT_HIP].visibility],
+        "left_shoulder": [landmarks[_LEFT_SHOULDER].x, landmarks[_LEFT_SHOULDER].y, landmarks[_LEFT_SHOULDER].visibility],
+        "right_shoulder": [landmarks[_RIGHT_SHOULDER].x, landmarks[_RIGHT_SHOULDER].y, landmarks[_RIGHT_SHOULDER].visibility],
     }
     tracker.add_frame(frame_data)
     landmark_history.append(frame_data)
@@ -45,6 +45,9 @@ def run_pose_extraction_pipeline(video_path: str) -> tuple[list, LandmarkTracker
     """
     print(f"[Pose Pipeline] Fast processing: {video_path}")
 
+    from app.pose.mediapipe_pose import reset_pose_tracker
+    reset_pose_tracker()
+
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise ValueError(f"Could not open video file: {video_path}")
@@ -52,6 +55,10 @@ def run_pose_extraction_pipeline(video_path: str) -> tuple[list, LandmarkTracker
     fps = cap.get(cv2.CAP_PROP_FPS)
     if fps <= 0:
         fps = 30.0
+        
+    from app.config import MIN_REQUIRED_FPS
+    if fps < MIN_REQUIRED_FPS:
+        print(f"[Pose Pipeline] WARNING: Low FPS detected ({fps}). Biomechanics timing (GCT) may be unreliable.")
 
     max_frames = int(fps * MAX_ANALYSIS_SECONDS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))

@@ -63,3 +63,9 @@ venv/
 
 # Next.js
 .next/
+
+# Video files and outputs
+*.mp4
+ai-engine/outputs/
+ai-engine/outputs/debug/
+test-videos/

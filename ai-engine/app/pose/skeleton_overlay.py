@@ -55,7 +55,7 @@ def _reencode_for_browser(src_path: str) -> str:
     return src_path
 
 
-def render_skeleton_overlay_video(video_path: str, output_path: str) -> str:
+def render_skeleton_overlay_video(video_path: str, output_path: str, foot_strikes: list[int] = None) -> str:
     """
     Render skeleton overlay on every frame for visual validation.
     Returns path to the output MP4 file (browser-playable when ffmpeg is available).
@@ -110,6 +110,18 @@ def render_skeleton_overlay_video(video_path: str, output_path: str) -> str:
                 mp_pose.POSE_CONNECTIONS,
                 _LANDMARK_STYLE,
                 _CONNECTION_STYLE,
+            )
+
+        if foot_strikes and frame_count in foot_strikes:
+            cv2.putText(
+                frame,
+                "FOOT STRIKE DETECTED",
+                (50, 50),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.5,
+                (0, 0, 255),
+                3,
+                cv2.LINE_AA,
             )
 
         writer.write(frame)

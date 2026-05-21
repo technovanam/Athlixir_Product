@@ -54,7 +54,7 @@ def run_biomechanics_extraction_pipeline(
     posture_angle = calculate_posture_lean(shoulder_x, shoulder_y, hip_x, hip_y)
     overstride_angle = calculate_overstride_angle(ankle_x, hip_x, posture_angle)
 
-    return {
+    result_payload = {
         "metrics": {
             "cadence": cadence,
             "gct": gct_data["avg"],
@@ -75,3 +75,18 @@ def run_biomechanics_extraction_pipeline(
         "durationSec": round(duration_sec, 3),
         "landmarkHistory": landmark_history,
     }
+
+    from app.config import DEBUG_MODE
+    if DEBUG_MODE:
+        import json
+        import os
+        os.makedirs("outputs/debug", exist_ok=True)
+        with open("outputs/debug/metrics.json", "w") as f:
+            json.dump(result_payload["metrics"], f, indent=2)
+        with open("outputs/debug/foot_strikes.json", "w") as f:
+            json.dump(result_payload["footStrikes"], f, indent=2)
+        with open("outputs/debug/landmarks.json", "w") as f:
+            json.dump(result_payload["landmarkHistory"], f, indent=2)
+        print("[DEBUG] Wrote raw metrics and landmarks to outputs/debug/")
+
+    return result_payload
