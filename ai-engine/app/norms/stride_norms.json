@@ -1,15 +1,12 @@
 {
-  "description": "Stride length performance tiers in meters.",
-  "ranges": {
-    "elite": {
-      "min": 2.0
-    },
-    "advanced": {
-      "min": 1.6,
-      "max": 2.0
-    },
-    "intermediate": {
-      "max": 1.6
-    }
-  }
+  "metric": "stride",
+  "unit": "m",
+  "is_higher_better": true,
+  "levels": [
+    { "level": "Beginner", "min": 0, "max": 1.7 },
+    { "level": "District", "min": 1.7, "max": 2.0 },
+    { "level": "State", "min": 2.0, "max": 2.2 },
+    { "level": "National", "min": 2.2, "max": 2.4 },
+    { "level": "Elite", "min": 2.4, "max": 3.0 }
+  ]
 }

@@ -1,8 +1,12 @@
 {
-  "description": "Standard Ground Contact Time (GCT) bounds in milliseconds.",
-  "ranges": {
-    "optimal": [180, 220],
-    "acceptable": [221, 260],
-    "suboptimal": [261, 320]
-  }
+  "metric": "gct",
+  "unit": "ms",
+  "is_higher_better": false,
+  "levels": [
+    { "level": "Beginner", "min": 150, "max": 1000 },
+    { "level": "District", "min": 120, "max": 150 },
+    { "level": "State", "min": 100, "max": 120 },
+    { "level": "National", "min": 85, "max": 100 },
+    { "level": "Elite", "min": 0, "max": 85 }
+  ]
 }

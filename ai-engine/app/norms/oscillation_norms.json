@@ -1,0 +1,12 @@
+{
+  "metric": "oscillation",
+  "unit": "cm",
+  "is_higher_better": false,
+  "levels": [
+    { "level": "Beginner", "min": 10.0, "max": 20.0 },
+    { "level": "District", "min": 8.0, "max": 10.0 },
+    { "level": "State", "min": 6.5, "max": 8.0 },
+    { "level": "National", "min": 5.0, "max": 6.5 },
+    { "level": "Elite", "min": 0.0, "max": 5.0 }
+  ]
+}

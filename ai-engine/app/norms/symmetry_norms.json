@@ -1,17 +1,12 @@
 {
-  "description": "Left/Right biomechanical asymmetry percentage benchmarks.",
-  "ranges": {
-    "optimal": {
-      "min": 0.0,
-      "max": 3.0
-    },
-    "acceptable": {
-      "min": 3.0,
-      "max": 5.0
-    },
-    "high_risk": {
-      "min": 5.0,
-      "max": 100.0
-    }
-  }
+  "metric": "symmetry",
+  "unit": "%",
+  "is_higher_better": false,
+  "levels": [
+    { "level": "Beginner", "min": 10.0, "max": 100.0 },
+    { "level": "District", "min": 5.0, "max": 10.0 },
+    { "level": "State", "min": 2.5, "max": 5.0 },
+    { "level": "National", "min": 1.0, "max": 2.5 },
+    { "level": "Elite", "min": 0.0, "max": 1.0 }
+  ]
 }

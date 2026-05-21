@@ -1,9 +1,12 @@
 {
-  "description": "Standard steps-per-minute (SPM) bounds for elite, advanced, and intermediate distance/sprint athletes.",
-  "ranges": {
-    "optimal": [170, 185],
-    "acceptable": [160, 195],
-    "suboptimal": [140, 159],
-    "high_impact_overload": [196, 220]
-  }
+  "metric": "cadence",
+  "unit": "spm",
+  "is_higher_better": true,
+  "levels": [
+    { "level": "Beginner", "min": 0, "max": 170 },
+    { "level": "District", "min": 170, "max": 185 },
+    { "level": "State", "min": 185, "max": 195 },
+    { "level": "National", "min": 195, "max": 205 },
+    { "level": "Elite", "min": 205, "max": 300 }
+  ]
 }
