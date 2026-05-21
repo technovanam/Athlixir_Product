@@ -57,3 +57,15 @@ class LandmarkTracker:
             else self.right_ankle_positions
         )
         return [p[0] for p in positions]
+
+    def smooth_all_trajectories(self):
+        """Apply Kalman and Savitzky-Golay joint smoothing to all tracked coordinates."""
+        from app.pose.smoothing import smooth_trajectory_2d
+        self.left_ankle_positions = smooth_trajectory_2d(self.left_ankle_positions)
+        self.right_ankle_positions = smooth_trajectory_2d(self.right_ankle_positions)
+        self.left_knee_positions = smooth_trajectory_2d(self.left_knee_positions)
+        self.right_knee_positions = smooth_trajectory_2d(self.right_knee_positions)
+        self.left_hip_positions = smooth_trajectory_2d(self.left_hip_positions)
+        self.right_hip_positions = smooth_trajectory_2d(self.right_hip_positions)
+        self.left_shoulder_positions = smooth_trajectory_2d(self.left_shoulder_positions)
+        self.right_shoulder_positions = smooth_trajectory_2d(self.right_shoulder_positions)
