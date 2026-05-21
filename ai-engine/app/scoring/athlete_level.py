@@ -24,25 +24,10 @@ def classify_athlete(
     benchmarks: dict[str, Any],
 ) -> dict[str, str]:
     performance = int(scores.get("performanceScore") or 0)
-    efficiency = int(scores.get("efficiencyScore") or 0)
 
-    levels = benchmarks.get("levels") or {}
-    level_values = [
-        levels.get("cadence"),
-        levels.get("gct"),
-        levels.get("strideLength"),
-    ]
-    ranks = [_level_rank(str(v)) for v in level_values if v]
-
-    elite_metrics = sum(1 for r in ranks if r >= 4)
-    national_metrics = sum(1 for r in ranks if r >= 3)
-    state_metrics = sum(1 for r in ranks if r >= 2)
-
-    if performance >= 88 and efficiency >= 85 and elite_metrics >= 2:
+    if performance >= 88:
         label = "Elite Prospect"
-    elif performance >= 78 and national_metrics >= 2:
-        label = "National Prospect"
-    elif performance >= 65 and state_metrics >= 2:
+    elif performance >= 65:
         label = "State Potential"
     else:
         label = "District Athlete"

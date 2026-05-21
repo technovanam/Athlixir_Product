@@ -31,12 +31,12 @@ def calculate_performance_scores(metrics: dict[str, Any]) -> dict[str, int]:
     posture_s = max(0.0, 100 - abs(posture - 8) * 4)
 
     performance = int(
-        cadence_s * 0.28
-        + gct_s * 0.28
-        + stride_s * 0.14
-        + symmetry_s * 0.14
-        + oscillation_s * 0.08
-        + posture_s * 0.08
+        cadence_s * 0.20
+        + gct_s * 0.25
+        + stride_s * 0.20
+        + symmetry_s * 0.15
+        + oscillation_s * 0.10
+        + posture_s * 0.10
     )
 
     efficiency = int(
