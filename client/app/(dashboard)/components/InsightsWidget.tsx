@@ -6,9 +6,9 @@ import { Lightbulb, AlertTriangle, TrendingUp, CheckCircle2 } from 'lucide-react
 export default function InsightsWidget({ analysis }: { analysis: any }) {
   if (!analysis || !analysis.insights) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
+      <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px] hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
         <Lightbulb className="h-8 w-8 text-zinc-700 mb-3" />
-        <p className="text-sm font-bold text-zinc-500">Awaiting AI Insights</p>
+        <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Awaiting AI Insights</p>
       </div>
     );
   }
@@ -16,10 +16,10 @@ export default function InsightsWidget({ analysis }: { analysis: any }) {
   const { strengths = [], weaknesses = [], observations = [] } = analysis.insights;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 flex flex-col h-full">
-      <div className="flex items-center gap-2 mb-6">
-        <Lightbulb className="h-5 w-5 text-amber-400" />
-        <h3 className="text-sm font-black text-white uppercase tracking-widest">AI Performance Insights</h3>
+    <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col h-full hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
+      <div className="flex items-center gap-2.5 mb-6">
+        <Lightbulb className="h-4 w-4 text-amber-400" />
+        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">AI Insights</h3>
       </div>
 
       <div className="flex-1 space-y-4">
@@ -36,7 +36,7 @@ export default function InsightsWidget({ analysis }: { analysis: any }) {
           </div>
         ))}
         {observations.map((o: string, i: number) => (
-          <div key={`o-${i}`} className="flex items-start gap-3 p-3 rounded-xl border border-zinc-700 bg-zinc-800/40">
+          <div key={`o-${i}`} className="flex items-start gap-3 p-3 rounded-xl border border-white/[0.05] bg-white/[0.01]">
             <TrendingUp className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
             <p className="text-xs text-zinc-300 font-medium leading-relaxed">{o}</p>
           </div>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { api } from '../../../../context/AuthContext';
+import { api } from '../../../context/AuthContext';
 import { 
   ArrowLeft, Play, Pause, SkipBack, SkipForward, 
   Settings2, Activity, Target, Download, Share2, AlertTriangle, ShieldCheck
@@ -100,7 +100,7 @@ export default function AnalysisDetailsPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen">
-        <div className="animate-spin text-[#FF4F21]"><Activity /></div>
+        <div className="animate-spin text-[#FF4F21]"><Activity className="h-6 w-6" /></div>
       </div>
     );
   }
@@ -108,9 +108,9 @@ export default function AnalysisDetailsPage() {
   if (!analysis) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-screen text-zinc-500">
-        <AlertTriangle className="h-12 w-12 mb-4" />
-        <h2>Analysis not found</h2>
-        <button onClick={() => router.back()} className="mt-4 text-[#FF4F21] hover:underline">Go Back</button>
+        <AlertTriangle className="h-12 w-12 mb-4 text-amber-500" />
+        <h2 className="text-lg font-bold text-white uppercase tracking-wider">Analysis not found</h2>
+        <button onClick={() => router.back()} className="mt-4 text-[#FF4F21] hover:text-[#FF8433] text-xs font-bold uppercase tracking-wider transition">Go Back</button>
       </div>
     );
   }
@@ -121,23 +121,23 @@ export default function AnalysisDetailsPage() {
   const injury = analysis.injuryRisk || { level: 'LOW' };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-8 animate-fadeIn pb-24">
+    <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-8 animate-fadeIn pb-24 text-white">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-6">
+      <div className="flex items-center justify-between border-b border-white/[0.05] pb-6">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="h-10 w-10 rounded-full border border-zinc-800 bg-zinc-900 flex items-center justify-center hover:bg-zinc-800 transition">
+          <button onClick={() => router.back()} className="h-10 w-10 rounded-full border border-white/[0.05] bg-[#08080C]/40 flex items-center justify-center hover:bg-white/[0.05] transition duration-200">
             <ArrowLeft className="h-5 w-5 text-white" />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Analysis Details</h1>
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{new Date(analysis.createdAt).toLocaleString()}</p>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight uppercase">Analysis Details</h1>
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{new Date(analysis.createdAt).toLocaleString()}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 text-sm font-bold text-white transition flex items-center gap-2">
+          <button className="px-4 py-2 rounded-xl border border-white/[0.05] bg-[#08080C]/40 hover:bg-white/[0.05] text-xs font-bold text-white transition flex items-center gap-2">
             <Share2 className="h-4 w-4" /> Share
           </button>
-          <button className="px-4 py-2 rounded-lg bg-[#FF4F21] hover:bg-[#FF8433] text-sm font-bold text-white transition flex items-center gap-2 shadow-[0_0_15px_rgba(255,79,33,0.3)]">
+          <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] text-xs font-bold text-white transition flex items-center gap-2 shadow-[0_0_15px_rgba(255,79,33,0.3)] hover:opacity-90">
             <Download className="h-4 w-4" /> PDF Report
           </button>
         </div>
@@ -150,21 +150,21 @@ export default function AnalysisDetailsPage() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* F1 Telemetry Video Player */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 overflow-hidden relative shadow-2xl">
+          <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 overflow-hidden relative shadow-2xl backdrop-blur-md">
             <div className="absolute top-4 left-4 z-10 flex gap-2">
-              <span className="bg-black/60 backdrop-blur border border-zinc-700 px-3 py-1 rounded-md text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
+              <span className="bg-black/60 backdrop-blur border border-white/[0.05] px-3 py-1 rounded-md text-[10px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /> RAW
               </span>
               {analysis.overlayVideoUrl && (
                 <span className="bg-blue-500/20 backdrop-blur border border-blue-500/50 px-3 py-1 rounded-md text-[10px] font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                  <Activity className="h-3 w-3" /> TRACKING
+                  <Activity className="h-3 w-3 animate-pulse" /> TRACKING
                 </span>
               )}
             </div>
 
             <div className="grid grid-cols-2 bg-black aspect-video relative group">
               {/* RAW Video */}
-              <div className="relative border-r border-zinc-800">
+              <div className="relative border-r border-white/[0.05]">
                 <video 
                   ref={videoRef}
                   src={analysis.videoUrl} 
@@ -185,7 +185,7 @@ export default function AnalysisDetailsPage() {
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600 bg-zinc-900/50">
-                    <Settings2 className="h-8 w-8 mb-2 opacity-50" />
+                    <Settings2 className="h-8 w-8 mb-2 opacity-50 animate-spin" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Processing Overlay...</span>
                   </div>
                 )}
@@ -193,7 +193,7 @@ export default function AnalysisDetailsPage() {
             </div>
 
             {/* Premium Custom Controls */}
-            <div className="p-4 bg-zinc-950 border-t border-zinc-800">
+            <div className="p-4 bg-black/60 border-t border-white/[0.05]">
               {/* Scrubber */}
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-xs font-mono text-zinc-400 w-12 text-right">{currentTime.toFixed(2)}s</span>
@@ -212,23 +212,23 @@ export default function AnalysisDetailsPage() {
               {/* Buttons */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <button onClick={() => stepFrame(false)} className="h-8 w-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center border border-zinc-800 transition">
+                  <button onClick={() => stepFrame(false)} className="h-8 w-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center border border-white/[0.05] transition">
                     <SkipBack className="h-4 w-4 text-zinc-400" />
                   </button>
                   <button onClick={togglePlay} className="h-10 w-10 rounded-full bg-[#FF4F21] hover:bg-[#FF8433] flex items-center justify-center shadow-[0_0_15px_rgba(255,79,33,0.3)] transition">
-                    {isPlaying ? <Pause className="h-5 w-5 text-white" /> : <Play className="h-5 w-5 text-white ml-1" />}
+                    {isPlaying ? <Pause className="h-5 w-5 text-white" /> : <Play className="h-5 w-5 text-white ml-0.5" />}
                   </button>
-                  <button onClick={() => stepFrame(true)} className="h-8 w-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center border border-zinc-800 transition">
+                  <button onClick={() => stepFrame(true)} className="h-8 w-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center border border-white/[0.05] transition">
                     <SkipForward className="h-4 w-4 text-zinc-400" />
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+                <div className="flex items-center gap-2 bg-zinc-900 border border-white/[0.05] rounded-lg p-1">
                   {[1, 0.5, 0.25].map(rate => (
                     <button 
                       key={rate}
                       onClick={() => changeSpeed(rate)}
-                      className={`px-3 py-1 rounded text-[10px] font-bold uppercase transition ${playbackRate === rate ? 'bg-[#FF4F21] text-white' : 'text-zinc-500 hover:text-white'}`}
+                      className={`px-3 py-1 rounded text-[10px] font-bold uppercase transition ${playbackRate === rate ? 'bg-[#FF4F21] text-white shadow-[0_2px_8px_rgba(255,79,33,0.3)]' : 'text-zinc-500 hover:text-white'}`}
                     >
                       {rate}x
                     </button>
@@ -239,13 +239,13 @@ export default function AnalysisDetailsPage() {
           </div>
 
           {/* Frame-by-Frame Timeline Highlights */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5">
+          <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-5">
             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
               <Activity className="h-3 w-3" /> Biomechanical Events Timeline
             </h3>
-            <div className="relative pl-6 border-l-2 border-zinc-800 space-y-4">
+            <div className="relative pl-6 border-l border-white/[0.05] space-y-4">
               <div className="relative">
-                <div className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-blue-500 border-[3px] border-zinc-950" />
+                <div className="absolute -left-[30px] top-1 h-2.5 w-2.5 rounded-full bg-blue-500 border border-black" />
                 <div className="flex gap-4 items-start">
                   <span className="text-xs font-mono font-bold text-zinc-400 w-12 mt-0.5">0.24s</span>
                   <div>
@@ -255,7 +255,7 @@ export default function AnalysisDetailsPage() {
                 </div>
               </div>
               <div className="relative">
-                <div className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-amber-500 border-[3px] border-zinc-950" />
+                <div className="absolute -left-[30px] top-1 h-2.5 w-2.5 rounded-full bg-amber-500 border border-black" />
                 <div className="flex gap-4 items-start">
                   <span className="text-xs font-mono font-bold text-zinc-400 w-12 mt-0.5">0.51s</span>
                   <div>
@@ -265,7 +265,7 @@ export default function AnalysisDetailsPage() {
                 </div>
               </div>
               <div className="relative">
-                <div className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-red-500 border-[3px] border-zinc-950" />
+                <div className="absolute -left-[30px] top-1 h-2.5 w-2.5 rounded-full bg-red-500 border border-black" />
                 <div className="flex gap-4 items-start">
                   <span className="text-xs font-mono font-bold text-zinc-400 w-12 mt-0.5">0.83s</span>
                   <div>
@@ -283,22 +283,22 @@ export default function AnalysisDetailsPage() {
         <div className="space-y-6">
           
           {/* Running Metrics */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
+          <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-5">
             <h3 className="text-[10px] font-bold text-[#FF4F21] uppercase tracking-widest mb-4">Running Metrics</h3>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-black border border-zinc-800 p-3 rounded-xl">
+              <div className="bg-black/40 border border-white/[0.03] p-3 rounded-xl">
                 <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Cadence</div>
                 <div className="text-lg font-black text-white">{metrics.cadence || '—'} <span className="text-[10px] font-normal text-zinc-500">spm</span></div>
               </div>
-              <div className="bg-black border border-zinc-800 p-3 rounded-xl">
+              <div className="bg-black/40 border border-white/[0.03] p-3 rounded-xl">
                 <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">GCT</div>
                 <div className="text-lg font-black text-white">{metrics.gct || '—'} <span className="text-[10px] font-normal text-zinc-500">ms</span></div>
               </div>
-              <div className="bg-black border border-zinc-800 p-3 rounded-xl">
+              <div className="bg-black/40 border border-white/[0.03] p-3 rounded-xl">
                 <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Stride Length</div>
                 <div className="text-lg font-black text-white">{metrics.strideLength || '—'} <span className="text-[10px] font-normal text-zinc-500">m</span></div>
               </div>
-              <div className="bg-black border border-zinc-800 p-3 rounded-xl">
+              <div className="bg-black/40 border border-white/[0.03] p-3 rounded-xl">
                 <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Symmetry</div>
                 <div className="text-lg font-black text-emerald-400">92<span className="text-[10px] font-normal text-zinc-500">%</span></div>
               </div>
@@ -306,7 +306,7 @@ export default function AnalysisDetailsPage() {
           </div>
 
           {/* Biomechanical Quality */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
+          <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-5">
             <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4">Biomechanical Form</h3>
             <div className="space-y-3">
               <div>
@@ -350,26 +350,26 @@ export default function AnalysisDetailsPage() {
         <InsightsWidget analysis={analysis} />
         
         {/* Recommendations Section */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6">
+        <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6">
           <div className="flex items-center gap-2 mb-6">
             <Target className="h-5 w-5 text-[#FF4F21]" />
-            <h3 className="text-sm font-black text-white uppercase tracking-widest">Targeted Recommendations</h3>
+            <h3 className="text-sm font-extrabold text-white uppercase tracking-widest">Targeted Recommendations</h3>
           </div>
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-black border border-zinc-800">
-              <h4 className="text-xs font-bold text-white mb-2">Fix Overstride</h4>
+            <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
+              <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Fix Overstride</h4>
               <p className="text-[10px] text-zinc-400 leading-relaxed">
                 Your foot is landing too far ahead of your center of mass. Incorporate **A-Skips** and **High Knees** into your warmup to promote a mid-foot strike directly under the hips.
               </p>
             </div>
-            <div className="p-4 rounded-xl bg-black border border-zinc-800">
-              <h4 className="text-xs font-bold text-white mb-2">Improve Cadence</h4>
+            <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
+              <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Improve Cadence</h4>
               <p className="text-[10px] text-zinc-400 leading-relaxed">
                 Current cadence is below the State benchmark. Try running with a metronome set to 180bpm to naturally shorten your stride and increase turnover rate.
               </p>
             </div>
           </div>
-          <button className="w-full mt-4 py-3 rounded-xl border border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 text-xs font-bold text-white transition">
+          <button className="w-full mt-4 py-3 rounded-xl border border-white/[0.05] bg-white/[0.03] hover:bg-white/[0.08] text-xs font-bold text-white transition duration-200">
             View Full Training Plan
           </button>
         </div>

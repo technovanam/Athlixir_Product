@@ -30,21 +30,21 @@ export default function AchievementsWidget({ historyCount }: { historyCount: num
   ];
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 flex flex-col h-full">
-      <div className="flex items-center gap-2 mb-6">
-        <Medal className="h-5 w-5 text-amber-500" />
-        <h3 className="text-sm font-black text-white uppercase tracking-widest">Achievements</h3>
+    <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col h-full hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
+      <div className="flex items-center gap-2.5 mb-6">
+        <Medal className="h-4 w-4 text-amber-500" />
+        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">Achievements</h3>
       </div>
 
       <div className="flex-1 space-y-3">
         {achievements.map((ach, i) => (
-          <div key={i} className={`p-3 rounded-xl flex items-center gap-4 transition-all duration-500 ${ach.unlocked ? `border ${ach.color}` : 'border border-zinc-800 bg-zinc-900/20 opacity-50 grayscale'}`}>
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${ach.unlocked ? ach.color : 'bg-zinc-800'}`}>
+          <div key={i} className={`p-3 rounded-xl flex items-center gap-4 transition-all duration-300 ${ach.unlocked ? `border ${ach.color}` : 'border border-white/[0.02] bg-white/[0.01] opacity-40 grayscale'}`}>
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border ${ach.unlocked ? ach.color : 'bg-zinc-950 border-white/[0.03]'}`}>
               {ach.icon}
             </div>
             <div>
-              <h4 className={`text-sm font-bold ${ach.unlocked ? 'text-white' : 'text-zinc-500'}`}>{ach.title}</h4>
-              <p className="text-[10px] font-medium text-zinc-400 mt-0.5">{ach.desc}</p>
+              <h4 className={`text-xs font-bold ${ach.unlocked ? 'text-white font-semibold' : 'text-zinc-500'}`}>{ach.title}</h4>
+              <p className="text-[10px] text-zinc-400 mt-0.5">{ach.desc}</p>
             </div>
           </div>
         ))}

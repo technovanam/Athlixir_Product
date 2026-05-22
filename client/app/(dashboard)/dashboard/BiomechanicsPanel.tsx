@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from '../context/AuthContext';
+import { api } from '../../context/AuthContext';
 import { io, Socket } from 'socket.io-client';
 import {
   UploadCloud,
@@ -445,7 +445,6 @@ export default function BiomechanicsPanel() {
     setErrorMsg(null);
   };
 
-
   const displayVideoUrl =
     videoTab === 'overlay' ? overlayBlobUrl : originalBlobUrl;
 
@@ -538,7 +537,7 @@ export default function BiomechanicsPanel() {
                         setCurrentAnalysis(item);
                         fetchSingleAnalysis(id);
                         if (item.status && !['COMPLETED', 'FAILED'].includes(item.status)) {
-                          startSocketConnection(id);
+                           startSocketConnection(id);
                         }
                       }}
                       className={`w-full text-left rounded-lg px-3 py-2.5 text-xs transition ${
@@ -622,7 +621,7 @@ export default function BiomechanicsPanel() {
             <>
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-black text-white">Live Telemetry Overview</h2>
-                <Link href={`/dashboard/analysis/${currentAnalysis.analysisId || currentAnalysis.id}`} className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#FF4F21] hover:text-[#FF4F21] text-xs font-bold text-white transition flex items-center gap-2 group">
+                <Link href={`/analysis/${currentAnalysis.analysisId || currentAnalysis.id}`} className="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#FF4F21] hover:text-[#FF4F21] text-xs font-bold text-white transition flex items-center gap-2 group">
                   View Full Analysis <ExternalLink className="h-3 w-3 group-hover:translate-x-1 transition" />
                 </Link>
               </div>
@@ -850,7 +849,7 @@ export default function BiomechanicsPanel() {
                   </a>
                 )}
                 <Link
-                  href="/dashboard/history"
+                  href="/history"
                   className="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-bold text-zinc-300 hover:text-white hover:border-zinc-600 transition"
                 >
                   <Activity className="h-3.5 w-3.5" />

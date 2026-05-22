@@ -33,21 +33,21 @@ export default function ProgressWidget() {
 
   if (data.length < 2) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
+      <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px] hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
         <TrendingUp className="h-8 w-8 text-zinc-700 mb-3" />
-        <p className="text-sm font-bold text-zinc-500">Need more sessions to show trends</p>
+        <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Need more sessions to show trends</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-6 flex flex-col h-full">
+    <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col h-full hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-emerald-400" />
-          <h3 className="text-sm font-black text-white uppercase tracking-widest">Performance Trend</h3>
+        <div className="flex items-center gap-2.5">
+          <TrendingUp className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">Performance Trend</h3>
         </div>
-        <span className="text-[10px] text-zinc-500 font-bold uppercase">Last {data.length} Scans</span>
+        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Last {data.length} Scans</span>
       </div>
 
       <div className="flex-1 h-32">
@@ -55,7 +55,7 @@ export default function ProgressWidget() {
           <LineChart data={data}>
             <YAxis domain={['auto', 'auto']} hide />
             <Tooltip 
-              contentStyle={{ backgroundColor: '#000', borderColor: '#333', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }}
+              contentStyle={{ backgroundColor: '#000', borderColor: '#333', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold' }}
               itemStyle={{ color: '#fff' }}
             />
             <Line 
