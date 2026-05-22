@@ -78,7 +78,7 @@ export default function ConsentStep() {
           <label className={`flex items-start gap-4 p-4 rounded-xl border transition duration-305 outline-none cursor-pointer ${
             termsAccepted 
               ? 'border-[#FF4F21]/40 bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.1)]' 
-              : 'border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08]'
+              : 'border-white/[0.05] bg-black/40 hover:bg-[#08080C]/60 hover:border-white/[0.08]'
           }`}>
             <input
               type="checkbox"
@@ -98,7 +98,7 @@ export default function ConsentStep() {
           <label className={`flex items-start gap-4 p-4 rounded-xl border transition duration-305 outline-none cursor-pointer ${
             aiAnalysisConsent 
               ? 'border-[#FF4F21]/40 bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.1)]' 
-              : 'border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08]'
+              : 'border-white/[0.05] bg-black/40 hover:bg-[#08080C]/60 hover:border-white/[0.08]'
           }`}>
             <input
               type="checkbox"
@@ -118,7 +118,7 @@ export default function ConsentStep() {
           <label className={`flex items-start gap-4 p-4 rounded-xl border transition duration-305 outline-none cursor-pointer ${
             dataStorageConsent 
               ? 'border-[#FF4F21]/40 bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.1)]' 
-              : 'border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08]'
+              : 'border-white/[0.05] bg-black/40 hover:bg-[#08080C]/60 hover:border-white/[0.08]'
           }`}>
             <input
               type="checkbox"
