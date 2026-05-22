@@ -125,7 +125,7 @@ export default function InjuryHistoryStep() {
                   className={`p-4 rounded-xl border text-center transition duration-300 outline-none cursor-pointer text-xs font-black uppercase tracking-wide ${
                     active
                       ? 'border-[#FF4F21] bg-[#FF4F21]/10 text-white shadow-[0_0_15px_rgba(255,79,33,0.15)] ring-1 ring-[#FF4F21]/30'
-                      : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-white/[0.01] hover:bg-white/[0.03] text-zinc-400 hover:text-zinc-200'
+                      : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-black/40 hover:bg-[#08080C]/60 text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   {item.label}
@@ -139,7 +139,7 @@ export default function InjuryHistoryStep() {
         {(!selectedInjuries.includes('None') && selectedInjuries.length > 0) && (
           <div className="border-t border-white/[0.05] pt-6 space-y-6 animate-fadeIn">
             {/* Toggle current discomfort */}
-            <div className="flex items-center justify-between rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-4">
+            <div className="flex items-center justify-between rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-4">
               <div className="space-y-1">
                 <span className="block text-xs font-black uppercase tracking-wider text-white">Active Discomfort</span>
                 <span className="block text-[10px] text-zinc-500 font-medium">Are you currently experiencing discomfort in these zones?</span>
@@ -151,7 +151,7 @@ export default function InjuryHistoryStep() {
                   if (currentPain) setSeverity(0);
                 }}
                 className={`h-6 w-11 rounded-full p-0.5 transition-colors duration-300 focus:outline-none cursor-pointer ${
-                  currentPain ? 'bg-[#FF4F21] shadow-[0_0_10px_rgba(255,79,33,0.4)]' : 'bg-white/[0.08]'
+                  currentPain ? 'bg-[#FF4F21] shadow-[0_0_10px_rgba(255,79,33,0.4)]' : 'bg-black/60'
                 }`}
               >
                 <div
@@ -164,7 +164,7 @@ export default function InjuryHistoryStep() {
 
             {/* Severity scale slider */}
             {currentPain && (
-              <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-6 space-y-4 animate-fadeIn">
+              <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4 animate-fadeIn">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
                     <AlertTriangle className="h-4 w-4 text-[#FF4F21] animate-pulse" />
