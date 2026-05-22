@@ -101,7 +101,7 @@ export default function GoalsStep() {
                 className={`flex flex-col items-start p-5 rounded-2xl border text-left transition duration-300 outline-none cursor-pointer relative overflow-hidden group ${
                   isSelected
                     ? 'border-[#FF4F21] bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.15)] ring-1 ring-[#FF4F21]/30'
-                    : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-white/[0.01] hover:bg-white/[0.03]'
+                    : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-black/40 hover:bg-[#08080C]/60'
                 }`}
               >
                 {isSelected && (
