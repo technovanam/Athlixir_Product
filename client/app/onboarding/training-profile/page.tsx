@@ -78,7 +78,7 @@ export default function TrainingProfileStep() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
           {/* Training Days */}
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Training Frequency</span>
               <span className="text-sm font-black text-white tracking-wide">{trainingDays} <span className="text-xs text-zinc-500 uppercase tracking-widest font-black">days/wk</span></span>
@@ -99,7 +99,7 @@ export default function TrainingProfileStep() {
           </div>
 
           {/* Average Duration */}
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Avg Session Duration</span>
               <span className="text-sm font-black text-white tracking-wide">{trainingDuration} <span className="text-xs text-zinc-500 uppercase tracking-widest font-black">minutes</span></span>
@@ -121,7 +121,7 @@ export default function TrainingProfileStep() {
           </div>
 
           {/* Experience Years */}
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Running Experience</span>
               <span className="text-sm font-black text-white tracking-wide">{experienceYears} <span className="text-xs text-zinc-500 uppercase tracking-widest font-black">{experienceYears === 1 ? 'year' : 'years'}</span></span>
@@ -142,7 +142,7 @@ export default function TrainingProfileStep() {
           </div>
 
           {/* Personal Best timing */}
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-6 space-y-4 flex flex-col justify-center group">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4 flex flex-col justify-center group">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
                 Personal Best Timing (Optional)
@@ -153,7 +153,7 @@ export default function TrainingProfileStep() {
                   value={personalBest}
                   onChange={(e) => setPersonalBest(e.target.value)}
                   placeholder="e.g. 100m -> 12.4s"
-                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-4 pr-11 py-3.5 text-xs text-white placeholder-zinc-650 outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
+                  className="block w-full bg-black/40 border border-white/[0.05] rounded-xl pl-4 pr-11 py-2.5 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-[#FF4F21] transition duration-200"
                 />
                 <Clock className="absolute right-4 h-4 w-4 text-zinc-700 transition-colors duration-200 group-focus-within:text-[#FF4F21]" />
               </div>
