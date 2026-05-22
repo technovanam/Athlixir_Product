@@ -56,7 +56,7 @@ export default function CompletedStep() {
       {/* Structured metrics summary */}
       {profileData && (
         <div className="max-w-md mx-auto grid grid-cols-2 gap-4 text-left border-t border-b border-white/[0.05] py-6 my-6">
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
             <Activity className="h-5 w-5 text-[#FF4F21] shrink-0" />
             <div>
               <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500">Event Class</span>
@@ -64,7 +64,7 @@ export default function CompletedStep() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
             <Ruler className="h-5 w-5 text-[#FF4F21] shrink-0" />
             <div>
               <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500">Biometrics</span>
@@ -72,7 +72,7 @@ export default function CompletedStep() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
             <Calendar className="h-5 w-5 text-[#FF4F21] shrink-0" />
             <div>
               <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500">Train Capacity</span>
@@ -80,7 +80,7 @@ export default function CompletedStep() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
             <ShieldCheck className="h-5 w-5 text-[#FF4F21] shrink-0 animate-pulse" />
             <div>
               <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500">Safety Status</span>
