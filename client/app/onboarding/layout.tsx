@@ -3,16 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth, api } from '../context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { User, Activity, Ruler, BarChart2, Target, Heart, CheckCircle2, ChevronRight, LogOut } from 'lucide-react';
+import { User, Activity, Ruler, BarChart2, Target, Heart, CheckCircle2, ArrowLeft, LogOut } from 'lucide-react';
 
 const STEPS = [
-  { path: '/onboarding/basic-info', label: 'Info', icon: User },
-  { path: '/onboarding/classification', label: 'Class', icon: Activity },
-  { path: '/onboarding/body-metrics', label: 'Body', icon: Ruler },
-  { path: '/onboarding/training-profile', label: 'Train', icon: BarChart2 },
-  { path: '/onboarding/goals', label: 'Goals', icon: Target },
-  { path: '/onboarding/injury-history', label: 'Health', icon: Heart },
-  { path: '/onboarding/consent', label: 'Confirm', icon: CheckCircle2 },
+  { path: '/onboarding/basic-info', label: 'Identity Info', icon: User },
+  { path: '/onboarding/classification', label: 'Classification', icon: Activity },
+  { path: '/onboarding/body-metrics', label: 'Body Metrics', icon: Ruler },
+  { path: '/onboarding/training-profile', label: 'Training Profile', icon: BarChart2 },
+  { path: '/onboarding/goals', label: 'Primary Goals', icon: Target },
+  { path: '/onboarding/injury-history', label: 'Injury & Health', icon: Heart },
+  { path: '/onboarding/consent', label: 'Final Consent', icon: CheckCircle2 },
 ];
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
@@ -33,7 +33,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
       router.push('/dashboard');
       return;
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   useEffect(() => {
     const idx = STEPS.findIndex((s) => pathname.startsWith(s.path));
@@ -55,59 +55,59 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
 
   const progressPercent = Math.round(((currentStepIndex + 1) / STEPS.length) * 100);
 
+  // If we are on the onboarding completed page, we may want to adjust sidebar or render standard, let's keep it consistent
+  const isCompletedPage = pathname.endsWith('/completed');
+
   return (
-    <div className="relative flex min-h-screen flex-col bg-[#08080C] text-white selection:bg-[#FF4F21]/30 selection:text-white overflow-x-hidden">
+    <div className="relative flex min-h-screen flex-col md:flex-row bg-[#08080C] text-white selection:bg-[#FF4F21]/30 selection:text-white overflow-hidden">
       {/* Carbon fiber subtle pattern texture */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] mix-blend-overlay pointer-events-none" />
 
       {/* Background neon blurs */}
-      <div className="absolute -top-40 right-1/4 h-[500px] w-[500px] rounded-full bg-[#FF4F21]/5 blur-[150px] pointer-events-none"></div>
-      <div className="absolute -bottom-40 left-1/4 h-[500px] w-[500px] rounded-full bg-[#FF8433]/3 blur-[150px] pointer-events-none"></div>
+      <div className="absolute top-1/4 right-1/4 h-[600px] w-[600px] rounded-full bg-[#FF4F21]/5 blur-[160px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 left-1/3 h-[500px] w-[500px] rounded-full bg-[#FF8433]/3 blur-[140px] pointer-events-none"></div>
 
-      {/* Modern Header */}
-      <header className="relative z-10 border-b border-white/[0.05] bg-[#08080C]/40 px-6 py-4 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] flex items-center justify-center font-bold text-sm tracking-wider shadow-lg shadow-[#FF4F21]/20 text-white">
-              Α
+      {/* Sidebar Progress Panel */}
+      <aside className="relative z-20 w-full md:w-[320px] bg-[#08080C]/60 border-b md:border-b-0 md:border-r border-white/[0.05] p-6 md:p-8 flex flex-col justify-between backdrop-blur-md shrink-0">
+        <div className="space-y-8">
+          {/* Brand Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] flex items-center justify-center font-bold text-sm tracking-wider shadow-lg shadow-[#FF4F21]/20 text-white">
+                Α
+              </div>
+              <div>
+                <span className="block font-black tracking-wider text-xs uppercase text-white">ATHLIXIR</span>
+                <span className="block text-[8px] font-black tracking-widest text-[#FF4F21] uppercase">SETUP PROTOCOL</span>
+              </div>
             </div>
-            <span className="font-extrabold tracking-wider text-xs uppercase text-zinc-200">ATHLIXIR</span>
-            <span className="text-[10px] bg-white/[0.02] border border-white/[0.05] text-zinc-400 px-2.5 py-0.5 rounded-lg font-bold uppercase tracking-wider">Athlete Setup</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex flex-col items-end text-right">
-              <span className="text-xs font-bold text-zinc-300 uppercase tracking-wide">{user.username || 'Athlete'}</span>
-              <span className="text-[10px] text-zinc-500 font-medium">{user.email}</span>
-            </div>
+          {/* Sleek Navigation Back Button */}
+          <div>
             <button
-              onClick={logout}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/[0.05] bg-[#08080C]/40 text-zinc-400 hover:text-[#FF4F21] hover:border-[#FF4F21]/20 hover:bg-[#FF4F21]/5 hover:shadow-[0_0_15px_rgba(255,79,33,0.1)] transition-all duration-300 text-xs cursor-pointer font-bold uppercase tracking-wider"
+              onClick={() => {
+                logout();
+                router.push('/login');
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/[0.05] bg-white/[0.02] text-zinc-400 hover:text-white hover:border-[#FF4F21]/25 hover:bg-[#FF4F21]/5 hover:shadow-[0_0_15px_rgba(255,79,33,0.08)] transition-all duration-300 text-[10px] font-black uppercase tracking-widest cursor-pointer"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>Log out</span>
+              <ArrowLeft className="h-3.5 w-3.5 text-[#FF4F21]" />
+              <span>Back to Sign In</span>
             </button>
           </div>
-        </div>
-      </header>
 
-      {/* Main Container */}
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-start px-4 py-8 md:py-12">
-        <div className="w-full max-w-4xl">
-          
-          {/* Custom Stepper Wizard */}
-          <div className="mb-10 rounded-2xl border border-white/[0.05] bg-[#08080C]/40 p-5 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.03),0_10px_30px_rgba(0,0,0,0.6)]">
-            <div className="flex justify-between items-center mb-5 px-1">
-              <span className="text-[10px] font-black text-[#FF4F21] tracking-widest uppercase">Onboarding Setup Progress</span>
-              <span className="text-[10px] font-black text-zinc-400 tracking-wider">{progressPercent}% Completed</span>
-            </div>
-
-            {/* Stepper bar */}
-            <div className="relative flex justify-between items-center px-4">
-              <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-white/[0.03] -translate-y-1/2 z-0"></div>
+          {/* Stepper Wizard Progress Timeline */}
+          {!isCompletedPage && (
+            <nav className="relative flex flex-col gap-6 pl-2">
+              {/* Vertical connector line in background */}
+              <div className="absolute left-[17px] top-4 bottom-4 w-0.5 bg-white/[0.04] z-0"></div>
               <div
-                className="absolute left-0 top-1/2 h-0.5 bg-gradient-to-r from-[#FF4F21] to-[#FF8433] -translate-y-1/2 z-0 transition-all duration-500 shadow-[0_0_8px_rgba(255,79,33,0.5)]"
-                style={{ width: `${(currentStepIndex / (STEPS.length - 1)) * 100}%` }}
+                className="absolute left-[17px] top-4 w-0.5 bg-gradient-to-b from-[#FF4F21] to-[#FF8433] z-0 transition-all duration-500 shadow-[0_0_8px_rgba(255,79,33,0.5)]"
+                style={{
+                  height: `${(currentStepIndex / (STEPS.length - 1)) * 100}%`,
+                  maxHeight: 'calc(100% - 32px)'
+                }}
               ></div>
 
               {STEPS.map((s, idx) => {
@@ -116,37 +116,61 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
                 const isActive = idx === currentStepIndex;
 
                 return (
-                  <div key={s.path} className="relative z-10 flex flex-col items-center">
+                  <div key={s.path} className="relative z-10 flex items-center gap-4 group">
                     <button
                       disabled
-                      className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 ${
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 ${
                         isPassed
                           ? 'border-[#FF4F21] bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] text-white shadow-lg shadow-[#FF4F21]/20 scale-105'
                           : isActive
-                          ? 'border-[#FF4F21] bg-black text-[#FF4F21] shadow-[0_0_20px_rgba(255,79,33,0.4)] ring-4 ring-[#FF4F21]/20 scale-110'
+                          ? 'border-[#FF4F21] bg-[#08080C] text-[#FF4F21] shadow-[0_0_20px_rgba(255,79,33,0.3)] ring-4 ring-[#FF4F21]/15 scale-110'
                           : 'border-white/[0.05] bg-zinc-950 text-zinc-600'
                       }`}
                     >
                       <StepIcon className="h-4 w-4" />
                     </button>
-                    <span
-                      className={`hidden md:block text-[9px] font-black uppercase tracking-widest mt-2 transition-all ${
-                        isActive ? 'text-[#FF4F21]' : isPassed ? 'text-zinc-400' : 'text-zinc-600'
-                      }`}
-                    >
-                      {s.label}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${
+                        isActive ? 'text-[#FF4F21]' : isPassed ? 'text-zinc-500' : 'text-zinc-600'
+                      }`}>
+                        Step 0{idx + 1}
+                      </span>
+                      <span className={`text-xs font-black uppercase tracking-wider transition-all ${
+                        isActive ? 'text-white' : isPassed ? 'text-zinc-300' : 'text-zinc-500'
+                      }`}>
+                        {s.label}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
-            </div>
-          </div>
+            </nav>
+          )}
+        </div>
 
+        {/* User Info / Overall Percentage Progress */}
+        <div className="mt-8 rounded-2xl border border-white/[0.05] bg-white/[0.01] p-4">
+          <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">Onboarding Progress</span>
+          <div className="flex items-center justify-between text-xs font-bold">
+            <span className="text-zinc-400 truncate max-w-[140px] uppercase text-[10px] tracking-wider">{user.username || 'Athlete'}</span>
+            <span className="text-[#FF4F21] text-[10px] font-black tracking-widest">{isCompletedPage ? '100%' : `${progressPercent}%`}</span>
+          </div>
+          <div className="mt-2.5 h-1 w-full bg-white/[0.03] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#FF4F21] to-[#FF8433] transition-all duration-500"
+              style={{ width: `${isCompletedPage ? 100 : progressPercent}%` }}
+            />
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="relative z-10 flex-1 flex flex-col justify-start items-center p-4 sm:p-8 md:p-12 overflow-y-auto h-screen">
+        <div className="w-full max-w-4xl my-auto">
           {/* Stepped Child Route Renders */}
           <div className="rounded-3xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03),0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-md overflow-hidden min-h-[460px] hover:border-white/[0.08] transition duration-300">
             {children}
           </div>
-
         </div>
       </main>
     </div>
