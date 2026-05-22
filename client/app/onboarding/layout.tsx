@@ -76,7 +76,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
   const tier = user?.classification?.athleteLevel || 'Active Athlete';
 
   return (
-    <div className="relative flex min-h-screen flex-col md:flex-row bg-[#08080C] text-white selection:bg-[#FF4F21]/30 selection:text-white overflow-hidden">
+    <div className="relative flex min-h-screen flex-col md:flex-row bg-black text-white selection:bg-[#FF4F21]/30 selection:text-white overflow-hidden">
       {/* Carbon fiber subtle pattern texture */}
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] mix-blend-overlay pointer-events-none" />
 
@@ -219,15 +219,6 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
                   </span>
                 </div>
               </div>
-
-              {/* Logout Button */}
-              <button
-                onClick={logout}
-                className="p-1.5 rounded-lg text-zinc-500 hover:text-[#FF4F21] hover:bg-[#FF4F21]/10 border border-transparent hover:border-[#FF4F21]/20 transition-all cursor-pointer shrink-0 overflow-hidden whitespace-nowrap"
-                title="Sign Out"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
             </div>
           </div>
         </div>
