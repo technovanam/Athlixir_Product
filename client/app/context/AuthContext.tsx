@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 export interface UserProfile {
   uid: string;
   username: string;
+  name?: string;
   email: string;
   role: string;
   onboardingCompleted: boolean;
@@ -17,6 +18,10 @@ export interface UserProfile {
     roleInWorkspace: string;
     workspaceSize?: number;
     industries?: string[];
+  };
+  classification?: {
+    primaryEvent?: string;
+    athleteLevel?: string;
   };
 }
 

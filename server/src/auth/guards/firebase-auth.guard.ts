@@ -37,7 +37,7 @@ export class FirebaseAuthGuard implements CanActivate {
       
       let decodedToken;
       if (request.cookies?.session) {
-        decodedToken = await this.firebaseService.auth.verifySessionCookie(token, true);
+        decodedToken = await this.firebaseService.auth.verifySessionCookie(token, false);
       } else {
         decodedToken = await this.firebaseService.auth.verifyIdToken(token);
       }
