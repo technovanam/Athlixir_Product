@@ -126,7 +126,7 @@ export default function ClassificationStep() {
                   className={`flex flex-col items-start p-4 rounded-xl border text-left transition duration-300 outline-none cursor-pointer ${
                     active
                       ? 'border-[#FF4F21] bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.15)] ring-1 ring-[#FF4F21]/30'
-                      : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-white/[0.01] hover:bg-white/[0.03]'
+                      : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-black/40 hover:bg-[#08080C]/60'
                   }`}
                 >
                   <span className="font-bold text-xs text-white uppercase tracking-wide">{t.label}</span>
@@ -144,7 +144,7 @@ export default function ClassificationStep() {
             <select
               value={primaryEvent}
               onChange={(e) => setPrimaryEvent(e.target.value)}
-              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-[#08080C] cursor-pointer"
+              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#FF4F21] transition duration-200 appearance-none cursor-pointer"
             >
               {(EVENTS_BY_TYPE[runningType] || []).map((ev) => (
                 <option key={ev} value={ev} className="bg-[#08080C] text-white">
@@ -159,7 +159,7 @@ export default function ClassificationStep() {
             <select
               value={secondaryEvent}
               onChange={(e) => setSecondaryEvent(e.target.value)}
-              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-[#08080C] cursor-pointer"
+              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#FF4F21] transition duration-200 appearance-none cursor-pointer"
             >
               {(EVENTS_BY_TYPE[runningType] || []).map((ev) => (
                 <option key={ev} value={ev} className="bg-[#08080C] text-white">
@@ -184,7 +184,7 @@ export default function ClassificationStep() {
                   className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-center transition duration-300 outline-none cursor-pointer ${
                     active
                       ? 'border-[#FF4F21] bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.15)] ring-1 ring-[#FF4F21]/30'
-                      : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-white/[0.01] hover:bg-white/[0.03]'
+                      : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-black/40 hover:bg-[#08080C]/60'
                   }`}
                 >
                   <span className="font-bold text-xs text-white uppercase tracking-wide">{lvl.label}</span>
