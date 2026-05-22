@@ -93,134 +93,141 @@ export default function BasicInfoStep() {
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
+    <div className="p-6 md:p-10 space-y-8 animate-fadeIn relative">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+        <h2 className="text-xl md:text-2xl font-black tracking-wider text-white flex items-center gap-2 uppercase crt-glow-white">
           <User className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 1: Athlete Basic Information</span>
         </h2>
-        <p className="text-zinc-400 text-xs mt-1">
+        <p className="text-zinc-500 text-xs mt-1 font-medium">
           Let’s set up your core athlete identity card. You can edit this anytime inside your dashboard settings.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
+        <div className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 animate-fadeIn">
+          <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+          <div>
+            <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0 mr-2">FAIL</span>
+            {error}
+          </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
         {/* Profile Photo Uploader */}
-        <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-zinc-900">
-          <div className="relative h-20 w-20 rounded-full border border-zinc-800 bg-zinc-900/50 flex items-center justify-center overflow-hidden shadow-inner">
-            {profilePhoto ? (
-              <img src={profilePhoto} alt="Profile" className="h-full w-full object-cover" />
-            ) : uploading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-[#FF4F21]" />
-            ) : (
-              <User className="h-8 w-8 text-zinc-600" />
-            )}
+        <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-white/[0.05]">
+          <div className="relative group shrink-0">
+            <div className="h-20 w-20 rounded-full border border-white/[0.08] bg-[#08080C]/40 flex items-center justify-center overflow-hidden shadow-inner relative z-10">
+              {profilePhoto ? (
+                <img src={profilePhoto} alt="Profile" className="h-full w-full object-cover" />
+              ) : uploading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-[#FF4F21]" />
+              ) : (
+                <User className="h-8 w-8 text-zinc-600" />
+              )}
+            </div>
+            <div className="absolute inset-[-4px] rounded-full border border-[#FF4F21]/20 animate-[spin_10s_linear_infinite] pointer-events-none" />
+            <div className="absolute inset-[-8px] rounded-full border border-[#FF4F21]/5 animate-[spin_15s_linear_infinite_reverse] pointer-events-none" />
           </div>
           <div className="space-y-2 text-center sm:text-left">
-            <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">Avatar Image</span>
-            <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900/40 text-zinc-300 hover:text-white hover:border-zinc-700 cursor-pointer text-xs font-medium transition duration-200">
-              <Upload className="h-3.5 w-3.5" />
+            <span className="block text-[10px] font-black uppercase tracking-widest text-zinc-400">Avatar Image</span>
+            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/[0.05] bg-white/[0.02] text-zinc-300 hover:text-white hover:border-[#FF4F21]/30 hover:bg-[#FF4F21]/5 cursor-pointer text-xs font-bold transition-all duration-300">
+              <Upload className="h-3.5 w-3.5 text-[#FF4F21]" />
               <span>{uploading ? 'Uploading image...' : 'Upload Photo'}</span>
               <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
             </label>
-            <p className="text-[10px] text-zinc-500">Supports JPEG, PNG up to 5MB</p>
+            <p className="text-[9px] text-zinc-500 font-medium">Supports JPEG, PNG up to 5MB</p>
           </div>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Full Name */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Full Name</label>
+          <div className="group">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">Full Name</label>
             <input
               type="text"
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. John Doe"
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
+              placeholder="John Doe"
+              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white placeholder-zinc-650 outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
             />
           </div>
 
           {/* Readonly Email */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Registered Email</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Registered Email</label>
             <div className="relative flex items-center">
               <input
                 type="email"
                 readOnly
                 value={user?.email || ''}
-                className="block w-full rounded-xl border border-zinc-900 bg-zinc-950/20 px-4 py-3 text-xs text-zinc-500 outline-none select-none cursor-not-allowed"
+                className="block w-full rounded-xl border border-white/[0.03] bg-white/[0.01] px-4 py-3.5 text-xs text-zinc-500 outline-none select-none cursor-not-allowed border-dashed"
               />
               <Mail className="absolute right-4 h-4 w-4 text-zinc-700" />
             </div>
           </div>
 
           {/* DOB */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Date of Birth</label>
+          <div className="group">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">Date of Birth</label>
             <input
               type="date"
               required
               value={dob}
               onChange={(e) => setDob(e.target.value)}
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
+              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] cursor-pointer"
             />
           </div>
 
           {/* Gender */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Gender</label>
+          <div className="group">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">Gender</label>
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 cursor-pointer"
+              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-[#08080C] cursor-pointer"
             >
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option value="Male" className="bg-[#08080C] text-white">Male</option>
+              <option value="Female" className="bg-[#08080C] text-white">Female</option>
+              <option value="Other" className="bg-[#08080C] text-white">Other</option>
             </select>
           </div>
 
           {/* State */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">State</label>
+          <div className="group">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">State</label>
             <input
               type="text"
               required
               value={state}
               onChange={(e) => setState(e.target.value)}
-              placeholder="e.g. California"
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
+              placeholder="California"
+              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white placeholder-zinc-650 outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
             />
           </div>
 
           {/* City */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">City</label>
+          <div className="group">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">City</label>
             <input
               type="text"
               required
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="e.g. Los Angeles"
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30"
+              placeholder="Los Angeles"
+              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white placeholder-zinc-650 outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
             />
           </div>
         </div>
 
         {/* Submit Actions */}
-        <div className="flex justify-end pt-6 border-t border-zinc-900">
+        <div className="flex justify-end pt-6 border-t border-white/[0.05]">
           <button
             type="submit"
             disabled={loading || uploading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[#FF4F21] hover:brightness-110 text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] hover:brightness-110 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#FF4F21]/20 active:scale-98 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>

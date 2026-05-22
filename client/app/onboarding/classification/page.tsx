@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
-import { Activity, Loader2, ArrowLeft, ArrowRight, AlertCircle, Shield } from 'lucide-react';
+import { Activity, Loader2, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 
 const RUNNING_TYPES = [
   { id: 'Sprint', label: 'Sprint', desc: 'Short-burst explosiveness (100m - 400m)' },
@@ -90,29 +90,32 @@ export default function ClassificationStep() {
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-8 animate-fadeIn">
+    <div className="p-6 md:p-10 space-y-8 animate-fadeIn relative">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+        <h2 className="text-xl md:text-2xl font-black tracking-wider text-white flex items-center gap-2 uppercase crt-glow-white">
           <Activity className="h-6 w-6 text-[#FF4F21]" />
           <span>Step 2: Athlete Classification</span>
         </h2>
-        <p className="text-zinc-400 text-xs mt-1">
+        <p className="text-zinc-500 text-xs mt-1 font-medium">
           Your running classification configures advanced scoring metrics, injury risks, and tailored AI recommendations.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
+        <div className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 animate-fadeIn">
+          <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+          <div>
+            <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0 mr-2">FAIL</span>
+            {error}
+          </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Running type selectors */}
         <div className="space-y-3">
-          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400">Running Type</label>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500">Running Category</label>
+          <div className="grid gap-4 sm:grid-cols-3">
             {RUNNING_TYPES.map((t) => {
               const active = runningType === t.id;
               return (
@@ -120,14 +123,14 @@ export default function ClassificationStep() {
                   key={t.id}
                   type="button"
                   onClick={() => handleRunningTypeChange(t.id)}
-                  className={`flex flex-col items-start p-4 rounded-xl border text-left transition duration-200 outline-none cursor-pointer ${
+                  className={`flex flex-col items-start p-4 rounded-xl border text-left transition duration-300 outline-none cursor-pointer ${
                     active
-                      ? 'border-[#FF4F21] bg-[#FF4F21]/5 ring-1 ring-[#FF4F21]/30'
-                      : 'border-zinc-900 hover:border-zinc-800 bg-zinc-950/30'
+                      ? 'border-[#FF4F21] bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.15)] ring-1 ring-[#FF4F21]/30'
+                      : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-white/[0.01] hover:bg-white/[0.03]'
                   }`}
                 >
-                  <span className="font-bold text-xs text-white">{t.label}</span>
-                  <span className="text-[10px] text-zinc-500 mt-1 leading-normal">{t.desc}</span>
+                  <span className="font-bold text-xs text-white uppercase tracking-wide">{t.label}</span>
+                  <span className="text-[10px] text-zinc-500 mt-2 font-medium leading-normal">{t.desc}</span>
                 </button>
               );
             })}
@@ -135,31 +138,31 @@ export default function ClassificationStep() {
         </div>
 
         {/* Dynamic Event selection */}
-        <div className="grid gap-5 sm:grid-cols-2 border-t border-zinc-900 pt-6">
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Primary Event Focus</label>
+        <div className="grid gap-6 sm:grid-cols-2 border-t border-white/[0.05] pt-6">
+          <div className="group">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">Primary Event Focus</label>
             <select
               value={primaryEvent}
               onChange={(e) => setPrimaryEvent(e.target.value)}
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 cursor-pointer"
+              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-[#08080C] cursor-pointer"
             >
               {(EVENTS_BY_TYPE[runningType] || []).map((ev) => (
-                <option key={ev} value={ev}>
+                <option key={ev} value={ev} className="bg-[#08080C] text-white">
                   {ev}
                 </option>
               ))}
             </select>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">Secondary Event Focus</label>
+          <div className="group">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">Secondary Event Focus</label>
             <select
               value={secondaryEvent}
               onChange={(e) => setSecondaryEvent(e.target.value)}
-              className="block w-full rounded-xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-xs text-white outline-none transition duration-200 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 cursor-pointer"
+              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-[#08080C] cursor-pointer"
             >
               {(EVENTS_BY_TYPE[runningType] || []).map((ev) => (
-                <option key={ev} value={ev}>
+                <option key={ev} value={ev} className="bg-[#08080C] text-white">
                   {ev}
                 </option>
               ))}
@@ -168,8 +171,8 @@ export default function ClassificationStep() {
         </div>
 
         {/* Competition level select */}
-        <div className="space-y-3 border-t border-zinc-900 pt-6">
-          <label className="block text-[10px] font-bold uppercase tracking-widest text-zinc-400">Competition Level</label>
+        <div className="space-y-3 border-t border-white/[0.05] pt-6">
+          <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500">Competition Level</label>
           <div className="grid gap-3 sm:grid-cols-5">
             {COMPETITION_LEVELS.map((lvl) => {
               const active = competitionLevel === lvl.id;
@@ -178,14 +181,14 @@ export default function ClassificationStep() {
                   key={lvl.id}
                   type="button"
                   onClick={() => setCompetitionLevel(lvl.id)}
-                  className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-center transition duration-200 outline-none cursor-pointer ${
+                  className={`flex flex-col items-center justify-center p-3.5 rounded-xl border text-center transition duration-300 outline-none cursor-pointer ${
                     active
-                      ? 'border-[#FF4F21] bg-[#FF4F21]/5 ring-1 ring-[#FF4F21]/30'
-                      : 'border-zinc-900 hover:border-zinc-800 bg-zinc-950/30'
+                      ? 'border-[#FF4F21] bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.15)] ring-1 ring-[#FF4F21]/30'
+                      : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-white/[0.01] hover:bg-white/[0.03]'
                   }`}
                 >
-                  <span className="font-bold text-xs text-white">{lvl.label}</span>
-                  <span className="text-[9px] text-zinc-500 mt-1 leading-normal">{lvl.desc}</span>
+                  <span className="font-bold text-xs text-white uppercase tracking-wide">{lvl.label}</span>
+                  <span className="text-[9px] text-zinc-500 mt-2 font-medium leading-normal">{lvl.desc}</span>
                 </button>
               );
             })}
@@ -193,20 +196,20 @@ export default function ClassificationStep() {
         </div>
 
         {/* Form navigation buttons */}
-        <div className="flex justify-between items-center pt-6 border-t border-zinc-900">
+        <div className="flex justify-between items-center pt-6 border-t border-white/[0.05]">
           <button
             type="button"
             onClick={() => router.push('/onboarding/basic-info')}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-zinc-500 hover:text-white transition duration-200 cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white transition duration-200 cursor-pointer"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 text-[#FF4F21]" />
             <span>Back</span>
           </button>
 
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-1.5 px-6 py-3 rounded-xl bg-[#FF4F21] hover:brightness-110 text-xs font-bold text-white shadow-lg shadow-[#FF4F21]/20 transition duration-200 cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] hover:brightness-110 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#FF4F21]/20 active:scale-98 transition duration-200 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -225,3 +228,4 @@ export default function ClassificationStep() {
     </div>
   );
 }
+
