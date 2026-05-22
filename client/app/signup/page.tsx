@@ -3,11 +3,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
-import { Trophy, Target, User, Mail, Lock, ShieldCheck, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, ShieldCheck, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function SignupPage() {
   const { signup, error, setError } = useAuth();
-  const [role, setRole] = useState('ATHLETE');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,222 +40,182 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-black bg-cover bg-center bg-no-repeat px-4 py-6 font-sans" style={{ backgroundImage: `url('/stadium_grass_bg.png')` }}>
-      <div className="absolute inset-0 bg-[#0a0f1c]/80 backdrop-blur-[2px]"></div>
-      
+    <div className="relative flex min-h-screen items-center justify-center bg-[#08080C] px-6 py-12 font-sans overflow-hidden">
+      {/* Carbon fiber subtle pattern texture */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] mix-blend-overlay pointer-events-none" />
+
+      {/* Massive gradient background blooms */}
+      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#FF4F21]/10 rounded-full blur-[120px] pointer-events-none animate-pulse duration-4000" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-[#FF8433]/5 rounded-full blur-[100px] pointer-events-none animate-pulse duration-6000 delay-1000" />
+
       {/* Back to Home Button */}
-      <div className="absolute top-6 left-6 z-20">
-        <Link href="/" className="flex items-center gap-2 text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase hover:text-white transition duration-200 cursor-pointer">
-          <ArrowLeft className="h-4 w-4 text-[#FF5722]" />
+      <div className="absolute top-8 left-8 z-20">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase hover:text-white transition duration-200 cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4 text-[#FF4F21] transition-transform duration-200 hover:-translate-x-0.5" />
           <span>BACK TO HOME</span>
         </Link>
       </div>
 
-      <div className="relative z-10 w-full max-w-[760px] flex flex-col items-center mt-2">
-        
+      <div className="relative z-10 w-full max-w-[450px] flex flex-col items-center">
         {/* Header Section */}
-        <div className="flex flex-col items-center mb-6 text-center">
-          <div className="mb-3">
-            <svg width="36" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF5722" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter">
+        <div className="flex flex-col items-center mb-6 text-center animate-fadeIn">
+          {/* Logo SVG */}
+          <div className="mb-4 relative group">
+            <div className="absolute inset-0 bg-[#FF4F21]/20 blur-[10px] rounded-full scale-75 group-hover:scale-110 transition duration-300 pointer-events-none" />
+            <svg width="48" height="36" viewBox="0 0 24 24" fill="none" stroke="#FF4F21" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter" className="relative z-10">
               <path d="M4 22L12 4L20 22" />
             </svg>
           </div>
-          <h1 className="text-[28px] sm:text-[36px] font-black tracking-tight text-white mb-1 uppercase">
-            JOIN THE ECOSYSTEM
+          <h1 className="text-[28px] font-black tracking-wider text-white mb-2 uppercase crt-glow-white">
+            ATHLETE SIGN UP
           </h1>
-          <p className="text-[9px] sm:text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase mt-1">
-            Create your verified <span className="text-[#FF5722]">digital profile</span>
+          <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase mt-1">
+            Create your verified <span className="text-[#FF4F21]">Athlete Profile</span>
           </p>
         </div>
 
         {/* Main Panel */}
-        <div className="w-full flex flex-col sm:flex-row rounded-[20px] bg-[#0c0c0c]/95 border border-white/5 shadow-2xl backdrop-blur-xl overflow-hidden min-h-[400px]">
-          
-          {/* Left Sidebar - Roles */}
-          <div className="flex sm:flex-col gap-3 p-4 sm:p-6 border-b sm:border-b-0 sm:border-r border-white/5 bg-black/40 sm:w-[140px] shrink-0 justify-center sm:justify-start">
+        <div className="w-full rounded-3xl border border-white/[0.05] bg-[#08080C]/40 p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03),0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-md hover:border-white/[0.08] transition-all duration-300">
+          <form onSubmit={handleSubmit} className="space-y-5">
             
-            <button
-              type="button"
-              onClick={() => setRole('ATHLETE')}
-              className={`flex flex-col items-center justify-center gap-2 w-[72px] h-[72px] sm:w-full sm:h-[84px] rounded-[16px] transition-all duration-200 ${
-                role === 'ATHLETE' 
-                  ? 'bg-[#FF5722] text-white shadow-[0_0_20px_rgba(255,87,34,0.15)]' 
-                  : 'bg-[#1a1a1a] text-zinc-500 hover:bg-[#222] hover:text-zinc-300'
-              }`}
-            >
-              <Trophy className={`h-5 w-5 ${role === 'ATHLETE' ? 'text-white' : 'text-zinc-400'}`} strokeWidth={role === 'ATHLETE' ? 2 : 1.5} />
-              <span className="text-[9px] font-bold tracking-[0.1em] uppercase">Athlete</span>
-            </button>
+            {/* Error Notifications */}
+            {(error || validationError) && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 flex items-start gap-2.5 animate-fadeIn">
+                <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0">FAIL</span>
+                <span>{validationError || error}</span>
+              </div>
+            )}
 
-            <button
-              type="button"
-              onClick={() => setRole('COACH')}
-              className={`flex flex-col items-center justify-center gap-2 w-[72px] h-[72px] sm:w-full sm:h-[84px] rounded-[16px] transition-all duration-200 ${
-                role === 'COACH' 
-                  ? 'bg-[#FF5722] text-white shadow-[0_0_20px_rgba(255,87,34,0.15)]' 
-                  : 'bg-[#1a1a1a] text-zinc-500 hover:bg-[#222] hover:text-zinc-300'
-              }`}
-            >
-              <Target className={`h-5 w-5 ${role === 'COACH' ? 'text-white' : 'text-zinc-400'}`} strokeWidth={role === 'COACH' ? 2 : 1.5} />
-              <span className="text-[9px] font-bold tracking-[0.1em] uppercase">Coach</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setRole('USER')}
-              className={`flex flex-col items-center justify-center gap-2 w-[72px] h-[72px] sm:w-full sm:h-[84px] rounded-[16px] transition-all duration-200 ${
-                role === 'USER' 
-                  ? 'bg-[#FF5722] text-white shadow-[0_0_20px_rgba(255,87,34,0.15)]' 
-                  : 'bg-transparent text-zinc-500 hover:bg-[#1a1a1a] hover:text-zinc-300'
-              }`}
-            >
-              <User className={`h-5 w-5 ${role === 'USER' ? 'text-white' : 'text-zinc-400'}`} strokeWidth={role === 'USER' ? 2 : 1.5} />
-              <span className="text-[9px] font-bold tracking-[0.1em] uppercase">User</span>
-            </button>
-
-          </div>
-
-          {/* Right Area - Form */}
-          <div className="flex-1 p-5 sm:p-8 flex flex-col justify-center">
-            <form onSubmit={handleSubmit} className="flex flex-col w-full max-w-[480px] mx-auto space-y-5">
-              
-              {/* Error Notifications */}
-              {(error || validationError) && (
-                <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400">
-                  <span className="font-semibold">Error:</span> {validationError || error}
+            {/* Username / Full Name */}
+            <div className="group">
+              <label htmlFor="username" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                Full Identity Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                  <User className="h-4 w-4" />
                 </div>
-              )}
+                <input
+                  type="text"
+                  id="username"
+                  required
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setError(null);
+                    setValidationError(null);
+                  }}
+                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-700 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
+                  placeholder="John Doe"
+                />
+              </div>
+            </div>
 
-              <div className="space-y-4">
-                {/* Full Name */}
-                <div>
-                  <label htmlFor="username" className="block text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2">
-                    Full Identity Name
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600">
-                      <User className="h-4 w-4" />
-                    </div>
-                    <input
-                      type="text"
-                      id="username"
-                      required
-                      value={username}
-                      onChange={(e) => {
-                        setUsername(e.target.value);
-                        setError(null);
-                        setValidationError(null);
-                      }}
-                      className="block w-full rounded-[12px] border border-transparent bg-[#171717] pl-11 pr-4 py-3 text-sm text-zinc-200 placeholder-zinc-700 outline-none transition duration-200 focus:border-[#FF5722]/30 focus:ring-1 focus:ring-[#FF5722]/30 focus:bg-[#1c1c1c]"
-                      placeholder="John Doe"
-                    />
-                  </div>
+            {/* Email Address */}
+            <div className="group">
+              <label htmlFor="email" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                Secure Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                  <Mail className="h-4 w-4" />
                 </div>
+                <input
+                  type="email"
+                  id="email"
+                  required
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError(null);
+                    setValidationError(null);
+                  }}
+                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-700 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
+                  placeholder="athlete@athlixir.com"
+                />
+              </div>
+            </div>
 
-                {/* Email */}
-                <div>
-                  <label htmlFor="email" className="block text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2">
-                    Secure Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600">
-                      <Mail className="h-4 w-4" />
-                    </div>
-                    <input
-                      type="email"
-                      id="email"
-                      required
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setError(null);
-                        setValidationError(null);
-                      }}
-                      className="block w-full rounded-[12px] border border-transparent bg-[#171717] pl-11 pr-4 py-3 text-sm text-zinc-200 placeholder-zinc-700 outline-none transition duration-200 focus:border-[#FF5722]/30 focus:ring-1 focus:ring-[#FF5722]/30 focus:bg-[#1c1c1c]"
-                      placeholder="name@email.com"
-                    />
+            {/* Passwords Stack */}
+            <div className="space-y-4">
+              <div className="group">
+                <label htmlFor="password" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                  Access Key
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                    <Lock className="h-4 w-4" />
                   </div>
-                </div>
-
-                {/* Passwords - Grid layout */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="password" className="block text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2">
-                      Access Key
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600">
-                        <Lock className="h-4 w-4" />
-                      </div>
-                      <input
-                        type="password"
-                        id="password"
-                        required
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          setError(null);
-                          setValidationError(null);
-                        }}
-                        className="block w-full rounded-[12px] border border-transparent bg-[#171717] pl-11 pr-3 py-3 text-sm text-zinc-200 placeholder-zinc-700 outline-none transition duration-200 focus:border-[#FF5722]/30 focus:ring-1 focus:ring-[#FF5722]/30 focus:bg-[#1c1c1c] tracking-[0.2em]"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="confirmPassword" className="block text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2">
-                      Confirm Key
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600">
-                        <ShieldCheck className="h-4 w-4" />
-                      </div>
-                      <input
-                        type="password"
-                        id="confirmPassword"
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => {
-                          setConfirmPassword(e.target.value);
-                          setError(null);
-                          setValidationError(null);
-                        }}
-                        className="block w-full rounded-[12px] border border-transparent bg-[#171717] pl-11 pr-3 py-3 text-sm text-zinc-200 placeholder-zinc-700 outline-none transition duration-200 focus:border-[#FF5722]/30 focus:ring-1 focus:ring-[#FF5722]/30 focus:bg-[#1c1c1c] tracking-[0.2em]"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                  </div>
+                  <input
+                    type="password"
+                    id="password"
+                    required
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setError(null);
+                      setValidationError(null);
+                    }}
+                    className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-700 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] tracking-[0.25em]"
+                    placeholder="••••••••"
+                  />
                 </div>
               </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="mt-4 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#FF5722] py-3.5 text-[12px] font-bold uppercase tracking-widest text-white hover:bg-[#f24c16] transition-colors duration-200 outline-none focus:ring-2 focus:ring-[#FF5722] focus:ring-offset-2 focus:ring-offset-[#121212] disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer group"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Creating...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Create Profile</span>
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </>
-                )}
-              </button>
+              <div className="group">
+                <label htmlFor="confirmPassword" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                  Confirm Key
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setError(null);
+                      setValidationError(null);
+                    }}
+                    className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-700 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] tracking-[0.25em]"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+            </div>
 
-            </form>
-          </div>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] py-4 text-xs font-black uppercase tracking-widest text-white shadow-[0_0_20px_rgba(255,79,33,0.25)] hover:shadow-[0_0_30px_rgba(255,79,33,0.4)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  <span>Creating Athlete Profile...</span>
+                </>
+              ) : (
+                <>
+                  <span>Create Profile</span>
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
+            </button>
+
+          </form>
         </div>
         
         {/* Footer Info */}
-        <div className="mt-5 text-center text-[11px] font-medium text-zinc-500 tracking-wide">
+        <div className="mt-6 text-center text-[10px] font-bold text-zinc-500 tracking-wider uppercase animate-fadeIn">
           Already an Athlete?{' '}
-          <Link href="/login" className="font-bold text-[#FF5722] hover:opacity-80 transition-opacity uppercase tracking-wider ml-1">
+          <Link href="/login" className="ml-1 text-[#FF4F21] hover:brightness-110 transition uppercase font-black">
             Access Portal
           </Link>
         </div>
