@@ -38,59 +38,62 @@ export default function LoginPage() {
   };
 
   return (
-    <div 
-      className="relative flex min-h-screen items-center justify-center bg-black bg-cover bg-center bg-no-repeat px-6 py-12 font-sans"
-      style={{ backgroundImage: `url('/stadium_grass_bg.png')` }}
-    >
-      {/* Dark overlay for background image */}
-      <div className="absolute inset-0 bg-[#0a0f1c]/80 backdrop-blur-[1px]"></div>
+    <div className="relative flex min-h-screen items-center justify-center bg-[#08080C] px-6 py-12 font-sans overflow-hidden">
+      {/* Carbon fiber subtle pattern texture */}
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] mix-blend-overlay pointer-events-none" />
+
+      {/* Massive gradient background blooms */}
+      <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#FF4F21]/10 rounded-full blur-[120px] pointer-events-none animate-pulse duration-4000" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#FF8433]/5 rounded-full blur-[100px] pointer-events-none animate-pulse duration-6000 delay-1000" />
 
       {/* Back to Home Button */}
       <div className="absolute top-8 left-8 z-20">
         <Link
           href="/"
-          className="flex items-center gap-2 text-[11px] font-bold tracking-[0.15em] text-white uppercase hover:text-[#FF5722] transition duration-200 cursor-pointer"
+          className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase hover:text-white transition duration-200 cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4 text-[#FF5722]" />
+          <ArrowLeft className="h-4 w-4 text-[#FF4F21] transition-transform duration-200 hover:-translate-x-0.5" />
           <span>BACK TO HOME</span>
         </Link>
       </div>
 
       <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center">
         {/* Logo and Title */}
-        <div className="flex flex-col items-center mb-8 text-center">
+        <div className="flex flex-col items-center mb-8 text-center animate-fadeIn">
           {/* Logo SVG */}
-          <div className="mb-4">
-            <svg width="44" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF5722" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter">
+          <div className="mb-4 relative group">
+            <div className="absolute inset-0 bg-[#FF4F21]/20 blur-[10px] rounded-full scale-75 group-hover:scale-110 transition duration-300 pointer-events-none" />
+            <svg width="48" height="36" viewBox="0 0 24 24" fill="none" stroke="#FF4F21" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter" className="relative z-10">
               <path d="M4 22L12 4L20 22" />
             </svg>
           </div>
-          <h2 className="text-[32px] font-black tracking-tight text-white mb-2" style={{ textShadow: 'none' }}>
-            ACCESS PORTAL
+          <h2 className="text-[28px] font-black tracking-wider text-white mb-2 uppercase crt-glow-white">
+            ATHLETE SIGN IN
           </h2>
-          <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
-            Secured Athlixir <span className="text-[#FF5722]">Data Gate</span>
+          <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase">
+            Secured Athlixir <span className="text-[#FF4F21]">Athlete Gate</span>
           </p>
         </div>
 
         {/* Form Container */}
-        <div className="w-full rounded-[28px] border border-white/5 bg-[#121212]/95 p-8 shadow-2xl backdrop-blur-md">
+        <div className="w-full rounded-3xl border border-white/[0.05] bg-[#08080C]/40 p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03),0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-md hover:border-white/[0.08] transition-all duration-300">
           <form onSubmit={handleSubmit} className="space-y-6">
             
             {/* Error Notifications */}
             {(error || validationError) && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400">
-                <span className="font-semibold">Error:</span> {validationError || error}
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 flex items-start gap-2.5 animate-fadeIn">
+                <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0">FAIL</span>
+                <span>{validationError || error}</span>
               </div>
             )}
 
             {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
+            <div className="group">
+              <label htmlFor="email" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
                 Athlete ID / Email
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
@@ -102,24 +105,24 @@ export default function LoginPage() {
                     setError(null);
                     setValidationError(null);
                   }}
-                  className="block w-full rounded-xl border border-transparent bg-[#1c1c1c] pl-11 pr-4 py-3.5 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF5722]/50 focus:ring-1 focus:ring-[#FF5722]/50"
-                  placeholder="name@email.com"
+                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-600 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
+                  placeholder="athlete@athlixir.com"
                 />
               </div>
             </div>
 
             {/* Password Field */}
-            <div>
+            <div className="group">
               <div className="flex justify-between items-center mb-2">
-                <label htmlFor="password" className="block text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                  Key Access
+                <label htmlFor="password" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
+                  Access Key
                 </label>
-                <Link href="#" className="text-[10px] font-bold uppercase tracking-wider text-[#FF5722] hover:opacity-80 transition-opacity">
+                <Link href="#" className="text-[9px] font-bold uppercase tracking-wider text-[#FF4F21] hover:brightness-110 transition">
                   Reset Key?
                 </Link>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
@@ -131,8 +134,8 @@ export default function LoginPage() {
                     setError(null);
                     setValidationError(null);
                   }}
-                  className="block w-full rounded-xl border border-transparent bg-[#1c1c1c] pl-11 pr-4 py-3.5 text-sm text-zinc-300 placeholder-zinc-600 outline-none transition duration-200 focus:border-[#FF5722]/50 focus:ring-1 focus:ring-[#FF5722]/50 tracking-[0.2em]"
-                  placeholder="........"
+                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-600 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] tracking-[0.25em]"
+                  placeholder="••••••••"
                 />
               </div>
             </div>
@@ -141,12 +144,12 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF5722] py-4 text-[13px] font-bold uppercase tracking-wide text-white hover:opacity-90 transition-opacity duration-200 outline-none focus:ring-2 focus:ring-[#FF5722] focus:ring-offset-2 focus:ring-offset-[#121212] disabled:opacity-70 disabled:cursor-not-allowed group cursor-pointer"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] py-4 text-xs font-black uppercase tracking-widest text-white shadow-[0_0_20px_rgba(255,79,33,0.25)] hover:shadow-[0_0_30px_rgba(255,79,33,0.4)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Verifying...</span>
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  <span>Verifying Athlete Card...</span>
                 </>
               ) : (
                 <>
@@ -159,10 +162,10 @@ export default function LoginPage() {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-8 text-center text-[11px] font-medium text-zinc-500 tracking-wide">
+        <div className="mt-8 text-center text-[10px] font-bold text-zinc-500 tracking-wider uppercase animate-fadeIn">
           New Athlete?{' '}
-          <Link href="/signup" className="font-bold text-[#FF5722] hover:opacity-80 transition-opacity uppercase">
-            Build Profile
+          <Link href="/signup" className="ml-1 text-[#FF4F21] hover:brightness-110 transition uppercase font-black">
+            Build Athlete Profile
           </Link>
         </div>
       </div>
