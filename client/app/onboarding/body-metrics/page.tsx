@@ -72,7 +72,7 @@ export default function BodyMetricsStep() {
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid gap-8 md:grid-cols-2">
           {/* Height slider */}
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-6 space-y-5">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-5">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Height Metric</span>
               <span className="text-xl font-black text-white tracking-wide">
@@ -95,7 +95,7 @@ export default function BodyMetricsStep() {
           </div>
 
           {/* Weight slider */}
-          <div className="rounded-2xl border border-white/[0.05] bg-white/[0.01] hover:border-white/[0.08] transition duration-300 p-6 space-y-5">
+          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-5">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Weight Mass</span>
               <span className="text-xl font-black text-white tracking-wide">
