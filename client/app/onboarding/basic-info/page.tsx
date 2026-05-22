@@ -151,7 +151,7 @@ export default function BasicInfoStep() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="John Doe"
-              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white placeholder-zinc-650 outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
+              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-[#FF4F21] transition duration-200"
             />
           </div>
 
@@ -163,7 +163,7 @@ export default function BasicInfoStep() {
                 type="email"
                 readOnly
                 value={user?.email || ''}
-                className="block w-full rounded-xl border border-white/[0.03] bg-white/[0.01] px-4 py-3.5 text-xs text-zinc-500 outline-none select-none cursor-not-allowed border-dashed"
+                className="block w-full bg-zinc-900/20 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-zinc-500 cursor-not-allowed border-dashed select-none"
               />
               <Mail className="absolute right-4 h-4 w-4 text-zinc-700" />
             </div>
@@ -177,7 +177,7 @@ export default function BasicInfoStep() {
               required
               value={dob}
               onChange={(e) => setDob(e.target.value)}
-              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] cursor-pointer"
+              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#FF4F21] transition duration-200 cursor-pointer"
             />
           </div>
 
@@ -187,7 +187,7 @@ export default function BasicInfoStep() {
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-[#08080C] cursor-pointer"
+              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#FF4F21] transition duration-200 appearance-none cursor-pointer"
             >
               <option value="Male" className="bg-[#08080C] text-white">Male</option>
               <option value="Female" className="bg-[#08080C] text-white">Female</option>
@@ -204,7 +204,7 @@ export default function BasicInfoStep() {
               value={state}
               onChange={(e) => setState(e.target.value)}
               placeholder="California"
-              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white placeholder-zinc-650 outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
+              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-[#FF4F21] transition duration-200"
             />
           </div>
 
@@ -217,7 +217,7 @@ export default function BasicInfoStep() {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="Los Angeles"
-              className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-4 py-3.5 text-xs text-white placeholder-zinc-650 outline-none transition duration-350 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
+              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-[#FF4F21] transition duration-200"
             />
           </div>
         </div>
