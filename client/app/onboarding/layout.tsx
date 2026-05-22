@@ -1,18 +1,33 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useAuth, api } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { User, Activity, Ruler, BarChart2, Target, Heart, CheckCircle2, ArrowLeft, LogOut } from 'lucide-react';
+import { 
+  User, 
+  Activity, 
+  Ruler, 
+  BarChart2, 
+  Target, 
+  Heart, 
+  CheckCircle2, 
+  Compass, 
+  LogOut 
+} from 'lucide-react';
 
-const STEPS = [
-  { path: '/onboarding/basic-info', label: 'Identity Info', icon: User },
-  { path: '/onboarding/classification', label: 'Classification', icon: Activity },
-  { path: '/onboarding/body-metrics', label: 'Body Metrics', icon: Ruler },
-  { path: '/onboarding/training-profile', label: 'Training Profile', icon: BarChart2 },
-  { path: '/onboarding/goals', label: 'Primary Goals', icon: Target },
-  { path: '/onboarding/injury-history', label: 'Injury & Health', icon: Heart },
-  { path: '/onboarding/consent', label: 'Final Consent', icon: CheckCircle2 },
+const SECTIONS = [
+  {
+    title: 'Setup Protocol',
+    items: [
+      { name: 'Identity Info', path: '/onboarding/basic-info', icon: User },
+      { name: 'Classification', path: '/onboarding/classification', icon: Activity },
+      { name: 'Body Metrics', path: '/onboarding/body-metrics', icon: Ruler },
+      { name: 'Training Profile', path: '/onboarding/training-profile', icon: BarChart2 },
+      { name: 'Primary Goals', path: '/onboarding/goals', icon: Target },
+      { name: 'Injury & Health', path: '/onboarding/injury-history', icon: Heart },
+      { name: 'Final Consent', path: '/onboarding/consent', icon: CheckCircle2 },
+    ],
+  },
 ];
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
@@ -36,7 +51,9 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
   }, [user, loading, router, pathname]);
 
   useEffect(() => {
-    const idx = STEPS.findIndex((s) => pathname.startsWith(s.path));
+    // Determine current active index based on path matching
+    const allItems = SECTIONS[0].items;
+    const idx = allItems.findIndex((s) => pathname.startsWith(s.path));
     if (idx !== -1) {
       setCurrentStepIndex(idx);
     }
@@ -53,10 +70,10 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
     );
   }
 
-  const progressPercent = Math.round(((currentStepIndex + 1) / STEPS.length) * 100);
-
-  // If we are on the onboarding completed page, we may want to adjust sidebar or render standard, let's keep it consistent
+  const progressPercent = Math.round(((currentStepIndex + 1) / SECTIONS[0].items.length) * 100);
   const isCompletedPage = pathname.endsWith('/completed');
+  const athleteName = user?.name || user?.username || 'Athlete';
+  const tier = user?.classification?.athleteLevel || 'Active Athlete';
 
   return (
     <div className="relative flex min-h-screen flex-col md:flex-row bg-[#08080C] text-white selection:bg-[#FF4F21]/30 selection:text-white overflow-hidden">
@@ -67,99 +84,151 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
       <div className="absolute top-1/4 right-1/4 h-[600px] w-[600px] rounded-full bg-[#FF4F21]/5 blur-[160px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 left-1/3 h-[500px] w-[500px] rounded-full bg-[#FF8433]/3 blur-[140px] pointer-events-none"></div>
 
-      {/* Sidebar Progress Panel */}
-      <aside className="relative z-20 w-full md:w-[320px] bg-[#08080C]/60 border-b md:border-b-0 md:border-r border-white/[0.05] p-6 md:p-8 flex flex-col justify-between backdrop-blur-md shrink-0">
-        <div className="space-y-8">
-          {/* Brand Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] flex items-center justify-center font-bold text-sm tracking-wider shadow-lg shadow-[#FF4F21]/20 text-white">
-                Α
+      {/* Sidebar Progress Panel (Matching Dashboard Sidebar styles) */}
+      <aside className="relative z-20 w-full md:w-[250px] bg-[#08080C] border-b md:border-b-0 md:border-r border-zinc-900/80 flex flex-col justify-between shrink-0 print:hidden">
+        <div>
+          {/* Sidebar Header */}
+          <div className="h-16 flex items-center border-b border-zinc-900/80 px-[14px]">
+            <div className="flex items-center font-semibold text-base tracking-tight text-white select-none w-full min-w-0">
+              <div className="w-12 h-9 flex items-center justify-center shrink-0">
+                <div className="h-9 w-9 rounded-xl bg-zinc-900/80 border border-white/[0.08] flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] group/logo cursor-pointer transition-all hover:border-[#FF4F21]/30 shrink-0">
+                  <Compass className="h-5 w-5 text-white transition-all duration-300 group-hover/logo:text-[#FF4F21] group-hover/logo:rotate-45" />
+                </div>
               </div>
-              <div>
-                <span className="block font-black tracking-wider text-xs uppercase text-white">ATHLIXIR</span>
-                <span className="block text-[8px] font-black tracking-widest text-[#FF4F21] uppercase">SETUP PROTOCOL</span>
+              
+              <div className="flex flex-col min-w-0 overflow-hidden whitespace-nowrap ml-2">
+                <span className="font-bold text-sm tracking-tight text-white leading-tight">
+                  Athlixir<span className="text-[#FF4F21]">.</span>
+                </span>
+                <span className="text-[8px] font-bold text-zinc-500 tracking-[0.25em] uppercase leading-none mt-1 truncate">
+                  Athlete Setup
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Sleek Navigation Back Button */}
-          <div>
-            <button
-              onClick={() => {
-                logout();
-                router.push('/login');
-              }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/[0.05] bg-white/[0.02] text-zinc-400 hover:text-white hover:border-[#FF4F21]/25 hover:bg-[#FF4F21]/5 hover:shadow-[0_0_15px_rgba(255,79,33,0.08)] transition-all duration-300 text-[10px] font-black uppercase tracking-widest cursor-pointer"
-            >
-              <ArrowLeft className="h-3.5 w-3.5 text-[#FF4F21]" />
-              <span>Back to Sign In</span>
-            </button>
-          </div>
-
-          {/* Stepper Wizard Progress Timeline */}
+          {/* Stepper Timeline Progress */}
           {!isCompletedPage && (
-            <nav className="relative flex flex-col gap-6 pl-2">
-              {/* Vertical connector line in background */}
-              <div className="absolute left-[17px] top-4 bottom-4 w-0.5 bg-white/[0.04] z-0"></div>
-              <div
-                className="absolute left-[17px] top-4 w-0.5 bg-gradient-to-b from-[#FF4F21] to-[#FF8433] z-0 transition-all duration-500 shadow-[0_0_8px_rgba(255,79,33,0.5)]"
-                style={{
-                  height: `${(currentStepIndex / (STEPS.length - 1)) * 100}%`,
-                  maxHeight: 'calc(100% - 32px)'
-                }}
-              ></div>
-
-              {STEPS.map((s, idx) => {
-                const StepIcon = s.icon;
-                const isPassed = idx < currentStepIndex;
-                const isActive = idx === currentStepIndex;
-
-                return (
-                  <div key={s.path} className="relative z-10 flex items-center gap-4 group">
-                    <button
-                      disabled
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 ${
-                        isPassed
-                          ? 'border-[#FF4F21] bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] text-white shadow-lg shadow-[#FF4F21]/20 scale-105'
-                          : isActive
-                          ? 'border-[#FF4F21] bg-[#08080C] text-[#FF4F21] shadow-[0_0_20px_rgba(255,79,33,0.3)] ring-4 ring-[#FF4F21]/15 scale-110'
-                          : 'border-white/[0.05] bg-zinc-950 text-zinc-600'
-                      }`}
-                    >
-                      <StepIcon className="h-4 w-4" />
-                    </button>
-                    <div className="flex flex-col">
-                      <span className={`text-[8px] font-black uppercase tracking-widest transition-all ${
-                        isActive ? 'text-[#FF4F21]' : isPassed ? 'text-zinc-500' : 'text-zinc-600'
-                      }`}>
-                        Step 0{idx + 1}
-                      </span>
-                      <span className={`text-xs font-black uppercase tracking-wider transition-all ${
-                        isActive ? 'text-white' : isPassed ? 'text-zinc-300' : 'text-zinc-500'
-                      }`}>
-                        {s.label}
-                      </span>
-                    </div>
+            <nav className="p-3 space-y-4 mt-4">
+              {SECTIONS.map((section) => (
+                <div key={section.title} className="space-y-1">
+                  {/* Section header */}
+                  <div className="relative h-6 flex items-center px-3.5 mb-1">
+                    <h3 className="text-[9px] font-bold text-zinc-500 tracking-[0.25em] uppercase select-none whitespace-nowrap overflow-hidden">
+                      {section.title}
+                    </h3>
                   </div>
-                );
-              })}
+
+                  {/* Section items */}
+                  <div className="space-y-1">
+                    {section.items.map((item, idx) => {
+                      const isActive = idx === currentStepIndex;
+                      const isPassed = idx < currentStepIndex;
+                      const Icon = item.icon;
+
+                      return (
+                        <div
+                          key={item.name}
+                          className={`relative flex items-center h-10 rounded-xl overflow-hidden transition duration-200 ${
+                            isActive 
+                              ? 'bg-white/[0.02] border border-white/[0.04]' 
+                              : 'border border-transparent'
+                          }`}
+                        >
+                          {/* Active line indicator */}
+                          {isActive && (
+                            <div className="absolute left-0 top-[25%] bottom-[25%] w-[3px] rounded-r bg-[#FF4F21] shadow-[0_0_8px_rgba(255,79,33,0.6)]" />
+                          )}
+
+                          <div className="relative flex items-center w-full pl-[2px]">
+                            {/* Fixed width container for icon */}
+                            <div className="w-12 h-9 flex items-center justify-center shrink-0">
+                              {isPassed ? (
+                                <div className="h-5 w-5 rounded-full bg-[#FF4F21]/10 border border-[#FF4F21]/30 flex items-center justify-center text-[#FF4F21] shadow-[0_0_8px_rgba(255,79,33,0.2)]">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                </div>
+                              ) : (
+                                <Icon className={`h-[18px] w-[18px] shrink-0 transition-all duration-200 ${
+                                  isActive ? 'text-[#FF4F21]' : 'text-zinc-650'
+                                }`} />
+                              )}
+                            </div>
+                            
+                            <span className={`text-xs font-semibold whitespace-nowrap overflow-hidden tracking-wide transition duration-200 ${
+                              isActive ? 'text-white' : isPassed ? 'text-zinc-400 font-medium' : 'text-zinc-600 font-medium'
+                            }`}>
+                              {item.name}
+                            </span>
+
+                            {/* Optional Active Badge */}
+                            {isActive && (
+                              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-[#FF4F21]/10 text-[#FF4F21] border border-[#FF4F21]/20 tracking-wider shrink-0 overflow-hidden whitespace-nowrap ml-auto mr-2">
+                                ACTIVE
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </nav>
           )}
         </div>
 
-        {/* User Info / Overall Percentage Progress */}
-        <div className="mt-8 rounded-2xl border border-white/[0.05] bg-white/[0.01] p-4">
-          <span className="block text-[8px] font-black uppercase tracking-widest text-zinc-500 mb-2">Onboarding Progress</span>
-          <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-zinc-400 truncate max-w-[140px] uppercase text-[10px] tracking-wider">{user.username || 'Athlete'}</span>
-            <span className="text-[#FF4F21] text-[10px] font-black tracking-widest">{isCompletedPage ? '100%' : `${progressPercent}%`}</span>
+        {/* Footer Area: Progress & User Info */}
+        <div className="mt-auto space-y-4">
+          
+          {/* Progress bar details */}
+          <div className="px-[18px]">
+            <div className="flex justify-between items-center text-[8px] font-black tracking-[0.2em] text-zinc-500 uppercase mb-1.5">
+              <span>Setup Progress</span>
+              <span className="text-[#FF4F21] font-black tracking-normal">{isCompletedPage ? '100%' : `${progressPercent}%`}</span>
+            </div>
+            <div className="h-[3px] w-full bg-zinc-900 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#FF4F21] to-[#FF8433] transition-all duration-500"
+                style={{ width: `${isCompletedPage ? 100 : progressPercent}%` }}
+              />
+            </div>
           </div>
-          <div className="mt-2.5 h-1 w-full bg-white/[0.03] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#FF4F21] to-[#FF8433] transition-all duration-500"
-              style={{ width: `${isCompletedPage ? 100 : progressPercent}%` }}
-            />
+
+          {/* User Profile Footer Section (Matching Dashboard) */}
+          <div className="p-[14px] border-t border-zinc-900/60 bg-zinc-950/20 backdrop-blur-sm">
+            <div className="flex items-center min-w-0 w-full justify-between">
+              <div className="flex items-center min-w-0">
+                {/* Avatar Container wrapper */}
+                <div className="w-12 h-9 flex items-center justify-center shrink-0">
+                  <div className="relative shrink-0">
+                    <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#FF4F21]/20 to-[#FF8433]/20 border border-[#FF4F21]/30 flex items-center justify-center font-bold text-sm text-[#FF4F21] shadow-md transition-all select-none">
+                      {athleteName.charAt(0).toUpperCase()}
+                    </div>
+                    {/* Active Online indicator */}
+                    <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-[#00DF89] border-2 border-[#0B0B0F] shadow-[0_0_8px_#00DF89]" />
+                  </div>
+                </div>
+                
+                {/* User Info (Smooth Sliding) */}
+                <div className="flex flex-col min-w-0 overflow-hidden whitespace-nowrap ml-2">
+                  <span className="text-xs font-semibold text-zinc-200 truncate leading-tight">
+                    {athleteName}
+                  </span>
+                  <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest leading-none mt-1 truncate">
+                    {tier}
+                  </span>
+                </div>
+              </div>
+
+              {/* Logout Button */}
+              <button
+                onClick={logout}
+                className="p-1.5 rounded-lg text-zinc-500 hover:text-[#FF4F21] hover:bg-[#FF4F21]/10 border border-transparent hover:border-[#FF4F21]/20 transition-all cursor-pointer shrink-0 overflow-hidden whitespace-nowrap"
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
