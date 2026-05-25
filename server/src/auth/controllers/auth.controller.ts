@@ -38,7 +38,7 @@ export class AuthController {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
 
     // Set non-HttpOnly, client-readable indicator cookie to avoid redundant auth/me checks
@@ -46,7 +46,7 @@ export class AuthController {
       maxAge: expiresIn,
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
 
     return {
@@ -73,7 +73,7 @@ export class AuthController {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
 
     // Set non-HttpOnly, client-readable indicator cookie to avoid redundant auth/me checks
@@ -81,7 +81,7 @@ export class AuthController {
       maxAge: expiresIn,
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
 
     return {

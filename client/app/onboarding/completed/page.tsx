@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '../../context/AuthContext';
+import { useAuth, api } from '../../context/AuthContext';
 import { Award, ChevronRight, Sparkles, Activity, ShieldCheck, Ruler, Calendar } from 'lucide-react';
 
 export default function CompletedStep() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [profileData, setProfileData] = useState<any>(null);
 
   useEffect(() => {
@@ -21,7 +22,8 @@ export default function CompletedStep() {
     loadSavedData();
   }, []);
 
-  const handleEnterWorkspace = () => {
+  const handleEnterWorkspace = async () => {
+    await refreshUser();
     router.push('/dashboard');
   };
 

@@ -27,8 +27,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${poppins.variable} ${geistMono.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-black font-sans text-zinc-100 antialiased">
+    <html lang="en" className={`${poppins.variable} ${geistMono.variable} antialiased dark`}>
+      <body className="bg-black font-sans text-zinc-100 antialiased">
         <SmoothScrollProvider>
           <AuthProvider>
             <DateFilterProvider>
