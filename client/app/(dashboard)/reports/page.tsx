@@ -108,7 +108,7 @@ export default function ReportsPage() {
                   <div className="flex items-center gap-3">
                     {r.reportReady ? (
                       <a
-                        href={`http://localhost:3001/api/analysis/${id}/report`}
+                        href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/analysis/${id}/report`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 bg-white text-black hover:bg-zinc-200 px-5 py-2.5 rounded-xl text-xs font-bold transition duration-200 shadow-md uppercase tracking-wider"

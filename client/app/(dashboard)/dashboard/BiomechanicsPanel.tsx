@@ -299,7 +299,7 @@ export default function BiomechanicsPanel() {
     setSocketStatus('PROCESSING_POSE');
     setSocketProgress(10);
 
-    const socket = io('http://localhost:3001');
+    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001');
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -839,7 +839,7 @@ export default function BiomechanicsPanel() {
               <div className="flex flex-wrap gap-3">
                 {currentAnalysis.reportReady && analysisId && (
                   <a
-                    href={`http://localhost:3001/api/analysis/${analysisId}/report`}
+                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/analysis/${analysisId}/report`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-xl bg-[#FF4F21] px-4 py-2.5 text-xs font-bold text-white hover:brightness-110 transition shadow-lg shadow-[#FF4F21]/20"

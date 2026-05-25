@@ -41,7 +41,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Configure global Axios instance to send cookies
 export const api = axios.create({
-  baseURL: 'http://localhost:3001/api', // NestJS gateway base address
+  baseURL: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:3001/api', // NestJS gateway base address
   withCredentials: true,
 });
 
