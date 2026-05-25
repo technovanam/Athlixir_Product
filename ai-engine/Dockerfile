@@ -19,10 +19,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code files
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8080
 
 # Set environment variable to allow MediaPipe to coexist with newer Protobuf versions
 ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 
 # Run FastAPI app
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
