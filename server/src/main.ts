@@ -20,9 +20,14 @@ async function bootstrap() {
   // Security Headers
   app.use(helmet());
 
+  // Parse multiple origins from FRONTEND_URL if provided
+  const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
+    : ['http://localhost:3000'];
+
   // CORS
   app.enableCors({
-    origin: true,
+    origin: allowedOrigins,
     credentials: true,
   });
 
