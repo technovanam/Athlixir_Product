@@ -28,9 +28,10 @@ class AnalysisRequest(BaseModel):
     athleteContext: Optional[AthleteContext] = None
     previousMetrics: Optional[dict[str, Any]] = None
 
-NESTJS_CALLBACK_URL = "http://127.0.0.1:3001/api/analysis/callback"
-NESTJS_OVERLAY_URL = "http://127.0.0.1:3001/api/analysis/overlay"
-NESTJS_REPORT_URL = "http://127.0.0.1:3001/api/analysis/report"
+NESTJS_CALLBACK_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/callback"
+NESTJS_OVERLAY_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/overlay"
+NESTJS_REPORT_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/report"
+AI_ENGINE_URL = os.environ.get('AI_ENGINE_URL', 'http://127.0.0.1:8080')
 
 
 def _send_update(analysis_id: str, status: str, progress: int, payload: dict = None):
@@ -83,7 +84,7 @@ def _overlay_worker(analysis_id: str, user_id: str, video_path: str):
         render_skeleton_overlay_video(video_path, overlay_path)
         
         # Build public HTTP URL
-        overlay_url = f"http://127.0.0.1:8000/outputs/{analysis_id}_overlay.mp4"
+        overlay_url = f"{AI_ENGINE_URL}/outputs/{analysis_id}_overlay.mp4"
         
         # Report COMPLETED immediately with the proper static HTTP URL
         _send_update(
@@ -163,7 +164,7 @@ def run_analysis_from_path(
         overlay_path = f"outputs/{analysis_id}_overlay.mp4"
         try:
             render_skeleton_overlay_video(video_path, overlay_path, foot_strikes=foot_strikes)
-            overlay_url = f"http://127.0.0.1:8000/outputs/{analysis_id}_overlay.mp4"
+            overlay_url = f"{AI_ENGINE_URL}/outputs/{analysis_id}_overlay.mp4"
             skeleton_overlay_ready = True
 
             # Safe Firebase background upload fallback
