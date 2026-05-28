@@ -6,17 +6,160 @@ import { api, useAuth } from '../../context/AuthContext';
 import {
   Activity, Trophy, Zap, Shield, Target, Award, Calendar, 
   Settings, Bell, Lock, Download, Watch, HeartPulse, ChevronRight, MapPin, 
-  TrendingUp, Star, Medal
+  TrendingUp, Star, Medal, Edit2, Plus, X, Save
 } from 'lucide-react';
 import { 
   AreaChart, Area, ResponsiveContainer, XAxis, Tooltip 
 } from 'recharts';
 
 export default function AthleteProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [data, setData] = useState<any>(null);
   const [historyList, setHistoryList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [physicalProfile, setPhysicalProfile] = useState<any>(null);
+
+  const [isEditingBody, setIsEditingBody] = useState(false);
+  const [editHeight, setEditHeight] = useState('');
+  const [editWeight, setEditWeight] = useState('');
+  const [isSavingBody, setIsSavingBody] = useState(false);
+
+  const [isEditingPB, setIsEditingPB] = useState(false);
+  const [pbList, setPbList] = useState<Record<string, string>>({});
+  const [newPbEvent, setNewPbEvent] = useState('');
+  const [newPbTime, setNewPbTime] = useState('');
+  const [isSavingPB, setIsSavingPB] = useState(false);
+
+  const [isEditingAchiev, setIsEditingAchiev] = useState(false);
+  const [achievList, setAchievList] = useState<{title: string, desc: string}[]>([]);
+  const [newAchievTitle, setNewAchievTitle] = useState('');
+  const [newAchievDesc, setNewAchievDesc] = useState('');
+  const [isSavingAchiev, setIsSavingAchiev] = useState(false);
+
+  useEffect(() => {
+    const profileToUse = physicalProfile || user?.physicalProfile;
+    if (profileToUse) {
+      setEditHeight(profileToUse.height_cm?.toString() || '');
+      setEditWeight(profileToUse.weight_kg?.toString() || '');
+      try {
+        if (profileToUse.personal_best) {
+          if (profileToUse.personal_best.startsWith('{')) {
+             setPbList(JSON.parse(profileToUse.personal_best));
+          } else {
+             const parts = profileToUse.personal_best.split('->');
+             if (parts.length === 2) {
+               setPbList({ [parts[0].trim()]: parts[1].trim() });
+             } else {
+               setPbList({ 'Event': profileToUse.personal_best });
+             }
+          }
+        }
+      } catch (e) {
+        console.error("Failed parsing PB", e);
+      }
+
+      try {
+        if (profileToUse.achievements) {
+          setAchievList(JSON.parse(profileToUse.achievements));
+        }
+      } catch (e) {
+        console.error("Failed parsing achievements", e);
+      }
+    }
+  }, [user, physicalProfile]);
+
+  const handleSaveBody = async () => {
+    setIsSavingBody(true);
+    try {
+      await api.post('/onboarding/body-metrics', {
+        heightCm: Number(editHeight),
+        weightKg: Number(editWeight)
+      });
+      await refreshUser();
+      fetchData();
+      setIsEditingBody(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingBody(false);
+    }
+  };
+
+  const handleSavePB = async (updatedPbList: Record<string, string>) => {
+    setIsSavingPB(true);
+    const profileToUse = physicalProfile || user?.physicalProfile;
+    try {
+      await api.post('/onboarding/training-profile', {
+        trainingDays: Number(profileToUse?.training_days) || 5,
+        trainingDuration: Number(profileToUse?.training_duration) || 90,
+        experienceYears: Number(profileToUse?.experience_years) || 3,
+        personalBest: JSON.stringify(updatedPbList),
+        achievements: JSON.stringify(achievList)
+      });
+      await refreshUser();
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingPB(false);
+    }
+  };
+
+  const handleSaveAchiev = async (updatedAchievList: {title: string, desc: string}[]) => {
+    setIsSavingAchiev(true);
+    const profileToUse = physicalProfile || user?.physicalProfile;
+    try {
+      await api.post('/onboarding/training-profile', {
+        trainingDays: Number(profileToUse?.training_days) || 5,
+        trainingDuration: Number(profileToUse?.training_duration) || 90,
+        experienceYears: Number(profileToUse?.experience_years) || 3,
+        personalBest: profileToUse?.personal_best || '',
+        achievements: JSON.stringify(updatedAchievList)
+      });
+      await refreshUser();
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingAchiev(false);
+    }
+  };
+
+  const addPB = () => {
+    if (newPbEvent && newPbTime) {
+      const newList = { ...pbList, [newPbEvent]: newPbTime };
+      setPbList(newList);
+      handleSavePB(newList);
+      setNewPbEvent('');
+      setNewPbTime('');
+      setIsEditingPB(false);
+    }
+  };
+
+  const removePB = (event: string) => {
+    const newList = { ...pbList };
+    delete newList[event];
+    setPbList(newList);
+    handleSavePB(newList);
+  };
+
+  const addAchiev = () => {
+    if (newAchievTitle && newAchievDesc) {
+      const newList = [...achievList, { title: newAchievTitle, desc: newAchievDesc }];
+      setAchievList(newList);
+      handleSaveAchiev(newList);
+      setNewAchievTitle('');
+      setNewAchievDesc('');
+      setIsEditingAchiev(false);
+    }
+  };
+
+  const removeAchiev = (index: number) => {
+    const newList = [...achievList];
+    newList.splice(index, 1);
+    setAchievList(newList);
+    handleSaveAchiev(newList);
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -35,7 +178,21 @@ export default function AthleteProfilePage() {
         setHistoryList(completed);
       }
     } catch (err) {
-      console.error('Failed to load profile data', err);
+      console.error('Failed to load analysis profile data', err);
+    }
+
+    try {
+      const statusRes = await api.get('/onboarding/status');
+      let pData = statusRes.data;
+      // Dynamically unwrap nested NestJS/Axios "data" wrappers until we reach the actual profile object
+      while (pData && pData.data && typeof pData.data === 'object' && !pData.height_cm) {
+        pData = pData.data;
+      }
+      if (pData && Object.keys(pData).length > 0) {
+        setPhysicalProfile(pData);
+      }
+    } catch (err) {
+      console.error('Failed to load onboarding status data', err);
     } finally {
       setLoading(false);
     }
@@ -53,9 +210,10 @@ export default function AthleteProfilePage() {
     );
   }
 
-  const athleteName = user?.name || user?.username || 'Athlete';
+  const athleteName = user?.physicalProfile?.full_name || user?.name || user?.username || 'Athlete';
   const initial = athleteName.substring(0, 2).toUpperCase();
-  const tier = user?.classification?.athleteLevel || 'U18 Sprinter';
+  const tier = user?.physicalProfile?.competition_level || user?.classification?.athleteLevel || 'U18 Sprinter';
+  const currentProfile = physicalProfile || user?.physicalProfile;
 
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-10 animate-fadeIn text-white pb-24">
@@ -79,10 +237,10 @@ export default function AthleteProfilePage() {
               <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight uppercase">{athleteName}</h1>
               <div className="flex flex-wrap justify-center md:justify-start items-center gap-3">
                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider bg-white/[0.02] border border-white/[0.04] px-2.5 py-1 rounded-lg">
-                  <Activity className="h-3.5 w-3.5 text-[#FF4F21]" /> Sprint Athlete
+                  <Activity className="h-3.5 w-3.5 text-[#FF4F21]" /> {user?.physicalProfile?.primary_event || '100m'} {user?.physicalProfile?.running_type || 'Sprint'}
                 </span>
                 <span className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider bg-white/[0.02] border border-white/[0.04] px-2.5 py-1 rounded-lg">
-                  <MapPin className="h-3.5 w-3.5 text-blue-400" /> Global Track Club
+                  <MapPin className="h-3.5 w-3.5 text-blue-400" /> {user?.physicalProfile?.city || 'Global Track Club'}
                 </span>
                 <span className="text-[9px] font-black uppercase tracking-[0.1em] px-2.5 py-1 rounded-lg bg-[#FF4F21]/10 text-[#FF4F21] border border-[#FF4F21]/20 shadow-[0_0_10px_rgba(255,79,33,0.1)]">
                   ATHLIXIR: {tier}
@@ -175,22 +333,29 @@ export default function AthleteProfilePage() {
               <Medal className="h-4 w-4 text-[#FF4F21]" /> Personal Records
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-4 hover:border-white/[0.1] hover:bg-[#08080C]/50 transition-all duration-300">
-                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">100m Dash</p>
-                <p className="text-xl font-extrabold text-white mt-1.5 tracking-tight">10.82s</p>
-                <p className="text-[9px] text-emerald-400 font-bold mt-2 uppercase tracking-wider">PB Set: Aug 2025</p>
-              </div>
-              <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-4 hover:border-white/[0.1] hover:bg-[#08080C]/50 transition-all duration-300">
-                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">200m Dash</p>
-                <p className="text-xl font-extrabold text-white mt-1.5 tracking-tight">21.45s</p>
-                <p className="text-[9px] text-emerald-400 font-bold mt-2 uppercase tracking-wider">PB Set: Sep 2025</p>
-              </div>
-              <div className="rounded-xl border border-dashed border-zinc-800 bg-transparent p-4 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 hover:border-[#FF4F21]/40 hover:bg-[#FF4F21]/5 hover:shadow-[0_0_15px_rgba(255,79,33,0.05)] transition duration-300 cursor-pointer group min-h-[96px]">
-                <p className="text-[9px] font-bold text-zinc-400 group-hover:text-[#FF4F21] uppercase tracking-widest">+ Add 400m</p>
-              </div>
-              <div className="rounded-xl border border-dashed border-zinc-800 bg-transparent p-4 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 hover:border-[#FF4F21]/40 hover:bg-[#FF4F21]/5 hover:shadow-[0_0_15px_rgba(255,79,33,0.05)] transition duration-300 cursor-pointer group min-h-[96px]">
-                <p className="text-[9px] font-bold text-zinc-400 group-hover:text-[#FF4F21] uppercase tracking-widest">+ Add 5K</p>
-              </div>
+              {Object.entries(pbList).map(([event, time]) => (
+                <div key={event} className="relative rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-4 hover:border-white/[0.1] hover:bg-[#08080C]/50 transition-all duration-300 group">
+                  <button onClick={() => removePB(event)} className="absolute top-2 right-2 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><X className="h-3 w-3" /></button>
+                  <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">{event}</p>
+                  <p className="text-xl font-extrabold text-white mt-1.5 tracking-tight">{time}</p>
+                  <p className="text-[9px] text-emerald-400 font-bold mt-2 uppercase tracking-wider">PB Set</p>
+                </div>
+              ))}
+              
+              {!isEditingPB ? (
+                <div onClick={() => setIsEditingPB(true)} className="rounded-xl border border-dashed border-zinc-800 bg-transparent p-4 flex flex-col items-center justify-center text-center opacity-50 hover:opacity-100 hover:border-[#FF4F21]/40 hover:bg-[#FF4F21]/5 hover:shadow-[0_0_15px_rgba(255,79,33,0.05)] transition duration-300 cursor-pointer group min-h-[96px]">
+                  <p className="text-[9px] font-bold text-zinc-400 group-hover:text-[#FF4F21] uppercase tracking-widest">+ Add New</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-white/[0.1] bg-black/40 p-4 flex flex-col gap-2 min-h-[96px] justify-center">
+                  <input type="text" placeholder="e.g. 100m" value={newPbEvent} onChange={e => setNewPbEvent(e.target.value)} className="w-full bg-black/50 border border-white/[0.1] rounded px-2 py-1 text-[10px] text-white focus:outline-none" />
+                  <input type="text" placeholder="e.g. 10.8s" value={newPbTime} onChange={e => setNewPbTime(e.target.value)} className="w-full bg-black/50 border border-white/[0.1] rounded px-2 py-1 text-[10px] text-white focus:outline-none" />
+                  <div className="flex gap-2 mt-1">
+                    <button onClick={addPB} disabled={isSavingPB} className="flex-1 bg-[#FF4F21] text-white rounded text-[10px] py-1 font-bold disabled:opacity-50">Save</button>
+                    <button onClick={() => setIsEditingPB(false)} className="flex-1 bg-zinc-800 text-zinc-300 rounded text-[10px] py-1 font-bold">Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -281,15 +446,28 @@ export default function AthleteProfilePage() {
           
           {/* 4. BODY & PERFORMANCE PROFILE */}
           <section className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-5 hover:border-white/[0.08] hover:bg-[#08080C]/50 transition-all duration-300">
-            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em] mb-4">Body Profile</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em]">Body Profile</h2>
+              <button onClick={() => isEditingBody ? handleSaveBody() : setIsEditingBody(true)} className="text-zinc-500 hover:text-white transition" disabled={isSavingBody}>
+                {isSavingBody ? <Activity className="h-4 w-4 animate-spin" /> : isEditingBody ? <Save className="h-4 w-4 text-emerald-400" /> : <Edit2 className="h-4 w-4" />}
+              </button>
+            </div>
             <div className="space-y-1">
               <div className="flex justify-between items-center text-xs py-2.5 border-b border-white/[0.03]">
                 <span className="text-zinc-400 font-medium">Height</span>
-                <span className="text-white font-bold">182 cm</span>
+                {isEditingBody ? (
+                   <input type="number" value={editHeight} onChange={e => setEditHeight(e.target.value)} className="w-20 bg-black/50 border border-white/[0.1] rounded px-2 py-1 text-right focus:outline-none" />
+                ) : (
+                   <span className="text-white font-bold">{currentProfile?.height_cm || '—'} cm</span>
+                )}
               </div>
               <div className="flex justify-between items-center text-xs py-2.5 border-b border-white/[0.03]">
                 <span className="text-zinc-400 font-medium">Weight</span>
-                <span className="text-white font-bold">75 kg</span>
+                {isEditingBody ? (
+                   <input type="number" value={editWeight} onChange={e => setEditWeight(e.target.value)} className="w-20 bg-black/50 border border-white/[0.1] rounded px-2 py-1 text-right focus:outline-none" />
+                ) : (
+                   <span className="text-white font-bold">{currentProfile?.weight_kg || '—'} kg</span>
+                )}
               </div>
               <div className="flex justify-between items-center text-xs py-2.5 border-b border-white/[0.03]">
                 <span className="text-zinc-400 font-medium">Dominant Leg</span>
@@ -297,39 +475,42 @@ export default function AthleteProfilePage() {
               </div>
               <div className="flex justify-between items-center text-xs py-2.5">
                 <span className="text-zinc-400 font-medium">Training Freq.</span>
-                <span className="text-white font-bold">5 days / week</span>
+                <span className="text-white font-bold">{currentProfile?.training_days || 5} days / week</span>
               </div>
             </div>
           </section>
 
           {/* 7. ACHIEVEMENTS / BADGES */}
           <section className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-5 hover:border-white/[0.08] hover:bg-[#08080C]/50 transition-all duration-300">
-            <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em] mb-5 flex items-center gap-2">
-              <Award className="h-4 w-4 text-[#FF4F21]" /> Achievements
-            </h2>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="aspect-square rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center text-center p-2 group hover:bg-emerald-500/20 hover:border-emerald-500/40 transition duration-300 shadow-[0_0_10px_rgba(16,185,129,0.05)] cursor-pointer">
-                <Activity className="h-5 w-5 text-emerald-400 mb-1.5 group-hover:scale-110 transition duration-300" />
-                <span className="text-[8px] font-extrabold text-emerald-300 uppercase tracking-wider">10 Scans</span>
-              </div>
-              <div className="aspect-square rounded-xl bg-blue-500/10 border border-blue-500/20 flex flex-col items-center justify-center text-center p-2 group hover:bg-blue-500/20 hover:border-blue-500/40 transition duration-300 shadow-[0_0_10px_rgba(59,130,246,0.05)] cursor-pointer">
-                <Shield className="h-5 w-5 text-blue-400 mb-1.5 group-hover:scale-110 transition duration-300" />
-                <span className="text-[8px] font-extrabold text-blue-300 uppercase tracking-wider">Elite Sym.</span>
-              </div>
-              <div className="aspect-square rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col items-center justify-center text-center p-2 group hover:bg-amber-500/20 hover:border-amber-500/40 transition duration-300 shadow-[0_0_10px_rgba(245,158,11,0.05)] cursor-pointer">
-                <Star className="h-5 w-5 text-amber-400 mb-1.5 group-hover:scale-110 transition duration-300" />
-                <span className="text-[8px] font-extrabold text-amber-300 uppercase tracking-wider">3wk Streak</span>
-              </div>
-              <div className="aspect-square rounded-xl border border-dashed border-white/[0.05] bg-black/10 flex items-center justify-center opacity-40 hover:opacity-60 transition duration-300">
-                <Lock className="h-4 w-4 text-zinc-500" />
-              </div>
-              <div className="aspect-square rounded-xl border border-dashed border-white/[0.05] bg-black/10 flex items-center justify-center opacity-40 hover:opacity-60 transition duration-300">
-                <Lock className="h-4 w-4 text-zinc-500" />
-              </div>
-              <div className="aspect-square rounded-xl border border-dashed border-white/[0.05] bg-black/10 flex items-center justify-center opacity-40 hover:opacity-60 transition duration-300">
-                <Lock className="h-4 w-4 text-zinc-500" />
-              </div>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em] flex items-center gap-2">
+                <Award className="h-4 w-4 text-[#FF4F21]" /> Achievements
+              </h2>
             </div>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {achievList.map((ach, i) => (
+                <div key={i} className="relative rounded-xl border border-white/[0.05] bg-black/40 p-3 hover:border-white/[0.1] transition-all duration-300 group">
+                  <button onClick={() => removeAchiev(i)} className="absolute top-2 right-2 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><X className="h-3 w-3" /></button>
+                  <p className="text-xs font-bold text-white uppercase tracking-wider">{ach.title}</p>
+                  <p className="text-[9px] text-zinc-500 font-medium mt-1 leading-relaxed">{ach.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {!isEditingAchiev ? (
+              <button onClick={() => setIsEditingAchiev(true)} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-zinc-800 bg-transparent opacity-50 hover:opacity-100 hover:border-[#FF4F21]/40 hover:bg-[#FF4F21]/5 hover:shadow-[0_0_15px_rgba(255,79,33,0.05)] transition duration-300 text-[10px] font-bold text-zinc-400 hover:text-[#FF4F21] uppercase tracking-widest cursor-pointer">
+                <Plus className="h-4 w-4" /> Add Custom Achievement
+              </button>
+            ) : (
+              <div className="rounded-xl border border-white/[0.1] bg-black/40 p-4 flex flex-col gap-2">
+                <input type="text" placeholder="e.g. State Finalist" value={newAchievTitle} onChange={e => setNewAchievTitle(e.target.value)} className="w-full bg-black/50 border border-white/[0.1] rounded px-2 py-1.5 text-[10px] text-white focus:outline-none" />
+                <input type="text" placeholder="e.g. Placed 3rd in U18 100m sprint" value={newAchievDesc} onChange={e => setNewAchievDesc(e.target.value)} className="w-full bg-black/50 border border-white/[0.1] rounded px-2 py-1.5 text-[10px] text-white focus:outline-none" />
+                <div className="flex gap-2 mt-2">
+                  <button onClick={addAchiev} disabled={isSavingAchiev} className="flex-1 bg-[#FF4F21] text-white rounded text-[10px] py-1.5 font-bold disabled:opacity-50">Save Achievement</button>
+                  <button onClick={() => setIsEditingAchiev(false)} className="flex-1 bg-zinc-800 text-zinc-300 rounded text-[10px] py-1.5 font-bold">Cancel</button>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* 8. CONNECTED DATA SECTION */}

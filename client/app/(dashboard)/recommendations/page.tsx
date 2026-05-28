@@ -6,9 +6,19 @@ import {
   Zap, Target, Shield, Activity, ArrowRight, CheckCircle, ChevronRight, PlayCircle, AlertTriangle, Trophy, Clock
 } from 'lucide-react';
 import { useDateFilter } from '../../context/DateFilterContext';
+import { useAuth, api } from '../../context/AuthContext';
 
 export default function RecommendationsPage() {
   const { dateRange } = useDateFilter();
+  const { user, refreshUser } = useAuth();
+  
+  const physicalProfile = user?.physicalProfile;
+  const preferredDays = physicalProfile?.training_days || 5;
+
+  const [targetDays, setTargetDays] = React.useState(preferredDays);
+  const [planVariant, setPlanVariant] = React.useState('balanced'); // balanced, speed, recovery
+  const [isEditingDays, setIsEditingDays] = React.useState(false);
+  const [isSavingDays, setIsSavingDays] = React.useState(false);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -29,9 +39,60 @@ export default function RecommendationsPage() {
       case 'Mobility': return <Shield className="h-3.5 w-3.5 text-blue-500" />;
       case 'Technique': return <Activity className="h-3.5 w-3.5 text-emerald-500" />;
       case 'Performance': return <Trophy className="h-3.5 w-3.5 text-purple-500" />;
-      default: return <Clock className="h-3.5 w-3.5 text-zinc-500" />;
+      case 'Rest': return <Clock className="h-3.5 w-3.5 text-zinc-500" />;
+      default: return <Activity className="h-3.5 w-3.5 text-zinc-500" />;
     }
   };
+
+  const handleSaveTargetDays = async () => {
+    setIsSavingDays(true);
+    try {
+      await api.post('/onboarding/training-profile', {
+        trainingDays: Number(targetDays),
+        trainingDuration: Number(physicalProfile?.training_duration) || 90,
+        experienceYears: Number(physicalProfile?.experience_years) || 3,
+        personalBest: physicalProfile?.personal_best || '',
+        achievements: physicalProfile?.achievements || ''
+      });
+      await refreshUser();
+      setIsEditingDays(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingDays(false);
+    }
+  };
+
+  const generatePlan = (daysCount: number, variant: string) => {
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const activeDays = daysOfWeek.slice(0, daysCount);
+    
+    return activeDays.map((day, i) => {
+      if (variant === 'speed') {
+        if (i === 0) return { day, focus: 'Acceleration Mechanics', type: 'Power', color: 'text-[#FF4F21]', bg: 'bg-[#FF4F21]/10 border-[#FF4F21]/20' };
+        if (i === 1) return { day, focus: 'Active Recovery', type: 'Rest', color: 'text-zinc-400', bg: 'bg-zinc-800/10 border-zinc-700/20' };
+        if (i === 2) return { day, focus: 'Max Velocity', type: 'Technique', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
+        if (i === 3) return { day, focus: 'Recovery & Mobility', type: 'Mobility', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+        if (i === 4) return { day, focus: 'Speed Endurance', type: 'Performance', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' };
+        if (i === 5) return { day, focus: 'Block Starts', type: 'Power', color: 'text-[#FF4F21]', bg: 'bg-[#FF4F21]/10 border-[#FF4F21]/20' };
+        return { day, focus: 'Light Jog', type: 'Rest', color: 'text-zinc-400', bg: 'bg-zinc-800/10 border-zinc-700/20' };
+      } else if (variant === 'recovery') {
+        if (i % 2 === 0) return { day, focus: 'Recovery & Mobility', type: 'Mobility', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+        return { day, focus: 'Light Technique', type: 'Technique', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
+      } else {
+        // Balanced
+        if (i === 0) return { day, focus: 'Acceleration Mechanics', type: 'Power', color: 'text-[#FF4F21]', bg: 'bg-[#FF4F21]/10 border-[#FF4F21]/20' };
+        if (i === 1) return { day, focus: 'Recovery & Mobility', type: 'Mobility', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+        if (i === 2) return { day, focus: 'Max Velocity (Wickets)', type: 'Technique', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' };
+        if (i === 3) return { day, focus: 'Active Recovery', type: 'Rest', color: 'text-zinc-400', bg: 'bg-zinc-800/10 border-zinc-700/20' };
+        if (i === 4) return { day, focus: 'Race Pace Simulation', type: 'Performance', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' };
+        if (i === 5) return { day, focus: 'Strength & Conditioning', type: 'Power', color: 'text-[#FF4F21]', bg: 'bg-[#FF4F21]/10 border-[#FF4F21]/20' };
+        return { day, focus: 'Long Easy Run', type: 'Mobility', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' };
+      }
+    });
+  };
+
+  const schedulePlan = generatePlan(targetDays, planVariant);
 
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-10 animate-fadeIn pb-24 text-white">
@@ -201,20 +262,49 @@ export default function RecommendationsPage() {
         animate="show"
         className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md overflow-hidden hover:border-white/[0.08] transition duration-300"
       >
-        <div className="p-5 border-b border-white/[0.05] bg-black/20 flex items-center justify-between">
-          <h2 className="text-xs font-black text-white uppercase tracking-widest">Weekly Prescribed Plan</h2>
-          <button className="flex items-center gap-1.5 text-[#FF4F21] text-[10px] font-black uppercase tracking-widest hover:text-white transition duration-200 cursor-pointer">
+        <div className="p-5 border-b border-white/[0.05] bg-black/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xs font-black text-white uppercase tracking-widest">Weekly Prescribed Plan</h2>
+            <div className="flex items-center gap-3 mt-2">
+              <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Plan Focus:</span>
+              <select 
+                value={planVariant} 
+                onChange={(e) => setPlanVariant(e.target.value)}
+                className="bg-black/50 border border-white/[0.1] rounded px-2 py-1 text-[10px] text-white focus:outline-none"
+              >
+                <option value="balanced">Balanced</option>
+                <option value="speed">Speed & Power</option>
+                <option value="recovery">Recovery & Mobility</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3 mt-2">
+              <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Training Days:</span>
+              {isEditingDays ? (
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    min="1" max="7" 
+                    value={targetDays} 
+                    onChange={e => setTargetDays(Number(e.target.value))} 
+                    className="w-16 bg-black/50 border border-white/[0.1] rounded px-2 py-1 text-[10px] text-white focus:outline-none" 
+                  />
+                  <button onClick={handleSaveTargetDays} disabled={isSavingDays} className="bg-[#FF4F21] text-white rounded px-2 py-1 text-[10px] font-bold">Save</button>
+                  <button onClick={() => { setIsEditingDays(false); setTargetDays(preferredDays); }} className="bg-zinc-800 text-white rounded px-2 py-1 text-[10px] font-bold">Cancel</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-white font-bold">{targetDays} days / week</span>
+                  <button onClick={() => setIsEditingDays(true)} className="text-[10px] text-[#FF4F21] font-bold uppercase tracking-widest hover:underline">Edit</button>
+                </div>
+              )}
+            </div>
+          </div>
+          <button className="flex items-center gap-1.5 text-[#FF4F21] text-[10px] font-black uppercase tracking-widest hover:text-white transition duration-200 cursor-pointer border border-[#FF4F21]/20 bg-[#FF4F21]/10 px-3 py-1.5 rounded-lg shadow-[0_0_8px_rgba(255,79,33,0.1)]">
             Sync to Calendar <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
         <div className="divide-y divide-white/[0.03]">
-          {[
-            { day: 'Monday', focus: 'Acceleration Mechanics', type: 'Power', color: 'text-[#FF4F21]', bg: 'bg-[#FF4F21]/10 border-[#FF4F21]/20' },
-            { day: 'Tuesday', focus: 'Recovery & Mobility', type: 'Mobility', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
-            { day: 'Wednesday', focus: 'Max Velocity (Wickets)', type: 'Technique', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-            { day: 'Thursday', focus: 'Active Recovery', type: 'Rest', color: 'text-zinc-400', bg: 'bg-zinc-800/10 border-zinc-700/20' },
-            { day: 'Friday', focus: 'Race Pace Simulation', type: 'Performance', color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' },
-          ].map((schedule, idx) => (
+          {schedulePlan.map((schedule, idx) => (
             <div key={idx} className="flex items-center justify-between p-5 hover:bg-white/[0.02] transition duration-200 group cursor-pointer">
               <div className="flex items-center gap-6">
                 <div className="w-20 text-[10px] font-black text-zinc-500 uppercase tracking-widest">{schedule.day}</div>

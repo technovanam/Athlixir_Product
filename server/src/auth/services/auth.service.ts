@@ -151,6 +151,17 @@ export class AuthService {
     if (!userDoc.exists || userDoc.data()?.isDeleted) {
       return null;
     }
-    return userDoc.data();
+    const userData = userDoc.data();
+    
+    try {
+      const profileDoc = await this.firebaseService.firestore.collection('athlete_profiles').doc(uid).get();
+      if (profileDoc.exists) {
+        userData.physicalProfile = profileDoc.data();
+      }
+    } catch (err) {
+      console.error('Failed to fetch physical profile', err);
+    }
+    
+    return userData;
   }
 }

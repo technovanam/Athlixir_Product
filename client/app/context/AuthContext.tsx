@@ -23,6 +23,11 @@ export interface UserProfile {
     primaryEvent?: string;
     athleteLevel?: string;
   };
+  physicalProfile?: {
+    height_cm?: number;
+    weight_kg?: number;
+    personal_best?: string;
+  };
 }
 
 interface AuthContextType {
@@ -52,22 +57,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const refreshUser = async () => {
-    // Check if companion non-HttpOnly cookie is set before calling /auth/me
-    const hasLoggedInCookie = typeof document !== 'undefined' && document.cookie.includes('athlixir_logged_in=true');
-    
-    if (!hasLoggedInCookie) {
-      setUser(null);
-      setLoading(false);
-      return;
+  const fetchAndAttachProfile = async (userData: any) => {
+    if (!userData) return userData;
+    try {
+      const statusRes = await api.get('/onboarding/status');
+      let pData = statusRes.data;
+      while (pData && pData.data && typeof pData.data === 'object' && !pData.height_cm) {
+        pData = pData.data;
+      }
+      if (pData && Object.keys(pData).length > 0) {
+        userData.physicalProfile = pData;
+      }
+    } catch (e) {
+      console.error('Failed to attach physical profile to session', e);
     }
+    return userData;
+  };
 
+  const refreshUser = async () => {
     try {
       const response = await api.get('/auth/me');
+      let userData = null;
       if (response.data && response.data.user) {
-        setUser(response.data.user);
+        userData = response.data.user;
       } else if (response.data && response.data.data && response.data.data.user) {
-        setUser(response.data.data.user);
+        userData = response.data.data.user;
+      }
+      
+      if (userData) {
+        userData = await fetchAndAttachProfile(userData);
+        setUser(userData);
       } else {
         setUser(null);
       }
@@ -87,7 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const response = await api.post('/auth/signup', { username, email, password });
-      const userData = response.data?.data?.user || response.data?.user;
+      let userData = response.data?.data?.user || response.data?.user;
+      userData = await fetchAndAttachProfile(userData);
       setUser(userData);
       
       // Since it's a new signup, onboardingCompleted is false -> Go to onboarding
@@ -106,7 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', { email, password });
-      const userData = response.data?.data?.user || response.data?.user;
+      let userData = response.data?.data?.user || response.data?.user;
+      userData = await fetchAndAttachProfile(userData);
       setUser(userData);
 
       // Decides routing based on backend database state

@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Medal, Star, ShieldCheck } from 'lucide-react';
+import { Medal, Star, ShieldCheck, Award } from 'lucide-react';
 
-export default function AchievementsWidget({ historyCount }: { historyCount: number }) {
+export default function AchievementsWidget({ historyCount, userProfile }: { historyCount: number; userProfile?: any }) {
   
   const achievements = [
     {
@@ -29,6 +29,24 @@ export default function AchievementsWidget({ historyCount }: { historyCount: num
     }
   ];
 
+  let customAchievs: any[] = [];
+  try {
+    if (userProfile?.achievements) {
+      const parsed = JSON.parse(userProfile.achievements);
+      customAchievs = parsed.map((a: any) => ({
+        title: a.title,
+        desc: a.desc,
+        icon: <Award className="h-5 w-5 text-purple-400" />,
+        unlocked: true,
+        color: 'bg-purple-500/10 border-purple-500/20 text-purple-400'
+      }));
+    }
+  } catch (e) {
+    // Ignore parse error
+  }
+
+  const allAchievements = [...customAchievs, ...achievements];
+
   return (
     <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col h-full hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
       <div className="flex items-center gap-2.5 mb-6">
@@ -36,8 +54,8 @@ export default function AchievementsWidget({ historyCount }: { historyCount: num
         <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">Achievements</h3>
       </div>
 
-      <div className="flex-1 space-y-3">
-        {achievements.map((ach, i) => (
+      <div className="flex-1 space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+        {allAchievements.map((ach, i) => (
           <div key={i} className={`p-3 rounded-xl flex items-center gap-4 transition-all duration-300 ${ach.unlocked ? `border ${ach.color}` : 'border border-white/[0.02] bg-white/[0.01] opacity-40 grayscale'}`}>
             <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border ${ach.unlocked ? ach.color : 'bg-zinc-950 border-white/[0.03]'}`}>
               {ach.icon}

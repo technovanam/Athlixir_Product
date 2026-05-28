@@ -303,7 +303,7 @@ export default function BiomechanicsPanel() {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      socket.emit('subscribeToAnalysis', { analysisId });
+      socket.emit('subscribeToAnalysis', { analysisId  });
     });
 
     socket.on('analysisStatus', (payload: {

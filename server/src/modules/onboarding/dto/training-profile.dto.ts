@@ -27,4 +27,9 @@ export class TrainingProfileDto {
   @IsString()
   @IsOptional()
   personalBest?: string;
+
+  @ApiPropertyOptional({ description: 'Custom athlete achievements JSON string', example: '[{"title":"State Champ","desc":"2023"}]' })
+  @IsString()
+  @IsOptional()
+  achievements?: string;
 }

@@ -258,7 +258,7 @@ export default function CopilotPage() {
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
           
           {/* Messages List */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide z-10 min-h-0">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 z-10 min-h-0">
             <AnimatePresence initial={false}>
               {messages.map((msg) => (
                 <motion.div
@@ -306,6 +306,7 @@ export default function CopilotPage() {
                   </div>
                 </motion.div>
               )}
+              <div ref={(el) => { el?.scrollIntoView({ behavior: 'smooth' }) }} />
             </AnimatePresence>
           </div>
 

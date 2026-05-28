@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth, api } from '../../context/AuthContext';
 import { useDateFilter } from '../../context/DateFilterContext';
+import { Biomech3DCanvas } from '../../components/Biomech3DCanvas';
 
 export default function InjuryRiskPage() {
   const { user } = useAuth();
@@ -281,24 +282,8 @@ export default function InjuryRiskPage() {
             <Target className="h-4 w-4 text-[#FF4F21]" /> Biomechanical Load Map
           </h3>
           
-          <div className="relative w-48 h-96 border border-white/[0.05] bg-black/30 rounded-full p-4 flex items-center justify-center z-10 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-sm">
-            {/* Abstract Body Coordinates representation */}
-            <div className="w-12 h-12 rounded-full border border-white/[0.08] absolute top-8 shadow-[0_0_10px_rgba(255,255,255,0.02)]" />
-            <div className="w-16 h-32 border border-white/[0.08] rounded-2xl absolute top-24 shadow-[0_0_10px_rgba(255,255,255,0.02)]" />
-            <div className="w-4 h-32 border border-white/[0.08] rounded-full absolute top-56 left-12" />
-            
-            {/* Right leg coordinates (stable) */}
-            <div className="w-4 h-32 border border-emerald-500/30 rounded-full absolute top-56 right-12 bg-emerald-500/10 shadow-[0_0_10px_rgba(16,185,129,0.1)] animate-pulse" />
-            
-            {/* Left Hamstring warning beacon */}
-            <div className="w-8 h-8 rounded-full bg-amber-500/20 absolute top-[260px] left-10 flex items-center justify-center animate-pulse border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.5)]">
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
-            </div>
-            
-            {/* Right Ankle critical stress beacon */}
-            <div className="w-6 h-6 rounded-full bg-[#FF4F21]/20 absolute bottom-[40px] right-[44px] flex items-center justify-center border border-[#FF4F21]/40 shadow-[0_0_15px_rgba(255,79,33,0.5)]">
-              <div className="w-2 h-2 rounded-full bg-[#FF4F21] shadow-[0_0_8px_rgba(255,79,33,0.8)] animate-ping" style={{ animationDuration: '2s' }} />
-            </div>
+          <div className="relative w-full h-[400px] border border-white/[0.05] bg-black/30 rounded-2xl p-4 flex items-center justify-center z-10 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-sm overflow-hidden">
+            <Biomech3DCanvas />
           </div>
         </motion.section>
 

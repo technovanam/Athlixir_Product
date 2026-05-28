@@ -177,6 +177,7 @@ export class OnboardingService {
       training_duration: dto.trainingDuration,
       experience_years: dto.experienceYears,
       personal_best: dto.personalBest || '',
+      achievements: dto.achievements || '',
       updated_at: now,
     };
 

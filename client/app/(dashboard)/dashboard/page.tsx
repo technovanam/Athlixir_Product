@@ -50,10 +50,10 @@ function DashboardPageContent() {
         <div className="lg:col-span-1 rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 relative overflow-hidden group hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF4F21]/5 rounded-full blur-[50px] pointer-events-none group-hover:bg-[#FF4F21]/10 transition duration-700" />
           
-          <h2 className="text-xl font-bold text-white mb-1 tracking-tight">{user?.name || user?.username || 'Athlete'}</h2>
+          <h2 className="text-xl font-bold text-white mb-1 tracking-tight">{user?.physicalProfile?.full_name || user?.name || user?.username || 'Athlete'}</h2>
           <div className="flex flex-col gap-1 mb-6">
-            <span className="text-[10px] font-bold text-[#FF4F21] uppercase tracking-[0.15em]">{user?.classification?.primaryEvent || '100m Sprint'}</span>
-            <span className="text-[10px] font-semibold text-zinc-500 tracking-wider">{user?.classification?.athleteLevel || 'U18 District Level'}</span>
+            <span className="text-[10px] font-bold text-[#FF4F21] uppercase tracking-[0.15em]">{`${user?.physicalProfile?.primary_event || '100m'} ${user?.physicalProfile?.running_type || 'Sprint'}`}</span>
+            <span className="text-[10px] font-semibold text-zinc-500 tracking-wider">{user?.physicalProfile?.competition_level || 'U18 District Level'}</span>
           </div>
 
           <div className="border-t border-white/[0.03] pt-5 space-y-3">
@@ -142,9 +142,15 @@ function DashboardPageContent() {
               <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Injury Risk</span>
             </div>
             <div>
-              <div className="text-3xl font-extrabold text-white tracking-tighter uppercase">{latestAnalysis?.injuryRisk?.level || 'LOW'}</div>
+              <div className="text-3xl font-extrabold text-white tracking-tighter uppercase">
+                {latestAnalysis?.injuryRisk?.level || (user?.physicalProfile?.injury_history?.injuries?.length > 0 ? 'WATCH' : 'LOW')}
+              </div>
               <div className="text-[9px] font-bold text-amber-500 mt-2 truncate uppercase tracking-wider">
-                {latestAnalysis?.injuryRisk?.riskArea !== 'None' ? `Watch: ${latestAnalysis?.injuryRisk?.riskArea}` : 'Stable'}
+                {latestAnalysis?.injuryRisk?.riskArea && latestAnalysis?.injuryRisk?.riskArea !== 'None' 
+                  ? `Watch: ${latestAnalysis?.injuryRisk?.riskArea}` 
+                  : user?.physicalProfile?.injury_history?.injuries?.length > 0 
+                    ? `Prev: ${user.physicalProfile.injury_history.injuries.join(', ')}`
+                    : 'Stable'}
               </div>
             </div>
           </div>
@@ -168,33 +174,33 @@ function DashboardPageContent() {
             </div>
           </button>
 
-          <Link href="/reports" className="flex items-center gap-3.5 p-4 rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300 group">
-            <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-white/[0.05] flex items-center justify-center">
-              <FileText className="h-4 w-4 text-zinc-400 group-hover:text-white transition duration-200" />
+          <Link href="/reports" className="flex items-center gap-3.5 p-4 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-all duration-300 group shadow-[0_0_15px_rgba(59,130,246,0.05)]">
+            <div className="h-8 w-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-[0_2px_8px_rgba(59,130,246,0.3)]">
+              <FileText className="h-4 w-4 text-white" />
             </div>
             <div className="text-left">
-              <div className="text-xs font-bold text-white uppercase tracking-wider">View Reports</div>
-              <div className="text-[9px] text-zinc-500 tracking-wider">PDF summaries</div>
+              <div className="text-xs font-bold text-white group-hover:text-blue-400 transition duration-200 uppercase tracking-wider">View Reports</div>
+              <div className="text-[9px] text-zinc-400 tracking-wider">PDF summaries</div>
             </div>
           </Link>
 
-          <Link href="/recommendations" className="flex items-center gap-3.5 p-4 rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300 group">
-            <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-white/[0.05] flex items-center justify-center">
-              <Target className="h-4 w-4 text-zinc-400 group-hover:text-emerald-400 transition duration-200" />
+          <Link href="/recommendations" className="flex items-center gap-3.5 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all duration-300 group shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+            <div className="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center shadow-[0_2px_8px_rgba(16,185,129,0.3)]">
+              <Target className="h-4 w-4 text-white" />
             </div>
             <div className="text-left">
-              <div className="text-xs font-bold text-white uppercase tracking-wider">AI Drills</div>
-              <div className="text-[9px] text-zinc-500 tracking-wider">Corrections</div>
+              <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition duration-200 uppercase tracking-wider">AI Drills</div>
+              <div className="text-[9px] text-zinc-400 tracking-wider">Corrections</div>
             </div>
           </Link>
 
-          <Link href="/history" className="flex items-center gap-3.5 p-4 rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300 group">
-            <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-white/[0.05] flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-zinc-400 group-hover:text-blue-400 transition duration-200" />
+          <Link href="/history" className="flex items-center gap-3.5 p-4 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-all duration-300 group shadow-[0_0_15px_rgba(168,85,247,0.05)]">
+            <div className="h-8 w-8 rounded-lg bg-purple-500 flex items-center justify-center shadow-[0_2px_8px_rgba(168,85,247,0.3)]">
+              <TrendingUp className="h-4 w-4 text-white" />
             </div>
             <div className="text-left">
-              <div className="text-xs font-bold text-white uppercase tracking-wider">Compare</div>
-              <div className="text-[9px] text-zinc-500 tracking-wider">History graphs</div>
+              <div className="text-xs font-bold text-white group-hover:text-purple-400 transition duration-200 uppercase tracking-wider">Compare</div>
+              <div className="text-[9px] text-zinc-400 tracking-wider">History graphs</div>
             </div>
           </Link>
         </div>
@@ -225,9 +231,9 @@ function DashboardPageContent() {
 
       {/* 5. PREMIUM EXPERIENCE & LONG-TERM EVOLUTION */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <InjuryIntelligence analysis={latestAnalysis} />
+        <InjuryIntelligence analysis={latestAnalysis} userProfile={user?.physicalProfile} />
         <EvolutionTimeline history={historyList} />
-        <AchievementsWidget historyCount={historyList.length} />
+        <AchievementsWidget historyCount={historyList.length} userProfile={user?.physicalProfile} />
       </section>
 
     </div>
