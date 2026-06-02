@@ -149,6 +149,11 @@ export default function EvolutionPage() {
                 </span>
               </div>
             </div>
+            {evolution.aiInsights?.progressSummary && (
+              <p className="text-[10px] text-zinc-400 italic mt-3 border-t border-white/[0.03] pt-3 leading-relaxed">
+                "{evolution.aiInsights.progressSummary}"
+              </p>
+            )}
           </div>
         </div>
 
@@ -323,28 +328,61 @@ export default function EvolutionPage() {
           </h3>
           <div className="flex-1 space-y-4">
             
-            <div className="flex items-start gap-3 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-emerald-200/90 font-medium leading-relaxed">
-                Your acceleration mechanics improved significantly in the last 3 sessions. GCT has consistently trended downwards.
-              </p>
-            </div>
-            
-            {cadenceDelta && cadenceDelta.diff > 0 && (
-              <div className="flex items-start gap-3 p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5">
-                <TrendingUp className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-blue-200/90 font-medium leading-relaxed">
-                  Turnover rate (Cadence) is up {cadenceDelta.pct}%. You are successfully transitioning to a mid-foot strike pattern.
-                </p>
-              </div>
+            {evolution.aiInsights ? (
+              <>
+                {evolution.aiInsights.highlights?.map((highlight: string, idx: number) => (
+                  <div key={idx} className="flex items-start gap-3 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-emerald-200/90 font-medium leading-relaxed">
+                      {highlight}
+                    </p>
+                  </div>
+                ))}
+                
+                {evolution.aiInsights.trendAnalysis && (
+                  <div className="flex items-start gap-3 p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5">
+                    <TrendingUp className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-200/90 font-medium leading-relaxed">
+                      {evolution.aiInsights.trendAnalysis}
+                    </p>
+                  </div>
+                )}
+
+                {evolution.aiInsights.progressCommentary && (
+                  <div className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                    <Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-200/90 font-medium leading-relaxed">
+                      {evolution.aiInsights.progressCommentary}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex items-start gap-3 p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-200/90 font-medium leading-relaxed">
+                    Your acceleration mechanics improved significantly in the last 3 sessions. GCT has consistently trended downwards.
+                  </p>
+                </div>
+                
+                {cadenceDelta && cadenceDelta.diff > 0 && (
+                  <div className="flex items-start gap-3 p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5">
+                    <TrendingUp className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-200/90 font-medium leading-relaxed">
+                      Turnover rate (Cadence) is up {cadenceDelta.pct}%. You are successfully transitioning to a mid-foot strike pattern.
+                    </p>
+                  </div>
+                )}
+                
+                <div className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-200/90 font-medium leading-relaxed">
+                    At your current progression rate, your Cadence may reach the **State Benchmark** within the next 4 sessions.
+                  </p>
+                </div>
+              </>
             )}
-            
-            <div className="flex items-start gap-3 p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5">
-              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-200/90 font-medium leading-relaxed">
-                At your current progression rate, your Cadence may reach the **State Benchmark** within the next 4 sessions.
-              </p>
-            </div>
 
           </div>
         </section>
