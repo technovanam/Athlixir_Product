@@ -9,11 +9,13 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
+import { AiInsightsModule } from './modules/ai-insights/ai-insights.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env', 'server/.env', '../.env'],
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000,
@@ -24,6 +26,7 @@ import { AnalysisModule } from './modules/analysis/analysis.module';
     UsersModule,
     OnboardingModule,
     AnalysisModule,
+    AiInsightsModule,
   ],
   controllers: [AppController],
   providers: [
