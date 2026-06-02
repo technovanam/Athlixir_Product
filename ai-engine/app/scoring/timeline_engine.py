@@ -28,8 +28,8 @@ def generate_timeline(analyses: list[dict[str, Any]]) -> list[dict[str, Any]]:
     
     for i, a in enumerate(completed):
         if i == 0:
-            best_cadence = float(a.get("metrics", {}).get("cadence") or 0)
-            highest_tier = a.get("scores", {}).get("athleteLevel") or "Intermediate"
+            best_cadence = float((a.get("metrics") or {}).get("cadence") or 0)
+            highest_tier = (a.get("scores") or {}).get("athleteLevel") or "Intermediate"
             continue
             
         date = a.get("createdAt", "")
