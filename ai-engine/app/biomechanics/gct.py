@@ -15,18 +15,29 @@ def _contact_frames_for_strike(
     ground_threshold: float,
     max_contact_frames: int,
 ) -> int:
-    """Count consecutive frames where ankle remains near ground after strike."""
+    """Scan both backward and forward from the strike peak to find touchdown and toe-off."""
     if strike_index >= len(ankle_y):
         return 0
 
-    contact = 0
-    for i in range(strike_index, min(strike_index + max_contact_frames, len(ankle_y))):
+    # 1. Scan backward from strike_index to find touchdown (foot descending and crossing ground line)
+    start_idx = strike_index
+    half_contact = max_contact_frames // 2
+    for i in range(strike_index, max(-1, strike_index - half_contact), -1):
         if ankle_y[i] >= ground_threshold:
-            contact += 1
-        elif contact > 0:
+            start_idx = i
+        else:
             break
 
-    return max(contact, 1)
+    # 2. Scan forward from strike_index to find toe-off (foot ascending and leaving ground line)
+    end_idx = strike_index
+    for i in range(strike_index, min(strike_index + half_contact, len(ankle_y))):
+        if ankle_y[i] >= ground_threshold:
+            end_idx = i
+        else:
+            break
+
+    total_frames = end_idx - start_idx + 1
+    return max(total_frames, 1)
 
 
 def calculate_gct(foot_strikes: list[dict], tracker, fps: float) -> dict:
