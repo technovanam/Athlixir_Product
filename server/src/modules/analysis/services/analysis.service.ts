@@ -6,11 +6,13 @@ import {
 } from '@nestjs/common';
 import { FirebaseService } from '../../../firebase/firebase.service';
 import { AnalysisGateway } from '../gateways/analysis.gateway';
+import { AiInsightsService } from '../../ai-insights/ai-insights.service';
 import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { Readable } from 'stream';
 import * as crypto from 'crypto';
+import { QueueService } from './queue.service';
 
 type PendingVideo = { buffer: Buffer; mimetype: string; expiresAt: number };
 
@@ -20,12 +22,15 @@ export class AnalysisService {
   private readonly collectionName = 'analyses';
   private readonly athleteProfilesCollection = 'athlete_profiles';
   private readonly fastapiUrl = process.env.FASTAPI_URL || 'http://127.0.0.1:8000/api/analyze';
+  private readonly internalApiSecret = process.env.INTERNAL_API_SECRET || 'a-very-secret-and-long-key-for-internal-service-auth';
   private readonly localVideoDir = join(tmpdir(), 'athlixir-videos');
   private readonly pendingVideos = new Map<string, PendingVideo>();
 
   constructor(
     private readonly firebaseService: FirebaseService,
     private readonly analysisGateway: AnalysisGateway,
+    private readonly aiInsightsService: AiInsightsService,
+    private readonly queueService: QueueService,
   ) {
     mkdirSync(this.localVideoDir, { recursive: true });
   }
@@ -301,17 +306,63 @@ export class AnalysisService {
         };
       }
 
-      // Call the AI Engine for full intelligence processing
+      const latestAnalysisId = completed[completed.length - 1].id;
+
+      // 1. Check if we have a valid fully cached evolution result to bypass the python server + LLM completely
+      try {
+        const cachedDoc = await this.firebaseService.firestore
+          .collection('athlete_evolution')
+          .doc(userId)
+          .get();
+
+        if (cachedDoc.exists) {
+          const cachedData = cachedDoc.data();
+          if (cachedData && cachedData.lastAnalysisId === latestAnalysisId && cachedData.intelligenceData) {
+            this.logger.log(`Using cached full evolution intelligence for user: ${userId}`);
+            return cachedData.intelligenceData;
+          }
+        }
+      } catch (cacheErr: any) {
+        this.logger.warn(`Failed to read evolution cache: ${cacheErr.message}`);
+      }
+
+      // 2. Cache miss or stale: Call the AI Engine for full intelligence processing
       try {
         const fastapiIntelUrl = process.env.FASTAPI_INTEL_URL || 'http://127.0.0.1:8000/api/analyze/intelligence';
         const response = await fetch(fastapiIntelUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.internalApiSecret}`,
+          },
           body: JSON.stringify({ analyses: all })
         });
         
         if (response.ok) {
           const intelligenceData = await response.json();
+          if (intelligenceData.evolution) {
+            try {
+              this.logger.log(`Cache miss or stale for user: ${userId}. Generating fresh evolution insights.`);
+              const aiInsights = await this.aiInsightsService.generateEvolutionInsights(
+                userId,
+                intelligenceData.evolution
+              );
+              intelligenceData.evolution.aiInsights = aiInsights;
+
+              // Write the fully calculated intelligenceData to cache
+              await this.firebaseService.firestore
+                .collection('athlete_evolution')
+                .doc(userId)
+                .set({
+                  userId,
+                  intelligenceData,
+                  lastAnalysisId: latestAnalysisId,
+                  updatedAt: new Date().toISOString(),
+                });
+            } catch (aiErr: any) {
+              this.logger.error(`Failed to retrieve/generate AI evolution insights: ${aiErr.message}`);
+            }
+          }
           return intelligenceData;
         } else {
           this.logger.warn(`AI engine returned ${response.status} for intelligence calculation. Fallback to empty.`);
@@ -333,6 +384,60 @@ export class AnalysisService {
     } catch (err) {
       this.logger.error(`Error computing evolution for ${userId}`, err);
       return { hasHistory: false, sessionCount: 0, error: true };
+    }
+  }
+
+  private async refreshEvolutionInsightsCache(userId: string) {
+    try {
+      const snapshot = await this.firebaseService.firestore
+        .collection(this.collectionName)
+        .where('userId', '==', userId)
+        .get();
+
+      const all = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Record<string, unknown>));
+
+      const completed = all
+        .filter((a: any) => a.status === 'COMPLETED' && a.metrics)
+        .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+      if (completed.length === 0) return;
+
+      const latestAnalysisId = completed[completed.length - 1].id;
+
+      const fastapiIntelUrl = process.env.FASTAPI_INTEL_URL || 'http://127.0.0.1:8000/api/analyze/intelligence';
+      const response = await fetch(fastapiIntelUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.internalApiSecret}`,
+        },
+        body: JSON.stringify({ analyses: all })
+      });
+      
+      if (response.ok) {
+        const intelligenceData = await response.json();
+        if (intelligenceData.evolution) {
+          const aiInsights = await this.aiInsightsService.generateEvolutionInsights(
+            userId,
+            intelligenceData.evolution
+          );
+          intelligenceData.evolution.aiInsights = aiInsights;
+          
+          await this.firebaseService.firestore
+            .collection('athlete_evolution')
+            .doc(userId)
+            .set({
+              userId,
+              intelligenceData,
+              lastAnalysisId: latestAnalysisId,
+              updatedAt: new Date().toISOString(),
+            });
+            
+          this.logger.log(`Successfully pre-generated and cached full evolution intelligence for user: ${userId}`);
+        }
+      }
+    } catch (err: any) {
+      this.logger.error(`Failed to refresh evolution insights cache for user ${userId}: ${err.message}`);
     }
   }
 
@@ -384,6 +489,31 @@ export class AnalysisService {
         const userId = (doc.data() as { userId?: string })?.userId;
         if (userId) {
           await this.persistIntelligenceArtifacts(analysisId, userId, data);
+          
+          // Trigger asynchronous background LLM sports science insights generation
+          this.aiInsightsService.generateIntelligence(analysisId, userId, data)
+            .then(async (enrichedData) => {
+              this.logger.log(`Background LLM enrichment successfully completed for ${analysisId}`);
+              
+              // Broadcast fully enriched client payload via WS to dynamically update dashboard
+              this.analysisGateway.broadcastStatus(
+                analysisId,
+                'COMPLETED',
+                100,
+                this.sanitizeForClient({ ...data, ...enrichedData })
+              );
+
+              // Pre-generate and cache evolution insights in the background
+              try {
+                this.logger.log(`Pre-generating and caching evolution insights for user: ${userId}`);
+                await this.refreshEvolutionInsightsCache(userId);
+              } catch (cacheErr: any) {
+                this.logger.error(`Failed to pre-generate evolution insights cache: ${cacheErr.message}`);
+              }
+            })
+            .catch((err) => {
+              this.logger.error(`Background LLM enrichment failed for ${analysisId}: ${err.message}`);
+            });
         }
       }
 
@@ -501,11 +631,11 @@ export class AnalysisService {
       .set({
         userId,
         analysisId,
-        metrics: data.metrics,
-        scores: data.scores,
-        benchmarks: data.benchmarks,
-        progress: data.progress,
-        classification: data.classification,
+        metrics: data.metrics || null,
+        scores: data.scores || null,
+        benchmarks: data.benchmarks || null,
+        progress: data.progressData || data.progress || null,
+        classification: data.classification || null,
         createdAt: ts,
       });
   }
@@ -681,35 +811,65 @@ export class AnalysisService {
     videoUrl: string,
     userId: string,
   ) {
-    this.logger.log(`Triggering AI for ${analysisId}`);
+    this.logger.log(`Adding analysis job to queue for ${analysisId}`);
 
     const athleteContext = await this.getAthleteContext(userId);
     const previousMetrics = await this.getPreviousMetrics(userId, analysisId);
 
     try {
-      const response = await fetch(this.fastapiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      if (!this.queueService.isReady()) {
+        throw new Error('Redis connection is offline');
+      }
+
+      // Add a 3-second timeout for the Queue addJob operation to prevent hanging if Redis becomes unresponsive
+      await Promise.race([
+        this.queueService.addJob('process-video', {
           analysisId,
           videoUrl,
           userId,
           athleteContext,
           previousMetrics,
         }),
-      });
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Queue add job timed out')), 3000)
+        ),
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`FastAPI status ${response.status}`);
-      }
-
-      this.logger.log(`FastAPI accepted ${analysisId}`);
+      this.logger.log(`Job for ${analysisId} successfully added to the queue`);
       await this.updateStatus(analysisId, 'PROCESSING_POSE', 15);
     } catch (err: any) {
-      this.logger.error(
-        `FastAPI unavailable for ${analysisId}, using simulator: ${err.message}`,
+      this.logger.warn(
+        `Failed to add job to Redis queue: ${err.message}. Falling back to direct HTTP trigger on ${this.fastapiUrl}`,
       );
-      this.simulateAnalysisPipeline(analysisId);
+      try {
+        const response = await fetch(this.fastapiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.internalApiSecret}`,
+          },
+          body: JSON.stringify({
+            analysisId,
+            videoUrl,
+            userId,
+            athleteContext,
+            previousMetrics,
+          }),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`FastAPI responded with ${response.status}: ${errText}`);
+        }
+
+        this.logger.log(`Successfully triggered analysis directly via HTTP for ${analysisId}`);
+        await this.updateStatus(analysisId, 'PROCESSING_POSE', 15);
+      } catch (httpErr: any) {
+        this.logger.error(`Direct HTTP fallback also failed: ${httpErr.message}`);
+        await this.updateStatus(analysisId, 'FAILED', 0, {
+          errorMessage: `Failed to trigger analysis pipeline: ${httpErr.message}`,
+        });
+      }
     }
   }
 
@@ -799,12 +959,24 @@ export class AnalysisService {
       },
     ];
 
-    let delay = 500;
-    for (const stage of stages) {
-      setTimeout(() => {
-        this.updateStatus(analysisId, stage.status, stage.progress, stage.data);
-      }, delay);
-      delay += 800;
-    }
+    // Play simulation steps
+    let currentStageIndex = 0;
+    const interval = setInterval(() => {
+      const stage = stages[currentStageIndex];
+      if (!stage) {
+        clearInterval(interval);
+        return;
+      }
+      this.updateStatus(analysisId, stage.status, stage.progress, (stage as any).data);
+      currentStageIndex++;
+    }, 1500);
+  }
+
+  /**
+   * Delegates contextual chat to the AI Sports Intelligence handler.
+   */
+  async chatWithAthleteAssistant(analysisId: string, userId: string, message: string): Promise<{ success: boolean; reply: string }> {
+    const reply = await this.aiInsightsService.handleAthleteChat(analysisId, userId, message);
+    return { success: true, reply };
   }
 }
