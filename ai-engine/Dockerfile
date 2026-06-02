@@ -19,10 +19,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code files
 COPY . .
 
+# Make start script executable
+RUN chmod +x ./start.sh
+
 EXPOSE 8080
 
 # Set environment variable to allow MediaPipe to coexist with newer Protobuf versions
 ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 
-# Run FastAPI app
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# Run the start script
+CMD ["./start.sh"]
