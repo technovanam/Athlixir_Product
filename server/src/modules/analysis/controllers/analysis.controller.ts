@@ -139,6 +139,20 @@ export class AnalysisController {
     stream.pipe(res);
   }
 
+  @Post(':id/chat')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiOperation({ summary: 'Interact with AI Athlete Assistant copilot dynamically based on telemetry context' })
+  async chatWithCopilot(
+    @Param('id') analysisId: string,
+    @Body('message') message: string,
+    @CurrentUser() user: any,
+  ) {
+    if (!message) {
+      throw new BadRequestException('Message cannot be empty.');
+    }
+    return this.analysisService.chatWithAthleteAssistant(analysisId, user.uid, message);
+  }
+
   @Get(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiOperation({ summary: 'Retrieve detailed running biomechanics profile by ID' })
@@ -149,23 +163,25 @@ export class AnalysisController {
   @Post('callback')
   @ApiOperation({ summary: 'Internal AI callback endpoint to synchronize biomechanics results' })
   async aiCallback(
-    @Body() body: {
-      analysisId: string;
-      status: string;
-      progress: number;
-      metrics?: any;
-      scores?: any;
-      injuryRisks?: any;
-      recommendations?: any;
-    },
+    @Body() body: any,
   ) {
     const { analysisId, status, progress, ...payload } = body;
     if (!analysisId || !status) {
       throw new BadRequestException('Missing analysisId or status in payload.');
     }
     
+    // Resolve naming collision: 'progress' object from Python is actually athlete progression comparison data
+    let progressNum = 100;
+    if (typeof progress === 'number') {
+      progressNum = progress;
+    }
+    
+    if (progress && typeof progress === 'object') {
+      payload.progressData = progress;
+    }
+    
     // Save to Firestore and emit real-time WebSocket event
-    await this.analysisService.updateStatus(analysisId, status, progress, payload);
+    await this.analysisService.updateStatus(analysisId, status, progressNum, payload);
     
     return {
       success: true,
