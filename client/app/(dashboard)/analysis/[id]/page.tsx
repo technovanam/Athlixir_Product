@@ -17,6 +17,26 @@ export default function AnalysisDetailsPage() {
   
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadReport = async () => {
+    setDownloading(true);
+    try {
+      const response = await api.get(`/analysis/${id}/report`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/html' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `athlixir_sports_science_report_${id}.html`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Failed to download report', err);
+      alert('AI Sports Science Report is generating in the background. Please give it 5-10 seconds and try again!');
+    } finally {
+      setDownloading(false);
+    }
+  };
   
   // Video Controls State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -137,8 +157,12 @@ export default function AnalysisDetailsPage() {
           <button className="px-4 py-2 rounded-xl border border-white/[0.05] bg-[#08080C]/40 hover:bg-white/[0.05] text-xs font-bold text-white transition flex items-center gap-2">
             <Share2 className="h-4 w-4" /> Share
           </button>
-          <button className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] text-xs font-bold text-white transition flex items-center gap-2 shadow-[0_0_15px_rgba(255,79,33,0.3)] hover:opacity-90">
-            <Download className="h-4 w-4" /> PDF Report
+          <button 
+            onClick={handleDownloadReport}
+            disabled={downloading}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] text-xs font-bold text-white transition flex items-center gap-2 shadow-[0_0_15px_rgba(255,79,33,0.3)] hover:opacity-90 disabled:opacity-50 cursor-pointer"
+          >
+            <Download className={`h-4 w-4 ${downloading ? 'animate-bounce' : ''}`} /> {downloading ? 'Downloading...' : 'PDF Report'}
           </button>
         </div>
       </div>
@@ -244,36 +268,24 @@ export default function AnalysisDetailsPage() {
               <Activity className="h-3 w-3" /> Biomechanical Events Timeline
             </h3>
             <div className="relative pl-6 border-l border-white/[0.05] space-y-4">
-              <div className="relative">
-                <div className="absolute -left-[30px] top-1 h-2.5 w-2.5 rounded-full bg-blue-500 border border-black" />
-                <div className="flex gap-4 items-start">
-                  <span className="text-xs font-mono font-bold text-zinc-400 w-12 mt-0.5">0.24s</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Toe-off Phase</h4>
-                    <p className="text-[10px] text-zinc-500 mt-1">Excellent ankle extension achieved.</p>
+              {(analysis.aiTimeline || [
+                { time: '0:24s', phase: 'Toe-off Phase', event: 'Excellent ankle extension achieved.', severity: 'optimal' },
+                { time: '0:51s', phase: 'Max Knee Drive', event: 'Knee angle is 72° (Optimal range is 75-85°). Slightly restricted.', severity: 'warning' },
+                { time: '0:83s', phase: 'Foot Strike', event: 'Overstride detected. Landing ahead of center of mass.', severity: 'warning' }
+              ]).map((item: any, idx: number) => (
+                <div key={idx} className="relative">
+                  <div className={`absolute -left-[30px] top-1 h-2.5 w-2.5 rounded-full border border-black ${
+                    item.severity === 'warning' ? 'bg-[#FF4F21]' : item.severity === 'optimal' ? 'bg-emerald-500' : 'bg-blue-500'
+                  }`} />
+                  <div className="flex gap-4 items-start">
+                    <span className="text-xs font-mono font-bold text-zinc-400 w-12 mt-0.5">{item.time}</span>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{item.phase}</h4>
+                      <p className="text-[10px] text-zinc-500 mt-1">{item.event}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="relative">
-                <div className="absolute -left-[30px] top-1 h-2.5 w-2.5 rounded-full bg-amber-500 border border-black" />
-                <div className="flex gap-4 items-start">
-                  <span className="text-xs font-mono font-bold text-zinc-400 w-12 mt-0.5">0.51s</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Max Knee Drive</h4>
-                    <p className="text-[10px] text-zinc-500 mt-1">Knee angle is 72° (Optimal range is 75-85°). Slightly restricted.</p>
-                  </div>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="absolute -left-[30px] top-1 h-2.5 w-2.5 rounded-full bg-red-500 border border-black" />
-                <div className="flex gap-4 items-start">
-                  <span className="text-xs font-mono font-bold text-zinc-400 w-12 mt-0.5">0.83s</span>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Foot Strike</h4>
-                    <p className="text-[10px] text-zinc-500 mt-1">Overstride detected. Landing ahead of center of mass.</p>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -356,22 +368,54 @@ export default function AnalysisDetailsPage() {
             <h3 className="text-sm font-extrabold text-white uppercase tracking-widest">Targeted Recommendations</h3>
           </div>
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
-              <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Fix Overstride</h4>
-              <p className="text-[10px] text-zinc-400 leading-relaxed">
-                Your foot is landing too far ahead of your center of mass. Incorporate **A-Skips** and **High Knees** into your warmup to promote a mid-foot strike directly under the hips.
-              </p>
-            </div>
-            <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
-              <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Improve Cadence</h4>
-              <p className="text-[10px] text-zinc-400 leading-relaxed">
-                Current cadence is below the State benchmark. Try running with a metronome set to 180bpm to naturally shorten your stride and increase turnover rate.
-              </p>
-            </div>
+            {analysis.aiRecommendations ? (
+              <>
+                <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
+                  <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Coaching Drills Focus</h4>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {analysis.aiRecommendations.drills?.map((d: string, idx: number) => (
+                      <span key={idx} className="px-2.5 py-1 rounded bg-[#FF4F21]/10 text-[#FF4F21] border border-[#FF4F21]/20 text-[9px] font-bold uppercase">{d}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
+                  <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Corrective Exercises</h4>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {analysis.aiRecommendations.correctiveExercises?.map((e: string, idx: number) => (
+                      <span key={idx} className="px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[9px] font-bold uppercase">{e}</span>
+                    ))}
+                  </div>
+                </div>
+                {analysis.aiRecommendations.recovery?.length > 0 && (
+                  <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
+                    <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Load Management & Recovery</h4>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed">{analysis.aiRecommendations.recovery.join(', ')}</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
+                  <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Fix Overstride</h4>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed">
+                    Your foot is landing too far ahead of your center of mass. Incorporate **A-Skips** and **High Knees** into your warmup to promote a mid-foot strike directly under the hips.
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-black/40 border border-white/[0.02]">
+                  <h4 className="text-xs font-bold text-white mb-2 uppercase tracking-wide">Improve Cadence</h4>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed">
+                    Current cadence is below the State benchmark. Try running with a metronome set to 180bpm to naturally shorten your stride and increase turnover rate.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
-          <button className="w-full mt-4 py-3 rounded-xl border border-white/[0.05] bg-white/[0.03] hover:bg-white/[0.08] text-xs font-bold text-white transition duration-200">
-            View Full Training Plan
-          </button>
+          {analysis.aiRecommendations?.trainingPlan && (
+            <div className="mt-4 p-3 rounded-lg border border-white/[0.04] bg-white/[0.01]">
+              <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Focus Training Block</span>
+              <p className="text-[10px] text-zinc-300 font-medium leading-relaxed">{analysis.aiRecommendations.trainingPlan.join(' • ')}</p>
+            </div>
+          )}
         </div>
       </div>
 
