@@ -1,16 +1,28 @@
 services:
+  redis:
+    image: 'redis:alpine'
+    container_name: athlixir-redis
+    ports:
+      - '6379:6379'
+    restart: always
+
   ai-engine:
     build:
       context: ./ai-engine
       dockerfile: Dockerfile
     container_name: athlixir-ai-engine
     ports:
-      - "8000:8000"
+      - '8000:8000'
     environment:
       - PORT=8000
       - HOST=0.0.0.0
       - PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+      - INTERNAL_API_SECRET=a-very-secret-and-long-key-for-internal-service-auth
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     restart: always
+    depends_on:
+      - redis
 
   server:
     build:
@@ -18,20 +30,26 @@ services:
       dockerfile: Dockerfile
     container_name: athlixir-server
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       - PORT=3001
       - NODE_ENV=production
       - FASTAPI_URL=http://ai-engine:8000/api/analyze
       - FASTAPI_INTEL_URL=http://ai-engine:8000/api/analyze/intelligence
       - FASTAPI_PUBLIC_URL=http://localhost:8000
+      - INTERNAL_API_SECRET=a-very-secret-and-long-key-for-internal-service-auth
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
       - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
       - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
       - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
       - FIREBASE_WEB_API_KEY=${FIREBASE_WEB_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
     depends_on:
       - ai-engine
+      - redis
     restart: always
 
   client:
