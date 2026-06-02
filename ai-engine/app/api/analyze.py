@@ -4,9 +4,11 @@ import threading
 import time
 import requests
 import tempfile
-from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Any, Optional
+
+from app.api.security import check_internal_secret
 
 from app.config import DOWNLOAD_CHUNK_SIZE
 from app.pipelines.biomechanics_pipeline import run_biomechanics_extraction_pipeline
@@ -31,7 +33,7 @@ class AnalysisRequest(BaseModel):
 NESTJS_CALLBACK_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/callback"
 NESTJS_OVERLAY_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/overlay"
 NESTJS_REPORT_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/report"
-AI_ENGINE_URL = os.environ.get('AI_ENGINE_URL', 'http://127.0.0.1:8080')
+AI_ENGINE_URL = os.environ.get('AI_ENGINE_URL', 'http://127.0.0.1:8000')
 
 
 def _send_update(analysis_id: str, status: str, progress: int, payload: dict = None):
@@ -146,12 +148,16 @@ def run_analysis_from_path(
         result.pop("footStrikes", None)
         metrics = result.get("metrics", {})
 
+        # Validate biomechanical metrics (V3 scientific validation layer)
+        from app.validation.biomechanics_validator import validate_biomechanics_metrics
+        validated_metrics, metric_flags = validate_biomechanics_metrics(metrics)
+
         _send_update(analysis_id, "DETECTING_FOOT_STRIKES", 55)
         time.sleep(0.5)
 
         _send_update(analysis_id, "CALCULATING_METRICS", 70)
         intelligence = _run_intelligence(
-            metrics, analysis_id, athlete_context, previous_metrics
+            validated_metrics, analysis_id, athlete_context, previous_metrics
         )
         print(f"[AI PIPELINE] Intelligence ready in {time.perf_counter() - t0:.2f}s")
 
@@ -194,6 +200,7 @@ def run_analysis_from_path(
             "landmarkFrameCount": result.get("landmarkFrameCount"),
             "skeletonOverlayReady": skeleton_overlay_ready,
             "skeletonOverlayPath": overlay_url,
+            "metricFlags": metric_flags,
         }
         payload = {k: v for k, v in payload.items() if v is not None}
 
@@ -282,30 +289,38 @@ def trigger_analysis(payload: AnalysisRequest, background_tasks: BackgroundTasks
 class IntelligenceRequest(BaseModel):
     analyses: list[dict[str, Any]]
 
-@router.post("/analyze/intelligence")
+@router.post("/analyze/intelligence", dependencies=[Depends(check_internal_secret)])
 def generate_intelligence(payload: IntelligenceRequest):
-    from app.scoring.evolution_engine import compute_athlete_evolution
-    from app.scoring.consistency_engine import calculate_consistency
-    from app.scoring.adaptation_engine import calculate_adaptation
-    from app.scoring.advanced_injury_engine import calculate_advanced_injury_risk
-    from app.scoring.forecast_engine import calculate_forecast
-    from app.scoring.talent_engine import evaluate_talent
-    from app.scoring.timeline_engine import generate_timeline
+    import traceback
+    import sys
+    print(f"[AI INTEL] Received request with {len(payload.analyses)} analyses", flush=True)
+    try:
+        from app.scoring.evolution_engine import compute_athlete_evolution
+        from app.scoring.consistency_engine import calculate_consistency
+        from app.scoring.adaptation_engine import calculate_adaptation
+        from app.scoring.advanced_injury_engine import calculate_advanced_injury_risk
+        from app.scoring.forecast_engine import calculate_forecast
+        from app.scoring.talent_engine import evaluate_talent
+        from app.scoring.timeline_engine import generate_timeline
 
-    evolution = compute_athlete_evolution(payload.analyses)
-    consistency = calculate_consistency(payload.analyses)
-    adaptation = calculate_adaptation(payload.analyses)
-    injury_insights = calculate_advanced_injury_risk(payload.analyses)
-    forecast = calculate_forecast(payload.analyses)
-    talent_flags = evaluate_talent(payload.analyses, adaptation.get("adaptation_score", 0))
-    timeline = generate_timeline(payload.analyses)
+        evolution = compute_athlete_evolution(payload.analyses)
+        consistency = calculate_consistency(payload.analyses)
+        adaptation = calculate_adaptation(payload.analyses)
+        injury_insights = calculate_advanced_injury_risk(payload.analyses)
+        forecast = calculate_forecast(payload.analyses)
+        talent_flags = evaluate_talent(payload.analyses, adaptation.get("adaptation_score", 0))
+        timeline = generate_timeline(payload.analyses)
 
-    return {
-        "evolution": evolution,
-        "consistency": consistency,
-        "adaptation": adaptation,
-        "advanced_injury": injury_insights,
-        "forecast": forecast,
-        "talent": talent_flags,
-        "timeline": timeline,
-    }
+        return {
+            "evolution": evolution,
+            "consistency": consistency,
+            "adaptation": adaptation,
+            "advanced_injury": injury_insights,
+            "forecast": forecast,
+            "talent": talent_flags,
+            "timeline": timeline,
+        }
+    except Exception as e:
+        print(f"[AI INTEL ERR] Exception in generate_intelligence: {e}", file=sys.stderr, flush=True)
+        traceback.print_exc(file=sys.stderr)
+        raise HTTPException(status_code=500, detail=f"AI Engine Error: {str(e)}")
