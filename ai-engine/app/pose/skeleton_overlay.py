@@ -6,7 +6,7 @@ import cv2
 import mediapipe as mp
 
 from app.config import MAX_ANALYSIS_SECONDS, MAX_FRAME_WIDTH
-from app.pose.mediapipe_pose import pose
+from app.pose.mediapipe_pose import _get_pose
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
@@ -101,7 +101,7 @@ def render_skeleton_overlay_video(video_path: str, output_path: str, foot_strike
             frame = cv2.resize(frame, (width, height))
 
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = pose.process(frame_rgb)
+        results = _get_pose().process(frame_rgb)
 
         if results.pose_landmarks:
             mp_drawing.draw_landmarks(
