@@ -122,7 +122,7 @@ def compute_athlete_evolution(
     
     efficiency_scores = []
     for a in completed:
-        eff = a.get("scores", {}).get("efficiencyScore")
+        eff = (a.get("scores") or {}).get("efficiencyScore")
         if eff:
             efficiency_scores.append(float(eff))
             
