@@ -152,6 +152,9 @@ export class AuthService {
       return null;
     }
     const userData = userDoc.data();
+    if (!userData) {
+      return null;
+    }
     
     try {
       const profileDoc = await this.firebaseService.firestore.collection('athlete_profiles').doc(uid).get();
