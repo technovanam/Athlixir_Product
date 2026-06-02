@@ -149,7 +149,7 @@ function DashboardPageContent() {
                 {latestAnalysis?.injuryRisk?.riskArea && latestAnalysis?.injuryRisk?.riskArea !== 'None' 
                   ? `Watch: ${latestAnalysis?.injuryRisk?.riskArea}` 
                   : user?.physicalProfile?.injury_history?.injuries?.length > 0 
-                    ? `Prev: ${user.physicalProfile.injury_history.injuries.join(', ')}`
+                    ? `Prev: ${user?.physicalProfile?.injury_history?.injuries?.join(', ')}`
                     : 'Stable'}
               </div>
             </div>
@@ -224,9 +224,13 @@ function DashboardPageContent() {
 
       {/* 4. INTELLIGENCE & BENCHMARKING */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <InsightsWidget analysis={latestAnalysis} />
-        <BenchmarkWidget analysis={latestAnalysis} />
-        <ProgressWidget />
+        <div className="lg:col-span-2">
+          <InsightsWidget analysis={latestAnalysis} />
+        </div>
+        <div className="lg:col-span-1 space-y-6">
+          <BenchmarkWidget analysis={latestAnalysis} />
+          <ProgressWidget />
+        </div>
       </section>
 
       {/* 5. PREMIUM EXPERIENCE & LONG-TERM EVOLUTION */}
