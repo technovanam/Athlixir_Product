@@ -12,8 +12,8 @@ export default function CopilotPage() {
   const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState([
-    { id: 1, role: 'system', content: 'ATHLIXIR AI Copilot initialized. Analyzing your recent biomechanics data...' },
-    { id: 2, role: 'assistant', content: 'Hello! I am your AI Athlete Assistant. Based on your last 3 sprint sessions, I noticed your Ground Contact Time (GCT) is slightly high at 210ms. How can I help you optimize your training today?' }
+    { id: '1', role: 'system', content: 'ATHLIXIR AI Copilot initialized. Analyzing your recent biomechanics data...' },
+    { id: '2', role: 'assistant', content: 'Hello! I am your AI Athlete Assistant. Based on your last 3 sprint sessions, I noticed your Ground Contact Time (GCT) is slightly high at 210ms. How can I help you optimize your training today?' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -43,35 +43,38 @@ export default function CopilotPage() {
     fetchLatest();
   }, []);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !latestAnalysis) return;
 
-    const newMessage = { id: Date.now(), role: 'user', content: input };
+    const userMsgText = input;
+    const newMessage = { 
+      id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, 
+      role: 'user', 
+      content: userMsgText 
+    };
     setMessages(prev => [...prev, newMessage]);
     setInput('');
     setIsTyping(true);
 
-    // Mock AI Response
-    setTimeout(() => {
-      let aiResponse = 'I am analyzing your biomechanical markers...';
-      const term = input.toLowerCase();
-      
-      if (term.includes('cadence') || term.includes('spm')) {
-        aiResponse = 'Your average cadence is 172 SPM. To reach the elite benchmark of 185 SPM, you should incorporate wicket runs into your acceleration days. This forces your body to adapt to rapid turnover without overstriding.';
-      } else if (term.includes('hamstring') || term.includes('injury') || term.includes('asymmetry')) {
-        aiResponse = 'I noticed a 11.4% asymmetry putting stress on your left hamstring. This is likely caused by excessive forward posture lean during deceleration. I recommend adding isometric hip flexor holds to your routine.';
-      } else if (term.includes('compare') || term.includes('elite')) {
-        aiResponse = 'Compared to State-level athletes, your sprint efficiency is in the top 18%, but your posture mechanics (specifically hip drop) are in the bottom 40%. Fixing hip stability will unlock significant top-end speed.';
-      } else if (term.includes('gct') || term.includes('ground contact')) {
-        aiResponse = 'Your Ground Contact Time (GCT) of 210ms is slightly above the optimal 180ms sprint target. Improving ankle tendon stiffness via pogo hops and depth drops will dramatically decrease GCT by improving reactive strength index.';
-      } else if (term.includes('stride') || term.includes('length')) {
-        aiResponse = 'Your current stride length of 2.1m matches your power output, but your vertical oscillation shows a 5.2cm hip rise. This implies you are bouncing upwards rather than pushing horizontally. Focus on horizontal sled drives.';
-      }
-
-      setMessages(prev => [...prev, { id: Date.now(), role: 'assistant', content: aiResponse }]);
+    try {
+      const res = await api.post(`/analysis/${latestAnalysis.id}/chat`, { message: userMsgText });
+      const aiResponse = res.data?.data?.reply || res.data?.reply || res.data;
+      setMessages(prev => [...prev, { 
+        id: `assistant-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, 
+        role: 'assistant', 
+        content: aiResponse 
+      }]);
+    } catch (err) {
+      console.error('Failed to get copilot response', err);
+      setMessages(prev => [...prev, {
+        id: `error-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        role: 'assistant',
+        content: "I'm experiencing high latency connecting to the cloud biomechanics analyzer. Remember that targeting a ground contact time under 180ms and working on horizontal project stiffness via plyometrics are key focuses in your current sprint cycle!"
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const PRESET_PROMPTS = [
@@ -120,8 +123,8 @@ export default function CopilotPage() {
         <button
           onClick={() => {
             setMessages([
-              { id: 1, role: 'system', content: 'ATHLIXIR AI Copilot re-initialized. Memory buffer flushed.' },
-              { id: 2, role: 'assistant', content: `Hello ${athleteName}! Ask me anything about your telemetry records, stride mechanics, or hamstring workload.` }
+              { id: '1', role: 'system', content: 'ATHLIXIR AI Copilot re-initialized. Memory buffer flushed.' },
+              { id: '2', role: 'assistant', content: `Hello ${athleteName}! Ask me anything about your telemetry records, stride mechanics, or hamstring workload.` }
             ]);
           }}
           className="flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition px-3 py-2 rounded-xl border border-white/[0.05] bg-[#08080C]/40 hover:border-white/[0.1] hover:bg-[#08080C]/60"
@@ -135,7 +138,7 @@ export default function CopilotPage() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
         
         {/* Left Column: Real-time Telemetry Context (1/4 size on desktop) */}
-        <div className="lg:col-span-1 flex flex-col gap-5 min-h-0 overflow-y-auto pr-1 scrollbar-hide">
+        <div data-lenis-prevent className="lg:col-span-1 flex flex-col gap-5 min-h-0 overflow-y-auto pr-1 scrollbar-hide">
           
           {/* Telemetry Sync Capsule */}
           <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-5 relative overflow-hidden group hover:border-white/[0.08] transition duration-300">
@@ -258,11 +261,11 @@ export default function CopilotPage() {
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
           
           {/* Messages List */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 z-10 min-h-0">
+          <div data-lenis-prevent className="flex-1 overflow-y-auto p-6 space-y-6 z-10 min-h-0">
             <AnimatePresence initial={false}>
-              {messages.map((msg) => (
+              {messages.map((msg, index) => (
                 <motion.div
-                  key={msg.id}
+                  key={msg.id || `msg-${index}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex gap-4 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
@@ -279,7 +282,7 @@ export default function CopilotPage() {
                   </div>
 
                   {/* Message Bubble */}
-                  <div className={`p-4 rounded-2xl text-[11px] leading-relaxed font-medium ${
+                  <div className={`p-4 rounded-2xl text-[11px] leading-relaxed font-medium whitespace-pre-wrap ${
                     msg.role === 'system' ? 'bg-black/40 border border-zinc-800/50 text-zinc-500 font-mono text-[9px] rounded-lg tracking-wider' :
                     msg.role === 'assistant' ? 'bg-[#08080C]/80 border border-white/[0.04] text-zinc-200 shadow-md backdrop-blur-sm' :
                     'bg-[#FF4F21]/15 text-white border border-[#FF4F21]/20 shadow-[0_2px_15px_rgba(255,79,33,0.1)] backdrop-blur-sm'
@@ -291,6 +294,7 @@ export default function CopilotPage() {
 
               {isTyping && (
                 <motion.div
+                  key="typing-indicator"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
@@ -306,8 +310,8 @@ export default function CopilotPage() {
                   </div>
                 </motion.div>
               )}
-              <div ref={(el) => { el?.scrollIntoView({ behavior: 'smooth' }) }} />
             </AnimatePresence>
+            <div ref={(el) => { el?.scrollIntoView({ behavior: 'smooth' }) }} />
           </div>
 
           {/* Input Area */}
