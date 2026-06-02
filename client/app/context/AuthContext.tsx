@@ -27,6 +27,7 @@ export interface UserProfile {
     height_cm?: number;
     weight_kg?: number;
     personal_best?: string;
+    [key: string]: any;
   };
 }
 

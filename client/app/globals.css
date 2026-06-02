@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -7,14 +9,6 @@
 
 html {
   scroll-behavior: smooth;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: #FF4F21;
-  --font-sans: var(--font-poppins);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -42,8 +36,6 @@ body {
   background: transparent !important;
 }
 
-
-
 /* Subtle Phosphor Glow effects for text and borders */
 .crt-glow-orange {
   text-shadow: 0 0 6px rgba(255, 79, 33, 0.55), 0 0 15px rgba(255, 79, 33, 0.25);
@@ -67,4 +59,3 @@ body {
 .crt-flicker {
   animation: crt-flicker 0.2s infinite;
 }
-
