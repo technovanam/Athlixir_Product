@@ -37,7 +37,7 @@ jobs:
           OUTPUT=$(gcloud builds submit \
             --async \
             --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-engine:latest \
-            ./ai-engine)
+            ./ai-engine 2>&1)
           BUILD_ID=$(echo "$OUTPUT" | grep -oE "builds/[a-f0-9-]+" | cut -d'/' -f2)
           echo "AI_BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
 
@@ -72,7 +72,7 @@ jobs:
           OUTPUT=$(gcloud builds submit \
             --async \
             --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/server:latest \
-            ./server)
+            ./server 2>&1)
           BUILD_ID=$(echo "$OUTPUT" | grep -oE "builds/[a-f0-9-]+" | cut -d'/' -f2)
           echo "BACKEND_BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
 
