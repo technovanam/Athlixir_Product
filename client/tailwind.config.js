@@ -12,8 +12,9 @@ module.exports = {
         primary: "#FF4F21",
       },
       fontFamily: {
-        sans: ["var(--font-poppins)"],
-        mono: ["var(--font-roboto-mono)"],
+        sans: ["var(--font-inter)", "sans-serif"],
+        teko: ["var(--font-teko)", "sans-serif"],
+        mono: ["var(--font-roboto-mono)", "monospace"],
       },
     },
   },

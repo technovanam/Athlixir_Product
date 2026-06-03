@@ -19,7 +19,7 @@ import {
   LogOut
 } from 'lucide-react';
 
-const SECTIONS = [
+export const SECTIONS = [
   {
     title: 'Overview',
     items: [
@@ -44,8 +44,15 @@ const SECTIONS = [
   },
 ];
 
-export default function Sidebar() {
-  const [isExpanded, setIsExpanded] = useState(true);
+interface SidebarProps {
+  isExpanded?: boolean;
+  setIsExpanded?: (expanded: boolean) => void;
+}
+
+export default function Sidebar({ isExpanded: propIsExpanded, setIsExpanded: propSetIsExpanded }: SidebarProps) {
+  const [localIsExpanded, setLocalIsExpanded] = useState(true);
+  const isExpanded = propIsExpanded !== undefined ? propIsExpanded : localIsExpanded;
+  const setIsExpanded = propSetIsExpanded !== undefined ? propSetIsExpanded : setLocalIsExpanded;
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
@@ -57,7 +64,7 @@ export default function Sidebar() {
       initial={false}
       animate={{ width: isExpanded ? 250 : 76 }}
       transition={{ type: 'spring', stiffness: 220, damping: 26 }}
-      className="relative sticky top-0 h-screen bg-[#08080C] border-r border-zinc-900/80 flex flex-col z-40 shrink-0 print:hidden"
+      className="hidden md:flex md:fixed md:left-0 md:top-0 h-screen bg-[#08080C] border-r border-zinc-900/80 flex-col z-40 shrink-0 print:hidden overflow-y-auto"
     >
       {/* Floating Expand/Collapse Button */}
       <button
@@ -88,7 +95,7 @@ export default function Sidebar() {
             transition={{ type: 'spring', stiffness: 220, damping: 26 }}
             className="flex flex-col min-w-0 overflow-hidden whitespace-nowrap"
           >
-            <span className="font-bold text-sm tracking-tight text-white leading-tight">
+            <span className="font-teko text-lg tracking-wider text-white leading-tight">
               Athlixir<span className="text-[#FF4F21]">.</span>
             </span>
             <span className="text-[8px] font-bold text-zinc-500 tracking-[0.25em] uppercase leading-none mt-1 truncate">

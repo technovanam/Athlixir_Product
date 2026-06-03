@@ -53,36 +53,38 @@ export default function PipelineDebugPage() {
 
             <div className="mt-8">
               <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">Determinism Variance Tracker</h3>
-              <table className="w-full text-left text-sm font-mono">
-                <thead>
-                  <tr className="border-b border-zinc-800 text-zinc-500">
-                    <th className="pb-3 font-medium">Metric</th>
-                    <th className="pb-3 font-medium">Allowed Var.</th>
-                    <th className="pb-3 font-medium">Last Run Var.</th>
-                    <th className="pb-3 font-medium text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800/50">
-                  <tr>
-                    <td className="py-4 text-white">Cadence</td>
-                    <td className="py-4">±1 spm</td>
-                    <td className="py-4 text-emerald-500">0.0 spm</td>
-                    <td className="py-4 text-right text-emerald-500">STABLE</td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 text-white">GCT</td>
-                    <td className="py-4">±5 ms</td>
-                    <td className="py-4 text-amber-500">8 ms</td>
-                    <td className="py-4 text-right text-amber-500">WARNING</td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 text-white">Symmetry</td>
-                    <td className="py-4">±2 %</td>
-                    <td className="py-4 text-emerald-500">0.4 %</td>
-                    <td className="py-4 text-right text-emerald-500">STABLE</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm font-mono min-w-[500px] md:min-w-0">
+                  <thead>
+                    <tr className="border-b border-zinc-800 text-zinc-500">
+                      <th className="pb-3 font-medium">Metric</th>
+                      <th className="pb-3 font-medium">Allowed Var.</th>
+                      <th className="pb-3 font-medium">Last Run Var.</th>
+                      <th className="pb-3 font-medium text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/50">
+                    <tr>
+                      <td className="py-4 text-white">Cadence</td>
+                      <td className="py-4">±1 spm</td>
+                      <td className="py-4 text-emerald-500">0.0 spm</td>
+                      <td className="py-4 text-right text-emerald-500">STABLE</td>
+                    </tr>
+                    <tr>
+                      <td className="py-4 text-white">GCT</td>
+                      <td className="py-4">±5 ms</td>
+                      <td className="py-4 text-amber-500">8 ms</td>
+                      <td className="py-4 text-right text-amber-500">WARNING</td>
+                    </tr>
+                    <tr>
+                      <td className="py-4 text-white">Symmetry</td>
+                      <td className="py-4">±2 %</td>
+                      <td className="py-4 text-emerald-500">0.4 %</td>
+                      <td className="py-4 text-right text-emerald-500">STABLE</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 

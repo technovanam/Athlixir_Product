@@ -93,7 +93,7 @@ export default function InsightsWidget({ analysis }: { analysis: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
         
         {/* SECTION 1 — MEASURED FACTS (DETERMINISTIC) */}
-        <div className="space-y-4 border-r border-white/[0.03] pr-0 lg:pr-8 flex flex-col justify-between">
+        <div className="space-y-4 border-r-0 lg:border-r border-white/[0.03] pr-0 lg:pr-8 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Activity className="h-4 w-4 text-blue-400" />

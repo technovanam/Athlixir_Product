@@ -233,9 +233,9 @@ export default function AnalysisDetailsPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 bg-black aspect-video relative group">
+            <div className="grid grid-cols-1 md:grid-cols-2 bg-black relative group">
               {/* RAW Video */}
-              <div className="relative border-r border-white/[0.05]">
+              <div className="relative border-b md:border-b-0 md:border-r border-white/[0.05] aspect-video">
                 <video 
                   ref={videoRef}
                   src={analysis.videoUrl} 
@@ -246,7 +246,7 @@ export default function AnalysisDetailsPage() {
                 />
               </div>
               {/* Overlay Video */}
-              <div className="relative">
+              <div className="relative aspect-video">
                 {analysis.overlayVideoUrl ? (
                   <video 
                     ref={overlayRef}

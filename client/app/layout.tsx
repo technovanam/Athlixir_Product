@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins, Roboto_Mono } from "next/font/google";
+import { Teko, Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -7,8 +7,14 @@ import SmoothScrollProvider from "./components/SmoothScrollProvider";
 import CommandPalette from "./components/CommandPalette";
 import { DateFilterProvider } from "./context/DateFilterContext";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const teko = Teko({
+  variable: "--font-teko",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
@@ -27,7 +33,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${poppins.variable} ${robotoMono.variable} antialiased dark`}>
+    <html lang="en" className={`${inter.variable} ${teko.variable} ${robotoMono.variable} antialiased dark`}>
       <body className="bg-black font-sans text-zinc-100 antialiased">
         <SmoothScrollProvider>
           <AuthProvider>

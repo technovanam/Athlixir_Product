@@ -87,7 +87,7 @@ function DashboardPageContent() {
         </div>
 
         {/* Big KPI Cards */}
-        <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           
           {/* KPI 1 */}
           <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-5 flex flex-col justify-between relative overflow-hidden group hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
@@ -99,7 +99,7 @@ function DashboardPageContent() {
               <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Perf Score</span>
             </div>
             <div>
-              <div className="text-4xl font-extrabold text-white tracking-tighter">{latestAnalysis?.scores?.performanceScore || '—'}</div>
+              <div className="text-5xl font-teko text-white tracking-normal leading-none">{latestAnalysis?.scores?.performanceScore || '—'}</div>
               <div className="flex items-center gap-1.5 mt-2">
                 <TrendingUp className="h-3 w-3 text-emerald-400" />
                 <span className="text-[9px] font-bold text-emerald-400">+2 from last</span>
@@ -117,7 +117,7 @@ function DashboardPageContent() {
               <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Biomechanics</span>
             </div>
             <div>
-              <div className="text-4xl font-extrabold text-white tracking-tighter">{latestAnalysis?.scores?.biomechanicsScore || '—'}</div>
+              <div className="text-5xl font-teko text-white tracking-normal leading-none">{latestAnalysis?.scores?.biomechanicsScore || '—'}</div>
               <div className="text-[9px] font-bold text-zinc-500 mt-2 uppercase tracking-wider">State Average</div>
             </div>
           </div>
@@ -132,7 +132,7 @@ function DashboardPageContent() {
               <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Efficiency</span>
             </div>
             <div>
-              <div className="text-4xl font-extrabold text-white tracking-tighter">{latestAnalysis?.scores?.efficiencyScore || '—'}</div>
+              <div className="text-5xl font-teko text-white tracking-normal leading-none">{latestAnalysis?.scores?.efficiencyScore || '—'}</div>
               <div className="text-[9px] font-bold text-zinc-500 mt-2 uppercase tracking-wider">Optimal range</div>
             </div>
           </div>
@@ -147,7 +147,7 @@ function DashboardPageContent() {
               <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Injury Risk</span>
             </div>
             <div>
-              <div className="text-3xl font-extrabold text-white tracking-tighter uppercase">
+              <div className="text-4xl font-teko text-white tracking-normal leading-none uppercase">
                 {latestAnalysis?.injuryRisk?.level || (user?.physicalProfile?.injury_history?.injuries?.length > 0 ? 'WATCH' : 'LOW')}
               </div>
               <div className="text-[9px] font-bold text-amber-500 mt-2 truncate uppercase tracking-wider">
@@ -168,7 +168,7 @@ function DashboardPageContent() {
         <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em] mb-4 flex items-center gap-2">
           <Zap className="h-3.5 w-3.5" /> Quick Actions
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <button className="flex items-center gap-3.5 p-4 rounded-xl border border-[#FF4F21]/30 bg-[#FF4F21]/10 hover:bg-[#FF4F21]/20 transition-all duration-300 group shadow-[0_0_15px_rgba(255,79,33,0.05)] cursor-pointer">
             <div className="h-8 w-8 rounded-lg bg-[#FF4F21] flex items-center justify-center shadow-[0_2px_8px_rgba(255,79,33,0.3)]">
               <UploadCloud className="h-4 w-4 text-white" />
