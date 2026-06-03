@@ -38,7 +38,7 @@ jobs:
             --async \
             --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-engine:latest \
             ./ai-engine 2>&1)
-          BUILD_ID=$(echo "$OUTPUT" | grep -oE "builds/[a-f0-9-]+" | cut -d'/' -f2)
+          BUILD_ID=$(echo "$OUTPUT" | grep -oE "builds/[a-f0-9-]+" | head -n 1 | cut -d'/' -f2)
           echo "AI_BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
 
       - name: Wait for AI Engine Build
@@ -73,7 +73,7 @@ jobs:
             --async \
             --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/server:latest \
             ./server 2>&1)
-          BUILD_ID=$(echo "$OUTPUT" | grep -oE "builds/[a-f0-9-]+" | cut -d'/' -f2)
+          BUILD_ID=$(echo "$OUTPUT" | grep -oE "builds/[a-f0-9-]+" | head -n 1 | cut -d'/' -f2)
           echo "BACKEND_BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
 
       - name: Wait for Backend Build
