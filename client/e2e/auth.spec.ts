@@ -6,7 +6,7 @@ test.describe('Authentication Flows', () => {
     await page.goto('/dashboard');
     // It should redirect to login page or show login form
     await expect(page).toHaveURL(/.*\/login/);
-    await expect(page.locator('text=ACCESS PORTAL')).toBeVisible();
+    await expect(page.locator('text=ATHLETE SIGN IN')).toBeVisible();
   });
 
   test('shows validation errors for empty fields', async ({ page }) => {
@@ -15,7 +15,7 @@ test.describe('Authentication Flows', () => {
     await page.locator('button[type="submit"]').click();
     
     // Expect error message
-    await expect(page.locator('text=Error: Please fill in all fields.')).toBeVisible();
+    await expect(page.locator('text=Please fill in all fields.')).toBeVisible();
   });
 
   test('shows validation errors for weak passwords', async ({ page }) => {
@@ -25,7 +25,7 @@ test.describe('Authentication Flows', () => {
     await page.locator('button[type="submit"]').click();
     
     // Expect error message
-    await expect(page.locator('text=Error: Password must be at least 8 characters long.')).toBeVisible();
+    await expect(page.locator('text=Password must be at least 8 characters long.')).toBeVisible();
   });
 
   test('attempts login and shows loading state', async ({ page }) => {
@@ -38,7 +38,7 @@ test.describe('Authentication Flows', () => {
     
     await page.locator('button[type="submit"]').click();
     
-    // The button should change to "Verifying..."
-    await expect(page.locator('text=Verifying...')).toBeVisible();
+    // The button should change to "Verifying Athlete Card..."
+    await expect(page.locator('text=Verifying Athlete Card...')).toBeVisible();
   });
 });

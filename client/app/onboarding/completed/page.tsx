@@ -24,7 +24,7 @@ export default function CompletedStep() {
 
   const handleEnterWorkspace = async () => {
     await refreshUser();
-    router.push('/dashboard');
+    router.replace('/dashboard');
   };
 
   return (

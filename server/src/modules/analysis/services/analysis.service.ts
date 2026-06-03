@@ -21,8 +21,9 @@ export class AnalysisService {
   private readonly logger = new Logger(AnalysisService.name);
   private readonly collectionName = 'analyses';
   private readonly athleteProfilesCollection = 'athlete_profiles';
-  private readonly fastapiUrl = process.env.FASTAPI_URL || 'http://127.0.0.1:8000/api/analyze';
-  private readonly internalApiSecret = process.env.INTERNAL_API_SECRET || 'a-very-secret-and-long-key-for-internal-service-auth';
+  private readonly fastapiUrl =
+    process.env.FASTAPI_URL || 'http://127.0.0.1:8000/api/analyze';
+  private readonly internalApiSecret = process.env.INTERNAL_API_SECRET;
   private readonly localVideoDir = join(tmpdir(), 'athlixir-videos');
   private readonly pendingVideos = new Map<string, PendingVideo>();
 
@@ -41,17 +42,30 @@ export class AnalysisService {
    */
   async uploadAndAnalyze(
     userId: string,
-    file: { buffer: Buffer; originalname: string; mimetype: string; size: number },
+    file: {
+      buffer: Buffer;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    },
   ) {
     this.logger.log(`Upload request for user ${userId}`);
 
     if (file.size > 100 * 1024 * 1024) {
-      throw new BadRequestException('Video size exceeds the 100MB enterprise limit.');
+      throw new BadRequestException(
+        'Video size exceeds the 100MB enterprise limit.',
+      );
     }
 
-    const allowedMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
+    const allowedMimeTypes = [
+      'video/mp4',
+      'video/quicktime',
+      'video/x-msvideo',
+    ];
     if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Unsupported video format. Please upload MP4, MOV, or AVI.');
+      throw new BadRequestException(
+        'Unsupported video format. Please upload MP4, MOV, or AVI.',
+      );
     }
 
     const analysisId = crypto.randomUUID();
@@ -97,10 +111,10 @@ export class AnalysisService {
     } catch (err: any) {
       this.logger.error(`Firebase upload failed for ${analysisId}`, err);
       await this.updateStatus(analysisId, 'FAILED', 0, {
-        errorMessage: `Storage upload failed: ${err.message}`,
+        errorMessage: 'Could not upload video files.',
       });
       throw new BadRequestException(
-        `Could not store video. Check Firebase Storage configuration. ${err.message}`,
+        'Could not store uploaded video. Please check your file and try again.',
       );
     }
 
@@ -234,6 +248,9 @@ export class AnalysisService {
     const copy = { ...data };
     delete copy.videoUrl;
     delete copy.overlayVideoUrl;
+    delete copy.originalVideoPath;
+    delete copy.skeletonOverlayPath;
+    delete copy.storageBucket;
 
     let progressData: any = null;
     if (copy.progress && typeof copy.progress === 'object') {
@@ -244,9 +261,9 @@ export class AnalysisService {
       ...copy,
       progressData: progressData || copy.progressData || null,
       progress: typeof copy.progress === 'number' ? copy.progress : 100,
-      videoReady: Boolean(copy.videoReady ?? copy.originalVideoPath),
+      videoReady: Boolean(copy.videoReady ?? data.originalVideoPath),
       hasOverlay: Boolean(
-        copy.skeletonOverlayReady ?? copy.skeletonOverlayPath,
+        copy.skeletonOverlayReady ?? data.skeletonOverlayPath,
       ),
     };
   }
@@ -259,7 +276,7 @@ export class AnalysisService {
         .get();
 
       const analyses = snapshot.docs.map((doc) =>
-        this.sanitizeForClient({ id: doc.id, ...doc.data() } as Record<string, unknown>),
+        this.sanitizeForClient({ id: doc.id, ...doc.data() }),
       );
 
       return analyses.sort(
@@ -279,11 +296,14 @@ export class AnalysisService {
         .where('userId', '==', userId)
         .get();
 
-      const all = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Record<string, unknown>));
+      const all = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
       const completed = all
         .filter((a: any) => a.status === 'COMPLETED' && a.metrics)
-        .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
 
       if (completed.length === 0) {
         return {
@@ -308,7 +328,7 @@ export class AnalysisService {
 
       const latestAnalysisId = completed[completed.length - 1].id;
 
-      // 1. Check if we have a valid fully cached evolution result to bypass the python server + LLM completely
+      // 1. Check if we have a valid fully cached evolution result
       try {
         const cachedDoc = await this.firebaseService.firestore
           .collection('athlete_evolution')
@@ -317,8 +337,14 @@ export class AnalysisService {
 
         if (cachedDoc.exists) {
           const cachedData = cachedDoc.data();
-          if (cachedData && cachedData.lastAnalysisId === latestAnalysisId && cachedData.intelligenceData) {
-            this.logger.log(`Using cached full evolution intelligence for user: ${userId}`);
+          if (
+            cachedData &&
+            cachedData.lastAnalysisId === latestAnalysisId &&
+            cachedData.intelligenceData
+          ) {
+            this.logger.log(
+              `Using cached full evolution intelligence for user: ${userId}`,
+            );
             return cachedData.intelligenceData;
           }
         }
@@ -326,49 +352,14 @@ export class AnalysisService {
         this.logger.warn(`Failed to read evolution cache: ${cacheErr.message}`);
       }
 
-      // 2. Cache miss or stale: Call the AI Engine for full intelligence processing
-      try {
-        const fastapiIntelUrl = process.env.FASTAPI_INTEL_URL || 'http://127.0.0.1:8000/api/analyze/intelligence';
-        const response = await fetch(fastapiIntelUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.internalApiSecret}`,
-          },
-          body: JSON.stringify({ analyses: all })
-        });
-        
-        if (response.ok) {
-          const intelligenceData = await response.json();
-          if (intelligenceData.evolution) {
-            try {
-              this.logger.log(`Cache miss or stale for user: ${userId}. Generating fresh evolution insights.`);
-              const aiInsights = await this.aiInsightsService.generateEvolutionInsights(
-                userId,
-                intelligenceData.evolution
-              );
-              intelligenceData.evolution.aiInsights = aiInsights;
-
-              // Write the fully calculated intelligenceData to cache
-              await this.firebaseService.firestore
-                .collection('athlete_evolution')
-                .doc(userId)
-                .set({
-                  userId,
-                  intelligenceData,
-                  lastAnalysisId: latestAnalysisId,
-                  updatedAt: new Date().toISOString(),
-                });
-            } catch (aiErr: any) {
-              this.logger.error(`Failed to retrieve/generate AI evolution insights: ${aiErr.message}`);
-            }
-          }
-          return intelligenceData;
-        } else {
-          this.logger.warn(`AI engine returned ${response.status} for intelligence calculation. Fallback to empty.`);
-        }
-      } catch (err) {
-        this.logger.error(`Failed to reach AI engine for intelligence: ${err.message}`);
+      // 2. Cache miss or stale: Call the helper
+      const intelligenceData = await this.calculateAndCacheEvolution(
+        userId,
+        all,
+        completed,
+      );
+      if (intelligenceData) {
+        return intelligenceData;
       }
 
       // Return empty format if AI engine fails
@@ -379,12 +370,79 @@ export class AnalysisService {
         advanced_injury: [],
         forecast: {},
         talent: [],
-        timeline: []
+        timeline: [],
       };
     } catch (err) {
       this.logger.error(`Error computing evolution for ${userId}`, err);
       return { hasHistory: false, sessionCount: 0, error: true };
     }
+  }
+
+  private async calculateAndCacheEvolution(
+    userId: string,
+    all: any[],
+    completed: any[],
+  ) {
+    if (!this.internalApiSecret) {
+      this.logger.error('CRITICAL: INTERNAL_API_SECRET is not configured!');
+      return null;
+    }
+    const latestAnalysisId = completed[completed.length - 1].id;
+    try {
+      const fastapiIntelUrl =
+        process.env.FASTAPI_INTEL_URL ||
+        'http://127.0.0.1:8000/api/analyze/intelligence';
+      const response = await fetch(fastapiIntelUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.internalApiSecret}`,
+        },
+        body: JSON.stringify({ analyses: all }),
+      });
+
+      if (response.ok) {
+        const intelligenceData = await response.json();
+        if (intelligenceData.evolution) {
+          try {
+            this.logger.log(
+              `Generating fresh evolution insights for user: ${userId}`,
+            );
+            const aiInsights =
+              await this.aiInsightsService.generateEvolutionInsights(
+                userId,
+                intelligenceData.evolution,
+              );
+            intelligenceData.evolution.aiInsights = aiInsights;
+
+            // Write the fully calculated intelligenceData to cache
+            await this.firebaseService.firestore
+              .collection('athlete_evolution')
+              .doc(userId)
+              .set({
+                userId,
+                intelligenceData,
+                lastAnalysisId: latestAnalysisId,
+                updatedAt: new Date().toISOString(),
+              });
+          } catch (aiErr: any) {
+            this.logger.error(
+              `Failed to retrieve/generate AI evolution insights: ${aiErr.message}`,
+            );
+          }
+        }
+        return intelligenceData;
+      } else {
+        this.logger.warn(
+          `AI engine returned ${response.status} for intelligence calculation.`,
+        );
+      }
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to reach AI engine for intelligence: ${err.message}`,
+      );
+    }
+    return null;
   }
 
   private async refreshEvolutionInsightsCache(userId: string) {
@@ -394,50 +452,25 @@ export class AnalysisService {
         .where('userId', '==', userId)
         .get();
 
-      const all = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Record<string, unknown>));
+      const all = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
       const completed = all
         .filter((a: any) => a.status === 'COMPLETED' && a.metrics)
-        .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
 
       if (completed.length === 0) return;
 
-      const latestAnalysisId = completed[completed.length - 1].id;
-
-      const fastapiIntelUrl = process.env.FASTAPI_INTEL_URL || 'http://127.0.0.1:8000/api/analyze/intelligence';
-      const response = await fetch(fastapiIntelUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.internalApiSecret}`,
-        },
-        body: JSON.stringify({ analyses: all })
-      });
-      
-      if (response.ok) {
-        const intelligenceData = await response.json();
-        if (intelligenceData.evolution) {
-          const aiInsights = await this.aiInsightsService.generateEvolutionInsights(
-            userId,
-            intelligenceData.evolution
-          );
-          intelligenceData.evolution.aiInsights = aiInsights;
-          
-          await this.firebaseService.firestore
-            .collection('athlete_evolution')
-            .doc(userId)
-            .set({
-              userId,
-              intelligenceData,
-              lastAnalysisId: latestAnalysisId,
-              updatedAt: new Date().toISOString(),
-            });
-            
-          this.logger.log(`Successfully pre-generated and cached full evolution intelligence for user: ${userId}`);
-        }
-      }
+      await this.calculateAndCacheEvolution(userId, all, completed);
+      this.logger.log(
+        `Successfully pre-generated and cached full evolution intelligence for user: ${userId}`,
+      );
     } catch (err: any) {
-      this.logger.error(`Failed to refresh evolution insights cache for user ${userId}: ${err.message}`);
+      this.logger.error(
+        `Failed to refresh evolution insights cache for user ${userId}: ${err.message}`,
+      );
     }
   }
 
@@ -454,7 +487,7 @@ export class AnalysisService {
     return this.sanitizeForClient({
       id: doc.id,
       ...doc.data(),
-    } as Record<string, unknown>);
+    });
   }
 
   async updateStatus(
@@ -489,30 +522,39 @@ export class AnalysisService {
         const userId = (doc.data() as { userId?: string })?.userId;
         if (userId) {
           await this.persistIntelligenceArtifacts(analysisId, userId, data);
-          
+
           // Trigger asynchronous background LLM sports science insights generation
-          this.aiInsightsService.generateIntelligence(analysisId, userId, data)
+          this.aiInsightsService
+            .generateIntelligence(analysisId, userId, data)
             .then(async (enrichedData) => {
-              this.logger.log(`Background LLM enrichment successfully completed for ${analysisId}`);
-              
+              this.logger.log(
+                `Background LLM enrichment successfully completed for ${analysisId}`,
+              );
+
               // Broadcast fully enriched client payload via WS to dynamically update dashboard
               this.analysisGateway.broadcastStatus(
                 analysisId,
                 'COMPLETED',
                 100,
-                this.sanitizeForClient({ ...data, ...enrichedData })
+                this.sanitizeForClient({ ...data, ...enrichedData }),
               );
 
               // Pre-generate and cache evolution insights in the background
               try {
-                this.logger.log(`Pre-generating and caching evolution insights for user: ${userId}`);
+                this.logger.log(
+                  `Pre-generating and caching evolution insights for user: ${userId}`,
+                );
                 await this.refreshEvolutionInsightsCache(userId);
               } catch (cacheErr: any) {
-                this.logger.error(`Failed to pre-generate evolution insights cache: ${cacheErr.message}`);
+                this.logger.error(
+                  `Failed to pre-generate evolution insights cache: ${cacheErr.message}`,
+                );
               }
             })
             .catch((err) => {
-              this.logger.error(`Background LLM enrichment failed for ${analysisId}: ${err.message}`);
+              this.logger.error(
+                `Background LLM enrichment failed for ${analysisId}: ${err.message}`,
+              );
             });
         }
       }
@@ -585,28 +627,37 @@ export class AnalysisService {
     const db = this.firebaseService.firestore;
 
     if (data.metrics) {
-      await db.collection('metrics').doc(analysisId).set({
-        analysisId,
-        userId,
-        ...(data.metrics as Record<string, unknown>),
-        createdAt: ts,
-      });
+      await db
+        .collection('metrics')
+        .doc(analysisId)
+        .set({
+          analysisId,
+          userId,
+          ...(data.metrics as Record<string, unknown>),
+          createdAt: ts,
+        });
     }
     if (data.scores) {
-      await db.collection('scores').doc(analysisId).set({
-        analysisId,
-        userId,
-        ...(data.scores as Record<string, unknown>),
-        createdAt: ts,
-      });
+      await db
+        .collection('scores')
+        .doc(analysisId)
+        .set({
+          analysisId,
+          userId,
+          ...(data.scores as Record<string, unknown>),
+          createdAt: ts,
+        });
     }
     if (data.benchmarks) {
-      await db.collection('benchmark_results').doc(analysisId).set({
-        analysisId,
-        userId,
-        ...(data.benchmarks as Record<string, unknown>),
-        createdAt: ts,
-      });
+      await db
+        .collection('benchmark_results')
+        .doc(analysisId)
+        .set({
+          analysisId,
+          userId,
+          ...(data.benchmarks as Record<string, unknown>),
+          createdAt: ts,
+        });
     }
     if (data.injuryRisks || data.injuryRisk) {
       await db.collection('injury_risks').doc(analysisId).set({
@@ -646,7 +697,11 @@ export class AnalysisService {
     file: { buffer: Buffer; mimetype: string },
   ) {
     const storagePath = `running-videos/${userId}/reports/${analysisId}.html`;
-    await this.uploadToFirebaseStorage(file.buffer, storagePath, file.mimetype || 'text/html');
+    await this.uploadToFirebaseStorage(
+      file.buffer,
+      storagePath,
+      file.mimetype || 'text/html',
+    );
 
     await this.firebaseService.firestore
       .collection('reports')
@@ -661,12 +716,18 @@ export class AnalysisService {
     await this.firebaseService.firestore
       .collection(this.collectionName)
       .doc(analysisId)
-      .set({ reportReady: true, updatedAt: new Date().toISOString() }, { merge: true });
+      .set(
+        { reportReady: true, updatedAt: new Date().toISOString() },
+        { merge: true },
+      );
 
     return { success: true };
   }
 
-  async streamReport(analysisId: string, requestUser: { uid?: string; sub?: string }) {
+  async streamReport(
+    analysisId: string,
+    requestUser: { uid?: string; sub?: string },
+  ) {
     const userId = this.resolveUserId(requestUser);
     const doc = await this.firebaseService.firestore
       .collection(this.collectionName)
@@ -756,29 +817,34 @@ export class AnalysisService {
       throw new NotFoundException('Video not available.');
     }
 
-    if (storagePath.startsWith('http://') || storagePath.startsWith('https://')) {
+    if (
+      storagePath.startsWith('http://') ||
+      storagePath.startsWith('https://')
+    ) {
       this.logger.log(`Streaming ${type} from URL: ${storagePath}`);
       try {
         const response = await fetch(storagePath);
         if (!response.ok) {
-          throw new NotFoundException(`Video URL is not accessible: status ${response.status}`);
+          throw new NotFoundException(
+            `Video URL is not accessible: status ${response.status}`,
+          );
         }
         return {
           stream: Readable.fromWeb(response.body as any),
           contentType: response.headers.get('content-type') || 'video/mp4',
         };
       } catch (err: any) {
-        this.logger.error(`Error streaming from URL ${storagePath}: ${err.message}`);
-        throw new NotFoundException(`Video URL streaming failed: ${err.message}`);
+        this.logger.error(
+          `Error streaming from URL ${storagePath}: ${err.message}`,
+        );
+        throw new NotFoundException(
+          `Video URL streaming failed: ${err.message}`,
+        );
       }
     }
 
-
     const buckets = analysis.storageBucket
-      ? [
-          analysis.storageBucket as string,
-          ...this.getStorageBucketNames(),
-        ]
+      ? [analysis.storageBucket as string, ...this.getStorageBucketNames()]
       : this.getStorageBucketNames();
 
     for (const bucketName of Array.from(new Set(buckets))) {
@@ -789,7 +855,9 @@ export class AnalysisService {
         if (!exists) continue;
 
         const [metadata] = await storageFile.getMetadata();
-        this.logger.log(`Streaming ${type} from gs://${bucketName}/${storagePath}`);
+        this.logger.log(
+          `Streaming ${type} from gs://${bucketName}/${storagePath}`,
+        );
         return {
           stream: storageFile.createReadStream(),
           contentType: metadata.contentType || 'video/mp4',
@@ -831,7 +899,7 @@ export class AnalysisService {
           previousMetrics,
         }),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Queue add job timed out')), 3000)
+          setTimeout(() => reject(new Error('Queue add job timed out')), 3000),
         ),
       ]);
 
@@ -846,7 +914,7 @@ export class AnalysisService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.internalApiSecret}`,
+            Authorization: `Bearer ${this.internalApiSecret}`,
           },
           body: JSON.stringify({
             analysisId,
@@ -859,13 +927,19 @@ export class AnalysisService {
 
         if (!response.ok) {
           const errText = await response.text();
-          throw new Error(`FastAPI responded with ${response.status}: ${errText}`);
+          throw new Error(
+            `FastAPI responded with ${response.status}: ${errText}`,
+          );
         }
 
-        this.logger.log(`Successfully triggered analysis directly via HTTP for ${analysisId}`);
+        this.logger.log(
+          `Successfully triggered analysis directly via HTTP for ${analysisId}`,
+        );
         await this.updateStatus(analysisId, 'PROCESSING_POSE', 15);
       } catch (httpErr: any) {
-        this.logger.error(`Direct HTTP fallback also failed: ${httpErr.message}`);
+        this.logger.error(
+          `Direct HTTP fallback also failed: ${httpErr.message}`,
+        );
         await this.updateStatus(analysisId, 'FAILED', 0, {
           errorMessage: `Failed to trigger analysis pipeline: ${httpErr.message}`,
         });
@@ -938,7 +1012,9 @@ export class AnalysisService {
               'Cadence at 178 SPM — State benchmark level',
               'Ground contact time shows efficient elastic response',
             ],
-            weaknesses: ['No major mechanical red flags in this analysis window'],
+            weaknesses: [
+              'No major mechanical red flags in this analysis window',
+            ],
             observations: [
               'Movement profile is consistent across cadence, contact time, and stride metrics',
             ],
@@ -967,7 +1043,12 @@ export class AnalysisService {
         clearInterval(interval);
         return;
       }
-      this.updateStatus(analysisId, stage.status, stage.progress, (stage as any).data);
+      this.updateStatus(
+        analysisId,
+        stage.status,
+        stage.progress,
+        (stage as any).data,
+      );
       currentStageIndex++;
     }, 1500);
   }
@@ -975,8 +1056,16 @@ export class AnalysisService {
   /**
    * Delegates contextual chat to the AI Sports Intelligence handler.
    */
-  async chatWithAthleteAssistant(analysisId: string, userId: string, message: string): Promise<{ success: boolean; reply: string }> {
-    const reply = await this.aiInsightsService.handleAthleteChat(analysisId, userId, message);
+  async chatWithAthleteAssistant(
+    analysisId: string,
+    userId: string,
+    message: string,
+  ): Promise<{ success: boolean; reply: string }> {
+    const reply = await this.aiInsightsService.handleAthleteChat(
+      analysisId,
+      userId,
+      message,
+    );
     return { success: true, reply };
   }
 }

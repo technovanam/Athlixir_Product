@@ -9,7 +9,13 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { OnboardingService } from '../services/onboarding.service';
 import { FirebaseAuthGuard } from '../../../auth/guards/firebase-auth.guard';
@@ -29,7 +35,9 @@ export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
 
   @Get('status')
-  @ApiOperation({ summary: 'Retrieve active onboarding progress details and step metrics' })
+  @ApiOperation({
+    summary: 'Retrieve active onboarding progress details and step metrics',
+  })
   async getStatus(@CurrentUser() user: any) {
     const status = await this.onboardingService.getStatus(user.uid);
     return {
@@ -42,9 +50,16 @@ export class OnboardingController {
 
   @Post('basic-info')
   @ApiOperation({ summary: 'Save Step 1: Basic Athlete Information' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Basic information saved' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Basic information saved',
+  })
   async saveBasicInfo(@CurrentUser() user: any, @Body() dto: BasicInfoDto) {
-    const status = await this.onboardingService.saveBasicInfo(user.uid, user.email, dto);
+    const status = await this.onboardingService.saveBasicInfo(
+      user.uid,
+      user.email,
+      dto,
+    );
     return {
       success: true,
       message: 'Basic info saved successfully',
@@ -55,8 +70,14 @@ export class OnboardingController {
 
   @Post('classification')
   @ApiOperation({ summary: 'Save Step 2: Athlete Classification' })
-  async saveClassification(@CurrentUser() user: any, @Body() dto: ClassificationDto) {
-    const status = await this.onboardingService.saveClassification(user.uid, dto);
+  async saveClassification(
+    @CurrentUser() user: any,
+    @Body() dto: ClassificationDto,
+  ) {
+    const status = await this.onboardingService.saveClassification(
+      user.uid,
+      dto,
+    );
     return {
       success: true,
       message: 'Athlete classification saved successfully',
@@ -79,8 +100,14 @@ export class OnboardingController {
 
   @Post('training-profile')
   @ApiOperation({ summary: 'Save Step 4: Training Profile' })
-  async saveTrainingProfile(@CurrentUser() user: any, @Body() dto: TrainingProfileDto) {
-    const status = await this.onboardingService.saveTrainingProfile(user.uid, dto);
+  async saveTrainingProfile(
+    @CurrentUser() user: any,
+    @Body() dto: TrainingProfileDto,
+  ) {
+    const status = await this.onboardingService.saveTrainingProfile(
+      user.uid,
+      dto,
+    );
     return {
       success: true,
       message: 'Training profile saved successfully',
@@ -103,8 +130,14 @@ export class OnboardingController {
 
   @Post('injury-history')
   @ApiOperation({ summary: 'Save Step 6: Injury History' })
-  async saveInjuryHistory(@CurrentUser() user: any, @Body() dto: InjuryHistoryDto) {
-    const status = await this.onboardingService.saveInjuryHistory(user.uid, dto);
+  async saveInjuryHistory(
+    @CurrentUser() user: any,
+    @Body() dto: InjuryHistoryDto,
+  ) {
+    const status = await this.onboardingService.saveInjuryHistory(
+      user.uid,
+      dto,
+    );
     return {
       success: true,
       message: 'Injury history saved successfully',
@@ -126,7 +159,9 @@ export class OnboardingController {
   }
 
   @Post('complete')
-  @ApiOperation({ summary: 'Lock in final onboarding completion and update access profiles' })
+  @ApiOperation({
+    summary: 'Lock in final onboarding completion and update access profiles',
+  })
   async completeOnboarding(@CurrentUser() user: any) {
     const status = await this.onboardingService.completeOnboarding(user.uid);
     return {
@@ -152,10 +187,7 @@ export class OnboardingController {
       },
     },
   })
-  async uploadPhoto(
-    @CurrentUser() user: any,
-    @UploadedFile() file: any,
-  ) {
+  async uploadPhoto(@CurrentUser() user: any, @UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('No image file selected.');
     }

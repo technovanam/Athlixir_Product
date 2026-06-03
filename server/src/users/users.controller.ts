@@ -1,10 +1,22 @@
-import { Controller, Get, Post, Body, UseGuards, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  HttpStatus,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { OnboardUserDto } from './dto/onboard.dto';
 import { FirebaseAuthGuard } from '../auth/guards/firebase-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -37,7 +49,10 @@ export class UsersController {
   @ApiOperation({
     summary: 'Complete onboarding wizard and initialize team workspace info',
   })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Onboarding completed successfully' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Onboarding completed successfully',
+  })
   async onboardUser(
     @CurrentUser() user: any,
     @Body() onboardUserDto: OnboardUserDto,

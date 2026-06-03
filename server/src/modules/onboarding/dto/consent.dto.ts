@@ -7,12 +7,18 @@ export class ConsentDto {
   @Equals(true)
   termsAccepted: boolean;
 
-  @ApiProperty({ description: 'Agreement to active AI analysis mechanics', example: true })
+  @ApiProperty({
+    description: 'Agreement to active AI analysis mechanics',
+    example: true,
+  })
   @IsBoolean()
   @Equals(true)
   aiAnalysisConsent: boolean;
 
-  @ApiProperty({ description: 'Agreement to active performance data storage', example: true })
+  @ApiProperty({
+    description: 'Agreement to active performance data storage',
+    example: true,
+  })
   @IsBoolean()
   @Equals(true)
   dataStorageConsent: boolean;

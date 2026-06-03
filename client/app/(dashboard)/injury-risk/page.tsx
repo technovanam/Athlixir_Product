@@ -62,8 +62,10 @@ export default function InjuryRiskPage() {
 
   // Deriving asymmetry index dynamically or fallback to 11.4%
   const symmetry = latestAnalysis?.metrics?.symmetry;
-  const asymmetryVal = latestAnalysis?.metrics?.asymmetryIndex || (symmetry ? (100 - symmetry) : 11.4);
-  const asymmetryPercent = parseFloat(asymmetryVal.toFixed(1));
+  const asymmetryVal = latestAnalysis?.metrics?.asymmetryIndex !== undefined && latestAnalysis?.metrics?.asymmetryIndex !== null
+    ? latestAnalysis.metrics.asymmetryIndex 
+    : (typeof symmetry === 'number' ? (100 - symmetry) : 11.4);
+  const asymmetryPercent = typeof asymmetryVal === 'number' ? parseFloat(asymmetryVal.toFixed(1)) : 11.4;
 
   // Style parameters depending on the active threat level
   const getRiskStyles = (level: string) => {

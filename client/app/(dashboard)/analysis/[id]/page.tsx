@@ -140,6 +140,53 @@ export default function AnalysisDetailsPage() {
   const insights = analysis.insights || {};
   const injury = analysis.injuryRisk || { level: 'LOW' };
 
+  // Knee Drive
+  const kneeDrive = metrics.kneeDrive ?? scores.efficiencyScore ?? 62;
+  let kneeDriveStatus = 'Restricted';
+  let kneeDriveColor = 'text-amber-400';
+  let kneeDriveBg = 'bg-amber-400';
+  if (kneeDrive >= 75) {
+    kneeDriveStatus = 'Optimal';
+    kneeDriveColor = 'text-emerald-400';
+    kneeDriveBg = 'bg-emerald-400';
+  } else if (kneeDrive < 60) {
+    kneeDriveStatus = 'Restricted';
+    kneeDriveColor = 'text-red-500';
+    kneeDriveBg = 'bg-red-500';
+  }
+
+  // Posture Angle
+  const postureAngle = metrics.postureAngle ?? 7.8;
+  let postureStatus = 'Optimal';
+  let postureColor = 'text-emerald-400';
+  let postureBg = 'bg-emerald-400';
+  let postureProgress = Math.min(100, Math.max(10, (postureAngle / 15) * 100));
+  if (postureAngle < 4) {
+    postureStatus = 'Upright';
+    postureColor = 'text-amber-400';
+    postureBg = 'bg-amber-400';
+  } else if (postureAngle > 12) {
+    postureStatus = 'Excessive Lean';
+    postureColor = 'text-red-500';
+    postureBg = 'bg-red-500';
+  }
+
+  // Foot Strike (Overstride)
+  const overstrideAngle = metrics.overstrideAngle ?? 4.5;
+  let strikeStatus = 'Mild Overstride';
+  let strikeColor = 'text-amber-400';
+  let strikeBg = 'bg-amber-400';
+  let strikeProgress = Math.min(100, Math.max(10, 100 - (overstrideAngle / 10) * 100));
+  if (overstrideAngle <= 3) {
+    strikeStatus = 'Optimal';
+    strikeColor = 'text-emerald-400';
+    strikeBg = 'bg-emerald-400';
+  } else if (overstrideAngle > 6) {
+    strikeStatus = 'Severe Overstride';
+    strikeColor = 'text-red-500';
+    strikeBg = 'bg-red-500';
+  }
+
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-8 animate-fadeIn pb-24 text-white">
       {/* Header */}
@@ -312,7 +359,16 @@ export default function AnalysisDetailsPage() {
               </div>
               <div className="bg-black/40 border border-white/[0.03] p-3 rounded-xl">
                 <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Symmetry</div>
-                <div className="text-lg font-black text-emerald-400">92<span className="text-[10px] font-normal text-zinc-500">%</span></div>
+                <div className="text-lg font-black text-emerald-400">
+                  {metrics.symmetry !== undefined && metrics.symmetry !== null ? (
+                    <>
+                      {metrics.symmetry}
+                      <span className="text-[10px] font-normal text-zinc-500">%</span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -324,28 +380,28 @@ export default function AnalysisDetailsPage() {
               <div>
                 <div className="flex justify-between text-[10px] font-bold text-zinc-400 uppercase mb-1">
                   <span>Knee Drive</span>
-                  <span className="text-amber-400">Restricted</span>
+                  <span className={kneeDriveColor}>{kneeDriveStatus}</span>
                 </div>
                 <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-400 w-[65%]" />
+                  <div className={`h-full ${kneeDriveBg}`} style={{ width: `${kneeDrive}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-[10px] font-bold text-zinc-400 uppercase mb-1">
                   <span>Posture Angle</span>
-                  <span className="text-emerald-400">Optimal</span>
+                  <span className={postureColor}>{postureStatus}</span>
                 </div>
                 <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-400 w-[85%]" />
+                  <div className={`h-full ${postureBg}`} style={{ width: `${postureProgress}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-[10px] font-bold text-zinc-400 uppercase mb-1">
                   <span>Foot Strike</span>
-                  <span className="text-red-500">Heel Heavy</span>
+                  <span className={strikeColor}>{strikeStatus}</span>
                 </div>
                 <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-red-500 w-[45%]" />
+                  <div className={`h-full ${strikeBg}`} style={{ width: `${strikeProgress}%` }} />
                 </div>
               </div>
             </div>

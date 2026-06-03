@@ -17,10 +17,12 @@ import { AiInsightsModule } from './modules/ai-insights/ai-insights.module';
       isGlobal: true,
       envFilePath: ['.env', 'server/.env', '../.env'],
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     FirebaseModule,
     AuthModule,
     UsersModule,

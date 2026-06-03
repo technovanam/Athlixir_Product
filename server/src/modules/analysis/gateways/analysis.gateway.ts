@@ -33,7 +33,12 @@ export class AnalysisGateway {
     return { status: 'subscribed', room };
   }
 
-  broadcastStatus(analysisId: string, status: string, progress: number, data?: any) {
+  broadcastStatus(
+    analysisId: string,
+    status: string,
+    progress: number,
+    data?: any,
+  ) {
     const room = `analysis:${analysisId}`;
     if (this.server) {
       this.server.to(room).emit('analysisStatus', {
@@ -43,9 +48,13 @@ export class AnalysisGateway {
         timestamp: new Date().toISOString(),
         data,
       });
-      this.logger.log(`Broadcasted analysis ${analysisId} status: ${status} (${progress}%)`);
+      this.logger.log(
+        `Broadcasted analysis ${analysisId} status: ${status} (${progress}%)`,
+      );
     } else {
-      this.logger.warn(`WebSocketServer is not initialized. Cannot broadcast status: ${status}`);
+      this.logger.warn(
+        `WebSocketServer is not initialized. Cannot broadcast status: ${status}`,
+      );
     }
   }
 }

@@ -14,7 +14,7 @@ export function generateSportsScienceReportHtml(
     aiProgressAnalysis: any;
     aiTimeline: any[];
     createdAt: string;
-  }
+  },
 ): string {
   const dateStr = new Date(data.createdAt).toLocaleDateString(undefined, {
     weekday: 'long',
@@ -31,16 +31,22 @@ export function generateSportsScienceReportHtml(
       <div class="timeline-phase">${item.phase}</div>
       <div class="timeline-event">${item.event}</div>
     </div>
-  `
+  `,
     )
     .join('');
 
   const strengthsHtml = (data.aiInsights?.strengths || [])
-    .map((s: string) => `<li class="strength-item"><span class="icon">✓</span> ${s}</li>`)
+    .map(
+      (s: string) =>
+        `<li class="strength-item"><span class="icon">✓</span> ${s}</li>`,
+    )
     .join('');
 
   const weaknessesHtml = (data.aiInsights?.weaknesses || [])
-    .map((w: string) => `<li class="weakness-item"><span class="icon">⚠</span> ${w}</li>`)
+    .map(
+      (w: string) =>
+        `<li class="weakness-item"><span class="icon">⚠</span> ${w}</li>`,
+    )
     .join('');
 
   const drillsHtml = (data.aiRecommendations?.drills || [])

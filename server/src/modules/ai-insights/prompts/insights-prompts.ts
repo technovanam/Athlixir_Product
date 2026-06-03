@@ -106,7 +106,7 @@ export interface BiomechanicsPromptInput {
 export function buildAnalysisPrompt(
   input: BiomechanicsPromptInput,
   metricFlags: string[],
-  confidence: number
+  confidence: number,
 ): string {
   const symmetryVal = input.metrics.symmetry;
 
@@ -115,91 +115,101 @@ export function buildAnalysisPrompt(
       ageGroup: input.athlete.ageGroup,
       gender: input.athlete.gender,
       event: input.athlete.event,
-      competitionLevel: input.athlete.level || "district"
+      competitionLevel: input.athlete.level || 'district',
     },
     confidenceScore: confidence,
     metricFlags: metricFlags,
     metrics: {
       cadence: {
         value: input.metrics.cadence,
-        definition: "turnover frequency measured in Strides Per Minute (SPM). Higher is typically better, representing faster leg turnover.",
+        definition:
+          'turnover frequency measured in Strides Per Minute (SPM). Higher is typically better, representing faster leg turnover.',
         benchmarks: {
           district: 175,
           state: 185,
-          elite: 195
-        }
+          elite: 195,
+        },
       },
       gct: {
         value: input.metrics.gct,
-        definition: "Ground Contact Time in milliseconds (ms). Lower is better, representing higher reactive ankle stiffness and faster force application.",
+        definition:
+          'Ground Contact Time in milliseconds (ms). Lower is better, representing higher reactive ankle stiffness and faster force application.',
         benchmarks: {
           district: 200,
           state: 180,
-          elite: 160
-        }
+          elite: 160,
+        },
       },
       strideLength: {
         value: input.metrics.strideLength,
-        definition: "stride amplitude measured in meters (m). Higher is generally better for ground coverage, assuming it is not achieved via overstriding.",
+        definition:
+          'stride amplitude measured in meters (m). Higher is generally better for ground coverage, assuming it is not achieved via overstriding.',
         benchmarks: {
           district: 1.8,
           state: 2.0,
-          elite: 2.2
-        }
+          elite: 2.2,
+        },
       },
       symmetryScore: {
         value: symmetryVal,
-        definition: "biomechanical symmetry score out of 100 where 100 represents perfect symmetrical force absorption and stride length between left and right legs.",
+        definition:
+          'biomechanical symmetry score out of 100 where 100 represents perfect symmetrical force absorption and stride length between left and right legs.',
         benchmarks: {
           district: 85,
           state: 90,
-          elite: 95
-        }
+          elite: 95,
+        },
       },
       oscillation: {
         value: input.metrics.oscillation ?? 7.4,
-        definition: "vertical displacement/bounce of the center of mass in centimeters (cm). Lower is better for sprinters to maximize horizontal displacement.",
+        definition:
+          'vertical displacement/bounce of the center of mass in centimeters (cm). Lower is better for sprinters to maximize horizontal displacement.',
         benchmarks: {
           district: 12.0,
           state: 9.0,
-          elite: 6.0
-        }
+          elite: 6.0,
+        },
       },
       postureLean: {
         value: input.metrics.postureAngle ?? 7.8,
-        definition: "forward lean angle of torso during sprint acceleration measured in degrees. Optimal range is 7 to 15 degrees depending on the phase.",
+        definition:
+          'forward lean angle of torso during sprint acceleration measured in degrees. Optimal range is 7 to 15 degrees depending on the phase.',
         benchmarks: {
           district: 5.0,
           state: 8.0,
-          elite: 12.0
-        }
+          elite: 12.0,
+        },
       },
       kneeDrive: {
         value: input.scores.efficiencyScore ?? 62,
-        definition: "knee drive extension angle index scored from 0 to 100 representing hip flexion amplitude and extension drive.",
+        definition:
+          'knee drive extension angle index scored from 0 to 100 representing hip flexion amplitude and extension drive.',
         benchmarks: {
           district: 60,
           state: 75, // state benchmark is 75/100
-          elite: 80
-        }
+          elite: 80,
+        },
       },
       sprintEfficiency: {
         value: input.scores.efficiencyScore ?? 81,
-        definition: "overall sprint mechanical efficiency index scored from 0 to 100.",
+        definition:
+          'overall sprint mechanical efficiency index scored from 0 to 100.',
         benchmarks: {
           district: 70,
           state: 80,
-          elite: 90
-        }
-      }
+          elite: 90,
+        },
+      },
     },
-    history: input.progress?.hasPrevious ? {
-      hasPrevious: true,
-      previousCadence: input.progress.previousMetrics?.cadence || 178,
-      previousSymmetry: input.progress.previousMetrics?.symmetry || 87.2
-    } : {
-      hasPrevious: false
-    }
+    history: input.progress?.hasPrevious
+      ? {
+          hasPrevious: true,
+          previousCadence: input.progress.previousMetrics?.cadence || 178,
+          previousSymmetry: input.progress.previousMetrics?.symmetry || 87.2,
+        }
+      : {
+          hasPrevious: false,
+        },
   };
 
   return `You are analyzing the following telemetry JSON:
@@ -265,7 +275,7 @@ export function buildEvolutionInsightsPrompt(
     cadence_growth: string | null;
     gct_reduction: string | null;
     efficiency_improvement: string | null;
-  }
+  },
 ): string {
   const data = {
     athlete,
@@ -311,12 +321,11 @@ You MUST return a JSON object matching this structure:
 Ensure the output is raw JSON only.`;
 }
 
-
 export function buildAthleteChatPrompt(
   history: any[],
   profile: any,
   latestAnalysis: any,
-  userMessage: string
+  userMessage: string,
 ): { system: string; user: string } {
   const system = `You are the ATHLIXIR AI Coach Copilot, a world-class sprint biomechanics expert and sports-performance intelligence assistant.
 
@@ -363,7 +372,16 @@ Current Analysis Metrics (Session: ${latestAnalysis ? new Date(latestAnalysis.cr
 
 Historical Trend Overview:
 - Total sessions: ${history.length}
-- Historical Metrics: ${JSON.stringify(history.slice(-3).map(h => ({ date: new Date(h.createdAt).toLocaleDateString(), cadence: h.metrics?.cadence, gct: h.metrics?.gct, stride: h.metrics?.strideLength })), null, 2)}
+- Historical Metrics: ${JSON.stringify(
+    history.slice(-3).map((h) => ({
+      date: new Date(h.createdAt).toLocaleDateString(),
+      cadence: h.metrics?.cadence,
+      gct: h.metrics?.gct,
+      stride: h.metrics?.strideLength,
+    })),
+    null,
+    2,
+  )}
 
 Athlete Query: "${userMessage}"
 

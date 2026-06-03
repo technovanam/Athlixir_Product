@@ -84,7 +84,7 @@ export default function BasicInfoStep() {
         city,
         profilePhoto,
       });
-      router.push('/onboarding/classification');
+      router.replace('/onboarding/classification');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save basic athlete info.');
     } finally {

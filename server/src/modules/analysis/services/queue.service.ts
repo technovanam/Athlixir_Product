@@ -17,13 +17,15 @@ export class QueueService implements OnModuleDestroy {
       retryStrategy(times) {
         // Linear backoff starting at 1s, capped at 10s
         return Math.min(times * 1000, 10000);
-      }
+      },
     });
 
     // Handle Redis connection events to prevent unhandled promise/error log pollution
     this.connection.on('error', (err) => {
       if (!this.redisErrorLogged) {
-        this.logger.warn(`Redis connection failed (is Redis running?): ${err.message}`);
+        this.logger.warn(
+          `Redis connection failed (is Redis running?): ${err.message}`,
+        );
         this.redisErrorLogged = true;
       }
     });
@@ -33,7 +35,9 @@ export class QueueService implements OnModuleDestroy {
       this.redisErrorLogged = false;
     });
 
-    this.analysisQueue = new Queue('analysis-jobs', { connection: this.connection as any });
+    this.analysisQueue = new Queue('analysis-jobs', {
+      connection: this.connection as any,
+    });
     this.analysisQueue.on('error', (err) => {
       if (!this.redisErrorLogged) {
         this.logger.error(`Queue error: ${err.message}`);

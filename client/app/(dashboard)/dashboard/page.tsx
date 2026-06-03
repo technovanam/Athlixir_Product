@@ -19,24 +19,29 @@ function DashboardPageContent() {
   const { user } = useAuth();
   const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
   const [historyList, setHistoryList] = useState<any[]>([]);
+  const [allAnalysesList, setAllAnalysesList] = useState<any[]>([]);
+
+  const fetchLatest = async () => {
+    try {
+      const res = await api.get('/analysis/list');
+      const list = res.data?.data ?? res.data ?? [];
+      if (Array.isArray(list)) {
+        setAllAnalysesList(list);
+        const completed = list.filter((a: any) => a.status === 'COMPLETED');
+        setHistoryList(completed);
+        if (completed.length > 0) {
+          completed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setLatestAnalysis(completed[0]);
+        } else {
+          setLatestAnalysis(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load analysis for hero', err);
+    }
+  };
 
   useEffect(() => {
-    const fetchLatest = async () => {
-      try {
-        const res = await api.get('/analysis/list');
-        const list = res.data?.data ?? res.data ?? [];
-        if (Array.isArray(list) && list.length > 0) {
-          const completed = list.filter((a: any) => a.status === 'COMPLETED');
-          setHistoryList(completed);
-          if (completed.length > 0) {
-            completed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            setLatestAnalysis(completed[0]);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load analysis for hero', err);
-      }
-    };
     fetchLatest();
   }, []);
 
@@ -218,7 +223,10 @@ function DashboardPageContent() {
         </div>
         
         <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-1">
-          <BiomechanicsPanel />
+          <BiomechanicsPanel 
+            analysesList={allAnalysesList} 
+            onAnalysesUpdated={fetchLatest} 
+          />
         </div>
       </section>
 

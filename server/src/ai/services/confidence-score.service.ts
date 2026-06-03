@@ -16,7 +16,7 @@ export class ConfidenceScoreService {
     metrics: any,
     scores: any,
     benchmarks: any,
-    rawAnalysis: any
+    rawAnalysis: any,
   ): number {
     let score = 1.0;
 
@@ -40,23 +40,28 @@ export class ConfidenceScoreService {
     }
 
     // 3. Pose Confidence (based on landmark average visibility)
-    const poseVisibility = rawAnalysis?.poseVisibility ?? rawAnalysis?.averageVisibility ?? 0.90;
+    const poseVisibility =
+      rawAnalysis?.poseVisibility ?? rawAnalysis?.averageVisibility ?? 0.9;
     if (poseVisibility < 0.85) {
-      score -= 0.10;
+      score -= 0.1;
     }
 
     // 4. Tracking Stability
     const isStable = rawAnalysis?.isStable ?? true;
     if (!isStable) {
-      score -= 0.10;
+      score -= 0.1;
     }
 
     // 5. Benchmark Availability
-    if (!benchmarks || !benchmarks.levels || Object.keys(benchmarks.levels).length === 0) {
-      score -= 0.10;
+    if (
+      !benchmarks ||
+      !benchmarks.levels ||
+      Object.keys(benchmarks.levels).length === 0
+    ) {
+      score -= 0.1;
     }
 
-    const finalScore = Math.max(0.50, Math.min(1.00, score));
+    const finalScore = Math.max(0.5, Math.min(1.0, score));
     return parseFloat(finalScore.toFixed(2));
   }
 }

@@ -3,15 +3,21 @@ import { Injectable, Logger } from '@nestjs/common';
 @Injectable()
 export class ClaudeService {
   private readonly logger = new Logger(ClaudeService.name);
-  private readonly apiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
+  private readonly apiKey =
+    process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
   private readonly apiUrl = 'https://api.anthropic.com/v1/messages';
 
   /**
    * Generates completions from Claude.
    */
-  async generateCompletion(systemPrompt: string, userPrompt: string): Promise<string> {
+  async generateCompletion(
+    systemPrompt: string,
+    userPrompt: string,
+  ): Promise<string> {
     if (!this.apiKey) {
-      this.logger.warn('Claude API key is missing. Bypassing and letting Orchestrator trigger Gemini or Simulator.');
+      this.logger.warn(
+        'Claude API key is missing. Bypassing and letting Orchestrator trigger Gemini or Simulator.',
+      );
       throw new Error('Claude API key missing');
     }
 
@@ -34,7 +40,9 @@ export class ClaudeService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.logger.error(`Claude API responded with error status ${response.status}: ${errorText}`);
+        this.logger.error(
+          `Claude API responded with error status ${response.status}: ${errorText}`,
+        );
         throw new Error(`Claude API Error: status ${response.status}`);
       }
 

@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { FirebaseService } from '../../../firebase/firebase.service';
 import { BasicInfoDto } from '../dto/basic-info.dto';
 import { ClassificationDto } from '../dto/classification.dto';
@@ -119,7 +124,9 @@ export class OnboardingService {
 
     const doc = await profileRef.get();
     if (!doc.exists) {
-      throw new BadRequestException('Please complete Step 1: Basic Information first.');
+      throw new BadRequestException(
+        'Please complete Step 1: Basic Information first.',
+      );
     }
 
     const payload = {
@@ -145,7 +152,9 @@ export class OnboardingService {
 
     const doc = await profileRef.get();
     if (!doc.exists) {
-      throw new BadRequestException('Please complete Step 1: Basic Information first.');
+      throw new BadRequestException(
+        'Please complete Step 1: Basic Information first.',
+      );
     }
 
     const payload = {
@@ -169,15 +178,24 @@ export class OnboardingService {
 
     const doc = await profileRef.get();
     if (!doc.exists) {
-      throw new BadRequestException('Please complete Step 1: Basic Information first.');
+      throw new BadRequestException(
+        'Please complete Step 1: Basic Information first.',
+      );
     }
 
+    const docData = doc.data() || {};
     const payload = {
       training_days: dto.trainingDays,
       training_duration: dto.trainingDuration,
       experience_years: dto.experienceYears,
-      personal_best: dto.personalBest || '',
-      achievements: dto.achievements || '',
+      personal_best:
+        dto.personalBest !== undefined
+          ? dto.personalBest
+          : docData.personal_best || '',
+      achievements:
+        dto.achievements !== undefined
+          ? dto.achievements
+          : docData.achievements || '',
       updated_at: now,
     };
 
@@ -196,7 +214,9 @@ export class OnboardingService {
 
     const doc = await profileRef.get();
     if (!doc.exists) {
-      throw new BadRequestException('Please complete Step 1: Basic Information first.');
+      throw new BadRequestException(
+        'Please complete Step 1: Basic Information first.',
+      );
     }
 
     const payload = {
@@ -219,7 +239,9 @@ export class OnboardingService {
 
     const doc = await profileRef.get();
     if (!doc.exists) {
-      throw new BadRequestException('Please complete Step 1: Basic Information first.');
+      throw new BadRequestException(
+        'Please complete Step 1: Basic Information first.',
+      );
     }
 
     const payload = {
@@ -246,14 +268,27 @@ export class OnboardingService {
 
     const doc = await profileRef.get();
     if (!doc.exists) {
-      throw new BadRequestException('Please complete Step 1: Basic Information first.');
+      throw new BadRequestException(
+        'Please complete Step 1: Basic Information first.',
+      );
     }
 
+    const docData = doc.data() || {};
     const payload = {
-      consent_accepted: true,
-      terms_accepted_at: now,
-      ai_consent_accepted_at: now,
-      data_consent_accepted_at: now,
+      consent_accepted:
+        dto.termsAccepted && dto.aiAnalysisConsent && dto.dataStorageConsent,
+      terms_accepted: dto.termsAccepted,
+      ai_consent_accepted: dto.aiAnalysisConsent,
+      data_consent_accepted: dto.dataStorageConsent,
+      terms_accepted_at: dto.termsAccepted
+        ? now
+        : docData.terms_accepted_at || null,
+      ai_consent_accepted_at: dto.aiAnalysisConsent
+        ? now
+        : docData.ai_consent_accepted_at || null,
+      data_consent_accepted_at: dto.dataStorageConsent
+        ? now
+        : docData.data_consent_accepted_at || null,
       updated_at: now,
     };
 
@@ -266,12 +301,12 @@ export class OnboardingService {
    */
   async completeOnboarding(uid: string) {
     const now = new Date().toISOString();
-    
+
     // 1. Update athlete_profiles collection
     const profileRef = this.firebaseService.firestore
       .collection(this.athleteProfilesCollection)
       .doc(uid);
-    
+
     const doc = await profileRef.get();
     if (!doc.exists) {
       throw new BadRequestException('Onboarding data not found.');
@@ -286,7 +321,7 @@ export class OnboardingService {
     const userRef = this.firebaseService.firestore
       .collection(this.usersCollection)
       .doc(uid);
-    
+
     const userDoc = await userRef.get();
     if (userDoc.exists) {
       await userRef.update({
@@ -322,7 +357,9 @@ export class OnboardingService {
       try {
         await fileRef.makePublic();
       } catch (err) {
-        this.logger.warn(`Could not make storage file public (usually fine in developer environments): ${err.message}`);
+        this.logger.warn(
+          `Could not make storage file public (usually fine in developer environments): ${err.message}`,
+        );
       }
 
       const publicUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
@@ -351,8 +388,11 @@ export class OnboardingService {
 
       return publicUrl;
     } catch (error) {
-      this.logger.error('Failed uploading photo to Firebase storage, falling back to data URI representation', error);
-      
+      this.logger.error(
+        'Failed uploading photo to Firebase storage, falling back to data URI representation',
+        error,
+      );
+
       // Fallback base64 representation if Storage is not fully configured
       const base64Data = file.buffer.toString('base64');
       const dataUri = `data:${file.mimetype};base64,${base64Data}`;
@@ -360,11 +400,14 @@ export class OnboardingService {
       const profileRef = this.firebaseService.firestore
         .collection(this.athleteProfilesCollection)
         .doc(uid);
-      
-      await profileRef.set({
-        profile_photo: dataUri,
-        updated_at: new Date().toISOString(),
-      }, { merge: true });
+
+      await profileRef.set(
+        {
+          profile_photo: dataUri,
+          updated_at: new Date().toISOString(),
+        },
+        { merge: true },
+      );
 
       return dataUri;
     }

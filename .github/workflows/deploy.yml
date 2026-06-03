@@ -1,0 +1,63 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: athlixir-sport
+  REGION: asia-south1
+  REPOSITORY: athlixir-repo
+
+jobs:
+  deploy:
+    name: Build & Deploy Services
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate with Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # =====================================================================
+      # STEP 1: Build & Deploy AI Engine (FastAPI & MediaPipe)
+      # =====================================================================
+      - name: Build and Push AI Engine Image
+        run: |
+          gcloud builds submit --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-engine:latest \
+                               --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-engine:v5 \
+                               --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-engine:${{ github.sha }} \
+                               ./ai-engine
+
+      - name: Deploy AI Engine to Cloud Run
+        run: |
+          gcloud run deploy athlixir-ai \
+            --image asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-engine:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed
+
+      # =====================================================================
+      # STEP 2: Build & Deploy Backend (NestJS Server)
+      # =====================================================================
+      - name: Build and Push Backend Image
+        run: |
+          gcloud builds submit --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/server:latest \
+                               --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/server:v5 \
+                               --tag asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/server:${{ github.sha }} \
+                               ./server
+
+      - name: Deploy Backend to Cloud Run
+        run: |
+          gcloud run deploy athlixir-backend \
+            --image asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/server:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed

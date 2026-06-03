@@ -12,6 +12,7 @@ export default function TrainingProfileStep() {
   const [trainingDuration, setTrainingDuration] = useState(90);
   const [experienceYears, setExperienceYears] = useState(2);
   const [personalBest, setPersonalBest] = useState('');
+  const [achievements, setAchievements] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export default function TrainingProfileStep() {
         if (data.training_duration) setTrainingDuration(data.training_duration);
         if (data.experience_years !== undefined) setExperienceYears(data.experience_years);
         if (data.personal_best) setPersonalBest(data.personal_best);
+        if (data.achievements) setAchievements(data.achievements);
       } catch (err) {
         // Safe to ignore
       }
@@ -44,8 +46,9 @@ export default function TrainingProfileStep() {
         trainingDuration: Number(trainingDuration),
         experienceYears: Number(experienceYears),
         personalBest: personalBest || '',
+        achievements: achievements || '',
       });
-      router.push('/onboarding/goals');
+      router.replace('/onboarding/goals');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save training profile.');
     } finally {
@@ -168,7 +171,7 @@ export default function TrainingProfileStep() {
         <div className="flex justify-between items-center pt-6 border-t border-white/[0.05]">
           <button
             type="button"
-            onClick={() => router.push('/onboarding/body-metrics')}
+            onClick={() => router.replace('/onboarding/body-metrics')}
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white transition duration-200 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4 text-[#FF4F21]" />

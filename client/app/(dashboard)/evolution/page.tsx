@@ -26,6 +26,12 @@ type EvolutionData = {
   cadenceSeries: { date: string; value: number }[];
   gctSeries: { date: string; value: number }[];
   symmetrySeries: { date: string; value: number }[];
+  aiInsights?: {
+    progressSummary?: string;
+    highlights?: string[];
+    trendAnalysis?: string;
+    progressCommentary?: string;
+  } | null;
 };
 
 export default function EvolutionPage() {

@@ -33,7 +33,9 @@ describe('ATHLIXIR Production Validation & Integrity (e2e)', () => {
         file: jest.fn().mockReturnValue({
           save: jest.fn().mockResolvedValue(true),
           exists: jest.fn().mockResolvedValue([true]),
-          getMetadata: jest.fn().mockResolvedValue([{ contentType: 'video/mp4' }]),
+          getMetadata: jest
+            .fn()
+            .mockResolvedValue([{ contentType: 'video/mp4' }]),
           getSignedUrl: jest.fn().mockResolvedValue(['http://mock-url.com']),
         }),
       }),
@@ -74,7 +76,11 @@ describe('ATHLIXIR Production Validation & Integrity (e2e)', () => {
 
   describe('PHASE 1 — AUTHENTICATION INTEGRITY', () => {
     it('Signup Validation Rejects Invalid Email formats', async () => {
-      const payload = { email: 'bad-email', password: 'Password123!', username: 'tester' };
+      const payload = {
+        email: 'bad-email',
+        password: 'Password123!',
+        username: 'tester',
+      };
       await request(app.getHttpServer())
         .post('/auth/signup')
         .send(payload)
@@ -82,7 +88,11 @@ describe('ATHLIXIR Production Validation & Integrity (e2e)', () => {
     });
 
     it('Signup Validation Rejects Weak Passwords', async () => {
-      const payload = { email: 'test@example.com', password: 'weak', username: 'tester' };
+      const payload = {
+        email: 'test@example.com',
+        password: 'weak',
+        username: 'tester',
+      };
       await request(app.getHttpServer())
         .post('/auth/signup')
         .send(payload)
@@ -91,7 +101,9 @@ describe('ATHLIXIR Production Validation & Integrity (e2e)', () => {
 
     it('Login Handles Invalid Passwords/Emails Gracefully', async () => {
       const { UnauthorizedException } = require('@nestjs/common');
-      mockAuthService.login.mockRejectedValue(new UnauthorizedException('Invalid credentials'));
+      mockAuthService.login.mockRejectedValue(
+        new UnauthorizedException('Invalid credentials'),
+      );
       await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email: 'test@example.com', password: 'WrongPassword!' })
@@ -99,15 +111,16 @@ describe('ATHLIXIR Production Validation & Integrity (e2e)', () => {
     });
 
     it('Protected Routes block unauthenticated requests', async () => {
-      await request(app.getHttpServer())
-        .get('/onboarding/status')
-        .expect(401);
+      await request(app.getHttpServer()).get('/onboarding/status').expect(401);
     });
   });
 
   describe('PHASE 2 — ONBOARDING PIPELINE INTEGRITY', () => {
     beforeEach(() => {
-      mockFirebaseService.auth.verifySessionCookie.mockResolvedValue({ uid: 'mock-uid', email: 'test@example.com' });
+      mockFirebaseService.auth.verifySessionCookie.mockResolvedValue({
+        uid: 'mock-uid',
+        email: 'test@example.com',
+      });
     });
 
     it('Saves basic profile details correctly', async () => {
@@ -120,7 +133,13 @@ describe('ATHLIXIR Production Validation & Integrity (e2e)', () => {
       await request(app.getHttpServer())
         .post('/onboarding/basic-info')
         .set('Cookie', ['session=fake-session'])
-        .send({ fullName: 'John Doe', dob: '2000-01-01', gender: 'male', state: 'CA', city: 'Los Angeles' })
+        .send({
+          fullName: 'John Doe',
+          dob: '2000-01-01',
+          gender: 'male',
+          state: 'CA',
+          city: 'Los Angeles',
+        })
         .expect(201);
     });
 
@@ -140,7 +159,10 @@ describe('ATHLIXIR Production Validation & Integrity (e2e)', () => {
 
   describe('PHASE 3 & 11 — FILE UPLOAD & SECURITY GATEWAYS', () => {
     beforeEach(() => {
-      mockFirebaseService.auth.verifySessionCookie.mockResolvedValue({ uid: 'mock-uid', email: 'test@example.com' });
+      mockFirebaseService.auth.verifySessionCookie.mockResolvedValue({
+        uid: 'mock-uid',
+        email: 'test@example.com',
+      });
     });
 
     it('MIME validator blocks unsupported formats like PNG', async () => {

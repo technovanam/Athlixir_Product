@@ -7,13 +7,13 @@ test.describe('ATHLIXIR Enterprise Visual & UI Validation', () => {
     
     // Check missing fields
     await page.locator('button[type="submit"]').click();
-    await expect(page.locator('text=Error: Please fill in all fields.')).toBeVisible();
+    await expect(page.locator('text=Please fill in all fields.')).toBeVisible();
 
     // Check weak password warning
     await page.fill('input#email', 'athlete@athlixir.com');
     await page.fill('input#password', 'weak');
     await page.locator('button[type="submit"]').click();
-    await expect(page.locator('text=Error: Password must be at least 8 characters long.')).toBeVisible();
+    await expect(page.locator('text=Password must be at least 8 characters long.')).toBeVisible();
   });
 
   test('Multi-step onboarding UI renders progress and step indicators', async ({ page }) => {
@@ -28,7 +28,7 @@ test.describe('ATHLIXIR Enterprise Visual & UI Validation', () => {
     // 1. Check Mobile layout
     await page.setViewportSize({ width: 375, height: 812 }); // iPhone X
     await page.goto('/login');
-    await expect(page.locator('text=ACCESS PORTAL')).toBeVisible();
+    await expect(page.locator('text=ATHLETE SIGN IN')).toBeVisible();
     
     // Confirm elements don't cause horizontal overflow
     const hasHorizontalScroll = await page.evaluate(() => {
@@ -39,7 +39,7 @@ test.describe('ATHLIXIR Enterprise Visual & UI Validation', () => {
     // 2. Check 4K high density display layout
     await page.setViewportSize({ width: 3840, height: 2160 });
     await page.goto('/login');
-    await expect(page.locator('text=ACCESS PORTAL')).toBeVisible();
+    await expect(page.locator('text=ATHLETE SIGN IN')).toBeVisible();
   });
 
   test('Dashboard loads telemetry scores and charts successfully', async ({ page }) => {

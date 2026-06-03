@@ -4,7 +4,7 @@ from fastapi.security import APIKeyHeader
 
 API_KEY_HEADER = APIKeyHeader(name="Authorization", auto_error=False)
 
-INTERNAL_API_SECRET = os.environ.get("INTERNAL_API_SECRET", "a-very-secret-and-long-key-for-internal-service-auth")
+INTERNAL_API_SECRET = os.environ.get("INTERNAL_API_SECRET")
 
 async def check_internal_secret(api_key: str = Security(API_KEY_HEADER)):
     if not INTERNAL_API_SECRET:

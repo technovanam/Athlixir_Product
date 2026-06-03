@@ -43,27 +43,49 @@ export default function AthleteProfilePage() {
       setEditWeight(profileToUse.weight_kg?.toString() || '');
       try {
         if (profileToUse.personal_best) {
-          if (profileToUse.personal_best.startsWith('{')) {
-             setPbList(JSON.parse(profileToUse.personal_best));
+          const pbTrim = profileToUse.personal_best.trim();
+          if (pbTrim.startsWith('{')) {
+             const parsed = JSON.parse(pbTrim);
+             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+               setPbList(parsed);
+             } else {
+               setPbList({ 'Event': pbTrim });
+             }
           } else {
-             const parts = profileToUse.personal_best.split('->');
+             const parts = pbTrim.split('->');
              if (parts.length === 2) {
                setPbList({ [parts[0].trim()]: parts[1].trim() });
              } else {
-               setPbList({ 'Event': profileToUse.personal_best });
+               setPbList({ 'Event': pbTrim });
              }
           }
+        } else {
+          setPbList({});
         }
       } catch (e) {
         console.error("Failed parsing PB", e);
+        setPbList({ 'Event': String(profileToUse.personal_best) });
       }
 
       try {
         if (profileToUse.achievements) {
-          setAchievList(JSON.parse(profileToUse.achievements));
+          const achTrim = profileToUse.achievements.trim();
+          if (achTrim.startsWith('[')) {
+            const parsed = JSON.parse(achTrim);
+            if (Array.isArray(parsed)) {
+              setAchievList(parsed);
+            } else {
+              setAchievList([{ title: 'Achievement', desc: achTrim }]);
+            }
+          } else {
+            setAchievList([{ title: 'Achievement', desc: achTrim }]);
+          }
+        } else {
+          setAchievList([]);
         }
       } catch (e) {
         console.error("Failed parsing achievements", e);
+        setAchievList([{ title: 'Achievement', desc: String(profileToUse.achievements) }]);
       }
     }
   }, [user, physicalProfile]);

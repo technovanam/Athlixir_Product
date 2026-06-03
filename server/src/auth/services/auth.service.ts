@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FirebaseService } from '../../firebase/firebase.service';
 import { SignupDto } from '../dto/signup.dto';
@@ -50,11 +55,15 @@ export class AuthService {
       if (error.code === 'auth/email-already-exists') {
         throw new ConflictException('Email address is already in use');
       }
-      throw new InternalServerErrorException(error.message || 'Failed to register user');
+      throw new InternalServerErrorException(
+        error.message || 'Failed to register user',
+      );
     }
   }
 
-  async login(loginDto: LoginDto): Promise<{ idToken: string; userProfile: any }> {
+  async login(
+    loginDto: LoginDto,
+  ): Promise<{ idToken: string; userProfile: any }> {
     const { email, password } = loginDto;
     const apiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
 
@@ -75,7 +84,8 @@ export class AuthService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage = errorData?.error?.message || 'Authentication failed';
+        const errorMessage =
+          errorData?.error?.message || 'Authentication failed';
         if (
           errorMessage === 'EMAIL_NOT_FOUND' ||
           errorMessage === 'INVALID_PASSWORD' ||
@@ -92,7 +102,9 @@ export class AuthService {
 
       // Update last login timestamp in Firestore
       const now = new Date().toISOString();
-      const userRef = this.firebaseService.firestore.collection(this.usersCollection).doc(uid);
+      const userRef = this.firebaseService.firestore
+        .collection(this.usersCollection)
+        .doc(uid);
       const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
@@ -101,7 +113,9 @@ export class AuthService {
 
       const currentData = userDoc.data();
       if (currentData?.isDeleted || currentData?.status !== 'active') {
-        throw new UnauthorizedException('This account has been disabled or deleted');
+        throw new UnauthorizedException(
+          'This account has been disabled or deleted',
+        );
       }
 
       const updatedProfile = {
@@ -120,10 +134,15 @@ export class AuthService {
         userProfile: updatedProfile,
       };
     } catch (error: any) {
-      if (error instanceof UnauthorizedException || error instanceof InternalServerErrorException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof InternalServerErrorException
+      ) {
         throw error;
       }
-      throw new UnauthorizedException('Failed to authenticate credentials: ' + error.message);
+      throw new UnauthorizedException(
+        'Failed to authenticate credentials: ' + error.message,
+      );
     }
   }
 
@@ -131,7 +150,9 @@ export class AuthService {
     try {
       // 5 days session cookie expiration
       const expiresIn = 60 * 60 * 24 * 5 * 1000;
-      return await this.firebaseService.auth.createSessionCookie(idToken, { expiresIn });
+      return await this.firebaseService.auth.createSessionCookie(idToken, {
+        expiresIn,
+      });
     } catch (error: any) {
       throw new UnauthorizedException('Failed to establish a secure session');
     }
@@ -139,7 +160,8 @@ export class AuthService {
 
   async revokeSession(sessionCookie: string): Promise<void> {
     try {
-      const decodedClaims = await this.firebaseService.auth.verifySessionCookie(sessionCookie);
+      const decodedClaims =
+        await this.firebaseService.auth.verifySessionCookie(sessionCookie);
       await this.firebaseService.auth.revokeRefreshTokens(decodedClaims.sub);
     } catch (error) {
       // Catch silently on invalid token during logout
@@ -147,7 +169,10 @@ export class AuthService {
   }
 
   async getUserProfile(uid: string) {
-    const userDoc = await this.firebaseService.firestore.collection(this.usersCollection).doc(uid).get();
+    const userDoc = await this.firebaseService.firestore
+      .collection(this.usersCollection)
+      .doc(uid)
+      .get();
     if (!userDoc.exists || userDoc.data()?.isDeleted) {
       return null;
     }
@@ -155,16 +180,19 @@ export class AuthService {
     if (!userData) {
       return null;
     }
-    
+
     try {
-      const profileDoc = await this.firebaseService.firestore.collection('athlete_profiles').doc(uid).get();
+      const profileDoc = await this.firebaseService.firestore
+        .collection('athlete_profiles')
+        .doc(uid)
+        .get();
       if (profileDoc.exists) {
         userData.physicalProfile = profileDoc.data();
       }
     } catch (err) {
       console.error('Failed to fetch physical profile', err);
     }
-    
+
     return userData;
   }
 }

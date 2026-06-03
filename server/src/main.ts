@@ -17,8 +17,36 @@ async function bootstrap() {
   // Cookie Parser
   app.use(cookieParser());
 
-  // Security Headers
-  app.use(helmet());
+  // Security Headers with strict CSP
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://fonts.googleapis.com',
+          ],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          imgSrc: [
+            "'self'",
+            'data:',
+            'https://storage.googleapis.com',
+            'https://*.googleusercontent.com',
+          ],
+          connectSrc: [
+            "'self'",
+            'https://generativelanguage.googleapis.com',
+            'https://*.googleapis.com',
+          ],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: [],
+        },
+      },
+    }),
+  );
 
   // Parse multiple origins from FRONTEND_URL if provided
   const allowedOrigins = process.env.FRONTEND_URL

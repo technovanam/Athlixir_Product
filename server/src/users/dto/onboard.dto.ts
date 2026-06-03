@@ -1,8 +1,14 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsArray,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class OnboardUserDto {
-  @ApiProperty({ description: 'The name of the user\'s team/organization' })
+  @ApiProperty({ description: "The name of the user's team/organization" })
   @IsString()
   @IsNotEmpty()
   workspaceName: string;
@@ -17,7 +23,10 @@ export class OnboardUserDto {
   @IsOptional()
   workspaceSize?: number;
 
-  @ApiProperty({ description: 'Workspace industries or focus areas', type: [String] })
+  @ApiProperty({
+    description: 'Workspace industries or focus areas',
+    type: [String],
+  })
   @IsArray()
   @IsString({ each: true })
   @IsOptional()

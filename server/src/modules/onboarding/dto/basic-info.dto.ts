@@ -1,4 +1,9 @@
-import { IsString, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class BasicInfoDto {
@@ -7,7 +12,10 @@ export class BasicInfoDto {
   @IsNotEmpty()
   fullName: string;
 
-  @ApiProperty({ description: 'Date of birth (ISO format)', example: '1998-05-15' })
+  @ApiProperty({
+    description: 'Date of birth (ISO format)',
+    example: '1998-05-15',
+  })
   @IsDateString()
   @IsNotEmpty()
   dob: string;

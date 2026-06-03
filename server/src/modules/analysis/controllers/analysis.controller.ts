@@ -15,7 +15,9 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AnalysisService } from '../services/analysis.service';
 import { FirebaseAuthGuard } from '../../../auth/guards/firebase-auth.guard';
+import { InternalAuthGuard } from '../../../auth/guards/internal-auth.guard';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
+import { AiCallbackDto } from '../dto/ai-callback.dto';
 
 @ApiTags('Analysis')
 @Controller('analysis')
@@ -25,7 +27,9 @@ export class AnalysisController {
   @Post('upload')
   @UseGuards(FirebaseAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload athlete running video and trigger biomechanics processing' })
+  @ApiOperation({
+    summary: 'Upload athlete running video and trigger biomechanics processing',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -38,10 +42,7 @@ export class AnalysisController {
       },
     },
   })
-  async uploadVideo(
-    @CurrentUser() user: any,
-    @UploadedFile() file: any,
-  ) {
+  async uploadVideo(@CurrentUser() user: any, @UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('No video file selected for analysis.');
     }
@@ -57,15 +58,21 @@ export class AnalysisController {
 
   @Get('evolution')
   @UseGuards(FirebaseAuthGuard)
-  @ApiOperation({ summary: 'Retrieve athlete multi-session evolution and progression trends' })
+  @ApiOperation({
+    summary: 'Retrieve athlete multi-session evolution and progression trends',
+  })
   async getEvolution(@CurrentUser() user: any) {
     return this.analysisService.getAthleteEvolution(user.uid);
   }
 
   /** Must be registered before @Get(':id') so "overlay" is not treated as an id. */
   @Post('overlay')
+  @UseGuards(InternalAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Internal AI endpoint to upload skeleton overlay video to Firebase Storage' })
+  @ApiOperation({
+    summary:
+      'Internal AI endpoint to upload skeleton overlay video to Firebase Storage',
+  })
   @ApiConsumes('multipart/form-data')
   async uploadOverlay(
     @UploadedFile() file: any,
@@ -82,8 +89,11 @@ export class AnalysisController {
   }
 
   @Post('report')
+  @UseGuards(InternalAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Internal AI endpoint to upload HTML biomechanics report' })
+  @ApiOperation({
+    summary: 'Internal AI endpoint to upload HTML biomechanics report',
+  })
   @ApiConsumes('multipart/form-data')
   async uploadReport(
     @UploadedFile() file: any,
@@ -118,7 +128,9 @@ export class AnalysisController {
 
   @Get(':id/video/:type')
   @UseGuards(FirebaseAuthGuard)
-  @ApiOperation({ summary: 'Stream analysis video through API (avoids Firebase CORS)' })
+  @ApiOperation({
+    summary: 'Stream analysis video through API (avoids Firebase CORS)',
+  })
   async streamVideo(
     @Param('id') analysisId: string,
     @Param('type') type: string,
@@ -131,7 +143,7 @@ export class AnalysisController {
     const { stream, contentType } = await this.analysisService.streamVideo(
       analysisId,
       user,
-      type as 'original' | 'overlay',
+      type,
     );
     res.setHeader('Content-Type', contentType);
     res.setHeader('Accept-Ranges', 'bytes');
@@ -141,7 +153,10 @@ export class AnalysisController {
 
   @Post(':id/chat')
   @UseGuards(FirebaseAuthGuard)
-  @ApiOperation({ summary: 'Interact with AI Athlete Assistant copilot dynamically based on telemetry context' })
+  @ApiOperation({
+    summary:
+      'Interact with AI Athlete Assistant copilot dynamically based on telemetry context',
+  })
   async chatWithCopilot(
     @Param('id') analysisId: string,
     @Body('message') message: string,
@@ -150,39 +165,52 @@ export class AnalysisController {
     if (!message) {
       throw new BadRequestException('Message cannot be empty.');
     }
-    return this.analysisService.chatWithAthleteAssistant(analysisId, user.uid, message);
+    return this.analysisService.chatWithAthleteAssistant(
+      analysisId,
+      user.uid,
+      message,
+    );
   }
 
   @Get(':id')
   @UseGuards(FirebaseAuthGuard)
-  @ApiOperation({ summary: 'Retrieve detailed running biomechanics profile by ID' })
+  @ApiOperation({
+    summary: 'Retrieve detailed running biomechanics profile by ID',
+  })
   async getAnalysis(@Param('id') analysisId: string) {
     return this.analysisService.getAnalysis(analysisId);
   }
 
   @Post('callback')
-  @ApiOperation({ summary: 'Internal AI callback endpoint to synchronize biomechanics results' })
-  async aiCallback(
-    @Body() body: any,
-  ) {
+  @UseGuards(InternalAuthGuard)
+  @ApiOperation({
+    summary:
+      'Internal AI callback endpoint to synchronize biomechanics results',
+  })
+  async aiCallback(@Body() body: AiCallbackDto) {
     const { analysisId, status, progress, ...payload } = body;
     if (!analysisId || !status) {
       throw new BadRequestException('Missing analysisId or status in payload.');
     }
-    
+
     // Resolve naming collision: 'progress' object from Python is actually athlete progression comparison data
     let progressNum = 100;
     if (typeof progress === 'number') {
       progressNum = progress;
     }
-    
+
     if (progress && typeof progress === 'object') {
       payload.progressData = progress;
     }
-    
+
     // Save to Firestore and emit real-time WebSocket event
-    await this.analysisService.updateStatus(analysisId, status, progressNum, payload);
-    
+    await this.analysisService.updateStatus(
+      analysisId,
+      status,
+      progressNum,
+      payload,
+    );
+
     return {
       success: true,
       message: 'State synced successfully',

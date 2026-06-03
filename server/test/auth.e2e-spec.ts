@@ -7,7 +7,7 @@ import { AuthService } from '../src/auth/services/auth.service';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
-  
+
   const mockAuthService = {
     signup: jest.fn(),
     login: jest.fn(),
@@ -40,12 +40,25 @@ describe('AuthController (e2e)', () => {
 
   describe('/auth/signup (POST)', () => {
     it('should successfully signup and return session cookie', async () => {
-      const signupDto = { email: 'test@example.com', password: 'Password123!', username: 'tester' };
-      const userProfile = { uid: '123', email: signupDto.email, username: signupDto.username };
-      
+      const signupDto = {
+        email: 'test@example.com',
+        password: 'Password123!',
+        username: 'tester',
+      };
+      const userProfile = {
+        uid: '123',
+        email: signupDto.email,
+        username: signupDto.username,
+      };
+
       mockAuthService.signup.mockResolvedValue(userProfile);
-      mockAuthService.login.mockResolvedValue({ idToken: 'fake-token', userProfile });
-      mockAuthService.createSessionCookie.mockResolvedValue('fake-session-cookie');
+      mockAuthService.login.mockResolvedValue({
+        idToken: 'fake-token',
+        userProfile,
+      });
+      mockAuthService.createSessionCookie.mockResolvedValue(
+        'fake-session-cookie',
+      );
 
       const response = await request(app.getHttpServer())
         .post('/auth/signup')
@@ -54,41 +67,65 @@ describe('AuthController (e2e)', () => {
 
       expect(response.body.message).toBe('Registration and login successful');
       expect(response.body.user).toEqual(userProfile);
-      
+
       // Check cookies
       const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
-      expect(cookies.some((cookie: string) => cookie.includes('session='))).toBeTruthy();
-      expect(cookies.some((cookie: string) => cookie.includes('athlixir_logged_in=true'))).toBeTruthy();
+      expect(
+        cookies.some((cookie: string) => cookie.includes('session=')),
+      ).toBeTruthy();
+      expect(
+        cookies.some((cookie: string) =>
+          cookie.includes('athlixir_logged_in=true'),
+        ),
+      ).toBeTruthy();
     });
 
     it('should reject invalid email', async () => {
-      const signupDto = { email: 'invalid-email', password: 'Password123!', username: 'tester' };
-      
+      const signupDto = {
+        email: 'invalid-email',
+        password: 'Password123!',
+        username: 'tester',
+      };
+
       const response = await request(app.getHttpServer())
         .post('/auth/signup')
         .send(signupDto)
         .expect(400);
 
-      expect(response.body.message).toEqual(expect.arrayContaining([expect.stringContaining('email')]));
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([expect.stringContaining('email')]),
+      );
     });
-    
+
     it('should reject weak password', async () => {
-      const signupDto = { email: 'test@example.com', password: 'weak', username: 'tester' };
-      
+      const signupDto = {
+        email: 'test@example.com',
+        password: 'weak',
+        username: 'tester',
+      };
+
       const response = await request(app.getHttpServer())
         .post('/auth/signup')
         .send(signupDto)
         .expect(400);
 
-      expect(response.body.message).toEqual(expect.arrayContaining([expect.stringContaining('Password')]));
+      expect(response.body.message).toEqual(
+        expect.arrayContaining([expect.stringContaining('Password')]),
+      );
     });
 
     it('should handle duplicate email gracefully', async () => {
-      const signupDto = { email: 'duplicate@example.com', password: 'Password123!', username: 'tester' };
-      
+      const signupDto = {
+        email: 'duplicate@example.com',
+        password: 'Password123!',
+        username: 'tester',
+      };
+
       const { ConflictException } = require('@nestjs/common');
-      mockAuthService.signup.mockRejectedValue(new ConflictException('Email address is already in use'));
+      mockAuthService.signup.mockRejectedValue(
+        new ConflictException('Email address is already in use'),
+      );
 
       const response = await request(app.getHttpServer())
         .post('/auth/signup')
@@ -102,30 +139,46 @@ describe('AuthController (e2e)', () => {
   describe('/auth/login (POST)', () => {
     it('should successfully login and return session cookie', async () => {
       const loginDto = { email: 'test@example.com', password: 'Password123!' };
-      const userProfile = { uid: '123', email: loginDto.email, username: 'tester' };
-      
-      mockAuthService.login.mockResolvedValue({ idToken: 'fake-token', userProfile });
-      mockAuthService.createSessionCookie.mockResolvedValue('fake-session-cookie');
+      const userProfile = {
+        uid: '123',
+        email: loginDto.email,
+        username: 'tester',
+      };
+
+      mockAuthService.login.mockResolvedValue({
+        idToken: 'fake-token',
+        userProfile,
+      });
+      mockAuthService.createSessionCookie.mockResolvedValue(
+        'fake-session-cookie',
+      );
 
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send(loginDto)
         .expect(201); // NestJS POST default is 201 unless HttpStatus.OK is strictly enforced via decorator without passthrough response issue. Let's check status
-      
+
       expect(response.body.message).toBe('Login successful');
       expect(response.body.user).toEqual(userProfile);
-      
+
       // Check cookies
       const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
-      expect(cookies.some((cookie: string) => cookie.includes('session='))).toBeTruthy();
+      expect(
+        cookies.some((cookie: string) => cookie.includes('session=')),
+      ).toBeTruthy();
     });
 
     it('should handle invalid credentials', async () => {
-      const loginDto = { email: 'wrong@example.com', password: 'WrongPassword123!' };
-      
+      const loginDto = {
+        email: 'wrong@example.com',
+        password: 'WrongPassword123!',
+      };
+
       const { UnauthorizedException } = require('@nestjs/common');
-      mockAuthService.login.mockRejectedValue(new UnauthorizedException('Invalid email or password'));
+      mockAuthService.login.mockRejectedValue(
+        new UnauthorizedException('Invalid email or password'),
+      );
 
       const response = await request(app.getHttpServer())
         .post('/auth/login')
@@ -144,11 +197,15 @@ describe('AuthController (e2e)', () => {
         .expect(201);
 
       expect(response.body.message).toBe('Logged out successfully');
-      
+
       const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
-      expect(cookies.some((cookie: string) => cookie.includes('session=;'))).toBeTruthy();
-      expect(mockAuthService.revokeSession).toHaveBeenCalledWith('fake-session-cookie');
+      expect(
+        cookies.some((cookie: string) => cookie.includes('session=;')),
+      ).toBeTruthy();
+      expect(mockAuthService.revokeSession).toHaveBeenCalledWith(
+        'fake-session-cookie',
+      );
     });
   });
 });

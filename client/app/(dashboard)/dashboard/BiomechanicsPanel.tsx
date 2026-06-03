@@ -89,8 +89,14 @@ const NORM_LEVEL_SCORE: Record<string, number> = {
   Elite: 98,
 };
 
-export default function BiomechanicsPanel() {
-  const [analysesList, setAnalysesList] = useState<AnalysisRecord[]>([]);
+export default function BiomechanicsPanel({
+  analysesList: propAnalysesList,
+  onAnalysesUpdated,
+}: {
+  analysesList?: AnalysisRecord[];
+  onAnalysesUpdated?: () => void;
+} = {}) {
+  const [analysesList, setAnalysesList] = useState<AnalysisRecord[]>(propAnalysesList || []);
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisRecord | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -114,6 +120,10 @@ export default function BiomechanicsPanel() {
     Boolean(effectiveStatus && !['COMPLETED', 'FAILED'].includes(effectiveStatus));
 
   const fetchAnalyses = useCallback(async () => {
+    if (onAnalysesUpdated) {
+      onAnalysesUpdated();
+      return;
+    }
     try {
       const response = await api.get('/analysis/list');
       const list = response.data?.data ?? response.data ?? [];
@@ -123,7 +133,7 @@ export default function BiomechanicsPanel() {
     } catch (err) {
       console.error('Failed to load analyses', err);
     }
-  }, []);
+  }, [onAnalysesUpdated]);
 
   const fetchSingleAnalysis = useCallback(async (id: string) => {
     try {
@@ -142,8 +152,16 @@ export default function BiomechanicsPanel() {
   }, []);
 
   useEffect(() => {
-    fetchAnalyses();
-  }, [fetchAnalyses]);
+    if (propAnalysesList) {
+      setAnalysesList(propAnalysesList);
+    }
+  }, [propAnalysesList]);
+
+  useEffect(() => {
+    if (!propAnalysesList) {
+      fetchAnalyses();
+    }
+  }, [fetchAnalyses, propAnalysesList]);
 
   useEffect(() => {
     return () => {

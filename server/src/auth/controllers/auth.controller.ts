@@ -1,5 +1,15 @@
-import { Controller, Post, Body, Req, Res, Get, UseGuards, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  Res,
+  Get,
+  UseGuards,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import * as express from 'express';
 import { AuthService } from '../services/auth.service';
 import { SignupDto } from '../dto/signup.dto';
@@ -13,9 +23,13 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Register a new enterprise user and log them in' })
   @ApiBody({ type: SignupDto })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'User successfully created' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'User successfully created',
+  })
   async signup(
     @Body() signupDto: SignupDto,
     @Res({ passthrough: true }) response: express.Response,
@@ -29,7 +43,9 @@ export class AuthController {
       password: signupDto.password,
     });
 
-    const sessionCookie = await this.authService.createSessionCookie(loginResult.idToken);
+    const sessionCookie = await this.authService.createSessionCookie(
+      loginResult.idToken,
+    );
 
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
 
@@ -56,9 +72,15 @@ export class AuthController {
   }
 
   @Post('login')
-  @ApiOperation({ summary: 'Authenticate user and set a secure HttpOnly session cookie' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Authenticate user and set a secure HttpOnly session cookie',
+  })
   @ApiBody({ type: LoginDto })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Successfully authenticated' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Successfully authenticated',
+  })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: express.Response,

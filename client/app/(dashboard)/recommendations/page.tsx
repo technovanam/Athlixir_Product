@@ -1,12 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Zap, Target, Shield, Activity, ArrowRight, CheckCircle, ChevronRight, PlayCircle, AlertTriangle, Trophy, Clock
+  Zap, Target, Shield, Activity, ArrowRight, CheckCircle, ChevronRight, PlayCircle, AlertTriangle, Trophy, Clock, Loader2
 } from 'lucide-react';
 import { useDateFilter } from '../../context/DateFilterContext';
 import { useAuth, api } from '../../context/AuthContext';
+
+const RUNNING_TYPES = {
+  Sprint: 'Sprint',
+  'Middle Distance': 'Middle Distance',
+  'Long Distance': 'Long Distance'
+};
 
 export default function RecommendationsPage() {
   const { dateRange } = useDateFilter();
@@ -15,10 +21,34 @@ export default function RecommendationsPage() {
   const physicalProfile = user?.physicalProfile;
   const preferredDays = physicalProfile?.training_days || 5;
 
-  const [targetDays, setTargetDays] = React.useState(preferredDays);
-  const [planVariant, setPlanVariant] = React.useState('balanced'); // balanced, speed, recovery
-  const [isEditingDays, setIsEditingDays] = React.useState(false);
-  const [isSavingDays, setIsSavingDays] = React.useState(false);
+  const [targetDays, setTargetDays] = useState(preferredDays);
+  const [planVariant, setPlanVariant] = useState('balanced'); // balanced, speed, recovery
+  const [isEditingDays, setIsEditingDays] = useState(false);
+  const [isSavingDays, setIsSavingDays] = useState(false);
+
+  const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadLatest() {
+      try {
+        const res = await api.get('/analysis/list');
+        const list = res.data?.data ?? res.data ?? [];
+        if (Array.isArray(list) && list.length > 0) {
+          const completed = list.filter((a: any) => a.status === 'COMPLETED');
+          if (completed.length > 0) {
+            completed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setLatestAnalysis(completed[0]);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load analysis for recommendations', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadLatest();
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -94,10 +124,26 @@ export default function RecommendationsPage() {
 
   const schedulePlan = generatePlan(targetDays, planVariant);
 
+  // Dynamic values based on telemetry
+  const isCadenceLow = latestAnalysis?.metrics?.cadence && latestAnalysis.metrics.cadence < 175;
+  const isGctHigh = latestAnalysis?.metrics?.gct && latestAnalysis.metrics.gct > 220;
+  const injuryArea = latestAnalysis?.injuryRisk?.riskArea || 'Hamstring & Ankle';
+  const rawRisk = latestAnalysis?.injuryRisk?.level || 'LOW';
+  const weakness = latestAnalysis?.insights?.weaknesses?.[0] || 'Overstride';
+  const observation = latestAnalysis?.insights?.observations?.[0] || 'AI coach suggests focusing on pelvic drop correction and mid-foot strike.';
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin text-[#FF4F21]"><Activity className="h-8 w-8" /></div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-10 animate-fadeIn pb-24 text-white">
       
-      {/* Header - Aligned to exact dashboard parameters */}
+      {/* Header */}
       <header className="flex items-end justify-between shrink-0">
         <div>
           <div className="flex items-center gap-2 text-[#FF4F21] mb-1">
@@ -111,7 +157,7 @@ export default function RecommendationsPage() {
         </div>
       </header>
 
-      {/* High Priority Alert - Re-designed as a premium glowing billboard */}
+      {/* High Priority Alert */}
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -128,12 +174,14 @@ export default function RecommendationsPage() {
             <AlertTriangle className="h-5 w-5 text-[#FF4F21]" />
           </div>
           <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 border border-red-500/20 bg-red-500/10 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest text-red-400 shadow-sm animate-pulse">
-              CRITICAL OVERLOAD
+            <span className={`inline-flex items-center gap-1.5 border px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm animate-pulse ${
+              rawRisk === 'HIGH' ? 'border-red-500/20 bg-red-500/10 text-red-400' : 'border-amber-500/20 bg-amber-500/10 text-amber-400'
+            }`}>
+              {rawRisk} OVERLOAD RISK
             </span>
-            <h2 className="text-lg font-black text-white uppercase tracking-tight">Fix Overstride Mechanics</h2>
+            <h2 className="text-lg font-black text-white uppercase tracking-tight">Fix {weakness} Mechanics</h2>
             <p className="text-zinc-300 text-xs max-w-3xl leading-relaxed font-medium">
-              Your recent analyses indicate persistent overstriding during the acceleration phase. This is increasing braking forces by 14% and elevating your ground contact time to 210ms. Immediate corrective action is required to prevent hamstring overload.
+              {observation} Currently, target areas focus on improving force dispersion across your <span className="text-[#FF4F21] underline decoration-[#FF4F21]/40 font-bold">{injuryArea}</span> joints to lower braking coefficients.
             </p>
           </div>
         </div>
@@ -166,15 +214,22 @@ export default function RecommendationsPage() {
             <ul className="space-y-4">
               <li className="flex gap-3 bg-black/20 p-3 rounded-lg border border-white/[0.02]">
                 <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">A-Skips (Focus on stiffness)</p>
-                  <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 20m • Pre-workout</p>
-                </div>
+                {isCadenceLow ? (
+                  <div>
+                    <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Metronome Runs (180 SPM)</p>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 60m • Shorten stride turnover</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">A-Skips (Focus on stiffness)</p>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 20m • Pre-workout</p>
+                  </div>
+                )}
               </li>
               <li className="flex gap-3 bg-black/20 p-3 rounded-lg border border-white/[0.02]">
                 <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Wicket Runs</p>
+                  <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Wicket Runs (Form Lock)</p>
                   <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">5x 30m • Max Velocity Day</p>
                 </div>
               </li>
@@ -202,16 +257,23 @@ export default function RecommendationsPage() {
             <ul className="space-y-4">
               <li className="flex gap-3 bg-black/20 p-3 rounded-lg border border-white/[0.02]">
                 <CheckCircle className="h-4 w-4 text-[#FF4F21] shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Heavy Sled Pushes</p>
-                  <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">4x 15m • 70% BW</p>
-                </div>
+                {isGctHigh ? (
+                  <div>
+                    <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Rapid Pogo Hops</p>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 30 reps • Lower GCT time</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Heavy Sled Pushes</p>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">4x 15m • 70% BW</p>
+                  </div>
+                )}
               </li>
               <li className="flex gap-3 bg-black/20 p-3 rounded-lg border border-white/[0.02]">
                 <CheckCircle className="h-4 w-4 text-[#FF4F21] shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Drop Jumps</p>
-                  <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 5 • Focus on minimal GCT</p>
+                  <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 5 • Focus on minimal contact</p>
                 </div>
               </li>
             </ul>
@@ -233,20 +295,27 @@ export default function RecommendationsPage() {
               <Shield className="h-5 w-5 text-blue-400 animate-pulse" />
             </div>
             <h3 className="text-base font-black text-white uppercase tracking-tight mb-2">Mobility & Recovery</h3>
-            <p className="text-[11px] text-zinc-400 mb-6 leading-relaxed font-medium">Corrective work to improve left-leg stability and reduce injury risk.</p>
+            <p className="text-[11px] text-zinc-400 mb-6 leading-relaxed font-medium">Corrective work to improve lower limb stability and reduce injury risk.</p>
             
             <ul className="space-y-4">
               <li className="flex gap-3 bg-black/20 p-3 rounded-lg border border-white/[0.02]">
                 <CheckCircle className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Hip Flexor Isometrics</p>
-                  <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 30s holds (Left side)</p>
-                </div>
+                {injuryArea.toLowerCase().includes('hamstring') ? (
+                  <div>
+                    <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Nordic Hamstring Drops</p>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 6 eccentric reps • Slow desc.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Hip Flexor Isometrics</p>
+                    <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">3x 30s holds (Left side)</p>
+                  </div>
+                )}
               </li>
               <li className="flex gap-3 bg-black/20 p-3 rounded-lg border border-white/[0.02]">
                 <CheckCircle className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Ankle Dorsiflexion</p>
+                  <p className="text-xs font-bold text-zinc-200 uppercase tracking-wide">Ankle Dorsiflexion Mobilization</p>
                   <p className="text-[9px] text-zinc-500 font-bold uppercase mt-0.5 tracking-wider">2x Daily • 2 mins per side</p>
                 </div>
               </li>
@@ -255,7 +324,7 @@ export default function RecommendationsPage() {
         </motion.div>
       </motion.div>
 
-      {/* Weekly AI Plan - Re-designed to matches evolution history lists */}
+      {/* Weekly AI Plan */}
       <motion.div 
         variants={itemVariants}
         initial="hidden"
@@ -288,7 +357,10 @@ export default function RecommendationsPage() {
                     onChange={e => setTargetDays(Number(e.target.value))} 
                     className="w-16 bg-black/50 border border-white/[0.1] rounded px-2 py-1 text-[10px] text-white focus:outline-none" 
                   />
-                  <button onClick={handleSaveTargetDays} disabled={isSavingDays} className="bg-[#FF4F21] text-white rounded px-2 py-1 text-[10px] font-bold">Save</button>
+                  <button onClick={handleSaveTargetDays} disabled={isSavingDays} className="bg-[#FF4F21] text-white rounded px-2 py-1 text-[10px] font-bold flex items-center gap-1 disabled:opacity-50">
+                    {isSavingDays && <Loader2 className="h-3 w-3 animate-spin" />}
+                    <span>Save</span>
+                  </button>
                   <button onClick={() => { setIsEditingDays(false); setTargetDays(preferredDays); }} className="bg-zinc-800 text-white rounded px-2 py-1 text-[10px] font-bold">Cancel</button>
                 </div>
               ) : (

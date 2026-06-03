@@ -1,14 +1,108 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Bell, Activity, Zap, ShieldAlert, Target, CheckCircle, Clock
 } from 'lucide-react';
 import { useDateFilter } from '../../context/DateFilterContext';
+import { api } from '../../context/AuthContext';
 
 export default function NotificationsPage() {
   const { dateRange } = useDateFilter();
+  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadNotifications() {
+      try {
+        const res = await api.get('/analysis/list');
+        const list = res.data?.data ?? res.data ?? [];
+        
+        // Compile notifications list
+        const compiled: any[] = [];
+        
+        if (Array.isArray(list)) {
+          list.forEach((analysis: any) => {
+            const id = analysis.analysisId || analysis.id || '';
+            const shortId = id.slice(0, 8);
+            const timeStr = new Date(analysis.createdAt || analysis.updatedAt).toLocaleString();
+            
+            if (analysis.status === 'COMPLETED') {
+              // 1. Completion event
+              compiled.push({
+                id: `${id}_completed`,
+                time: timeStr,
+                timestamp: new Date(analysis.createdAt || analysis.updatedAt).getTime(),
+                type: 'success',
+                badge: 'Analysis Ready',
+                title: `Sprint Analysis Ready (${shortId})`,
+                description: `Your sprint session has completed processing. Cadence: ${analysis.metrics?.cadence || '—'} SPM, GCT: ${analysis.metrics?.gct || '—'} ms, Stride: ${analysis.metrics?.strideLength || '—'} m.`,
+              });
+              
+              // 2. Asymmetry warning
+              const symmetry = analysis.metrics?.symmetry;
+              const asymmetry = analysis.metrics?.asymmetryIndex || (symmetry ? (100 - symmetry) : null);
+              if (asymmetry && asymmetry > 8) {
+                compiled.push({
+                  id: `${id}_asymmetry`,
+                  time: timeStr,
+                  timestamp: new Date(analysis.createdAt || analysis.updatedAt).getTime() - 1000, // slight offset to order below completed
+                  type: 'warning',
+                  badge: 'Warning',
+                  title: `Movement Asymmetry Detected (${shortId})`,
+                  description: `AI pipeline detected a ${asymmetry.toFixed(1)}% asymmetry index. Focus on corrective exercises to balance load distribution.`,
+                });
+              }
+              
+              // 3. Flags warning
+              if (analysis.metricFlags && analysis.metricFlags.length > 0) {
+                compiled.push({
+                  id: `${id}_flags`,
+                  time: timeStr,
+                  timestamp: new Date(analysis.createdAt || analysis.updatedAt).getTime() - 2000,
+                  type: 'danger',
+                  badge: 'Telemetry Alert',
+                  title: `Performance Flags Raised (${shortId})`,
+                  description: `The following flags were raised during analysis: ${analysis.metricFlags.join(', ')}.`,
+                });
+              }
+            } else if (analysis.status === 'FAILED') {
+              compiled.push({
+                id: `${id}_failed`,
+                time: timeStr,
+                timestamp: new Date(analysis.createdAt || analysis.updatedAt).getTime(),
+                type: 'danger',
+                badge: 'Analysis Failed',
+                title: `Sprint Processing Failed (${shortId})`,
+                description: analysis.errorMessage || 'The video format or resolution was insufficient for pose extraction. Please try uploading another clip.',
+              });
+            } else {
+              // In progress
+              compiled.push({
+                id: `${id}_progress`,
+                time: timeStr,
+                timestamp: new Date(analysis.createdAt || analysis.updatedAt).getTime(),
+                type: 'info',
+                badge: 'Processing',
+                title: `Sprint Analysis In Progress (${shortId})`,
+                description: `Your uploaded video is running through the AI pipeline. Progress: ${analysis.progress ?? 0}%.`,
+              });
+            }
+          });
+        }
+        
+        // Sort by timestamp descending
+        compiled.sort((a, b) => b.timestamp - a.timestamp);
+        setNotifications(compiled);
+      } catch (err) {
+        console.error('Failed to compile notifications', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadNotifications();
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -42,80 +136,88 @@ export default function NotificationsPage() {
       </motion.div>
 
       {/* Activity Timeline */}
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="relative border-l border-white/[0.05] ml-6 pl-8 space-y-12"
-      >
-        {/* Event 1 */}
-        <motion.div variants={itemVariants} className="relative group">
-          <div className="absolute -left-[45px] top-1 h-6 w-6 rounded-full bg-emerald-500/20 border border-emerald-500 flex items-center justify-center ring-4 ring-[#08080C]">
-            <CheckCircle className="h-3 w-3 text-emerald-500" />
-          </div>
-          <div className="bg-[#08080C]/40 border border-white/[0.05] shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md rounded-xl p-6 hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-                <Clock className="h-3 w-3" /> Just now
-              </span>
-              <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">Analysis Ready</span>
-            </div>
-            <h3 className="text-lg font-black text-white mb-2 uppercase tracking-tight">Sprint Analysis Completed</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">Your recent 100m sprint analysis has finished processing. The full biomechanics report is now available.</p>
-          </div>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Activity className="h-6 w-6 animate-spin text-[#FF4F21]" />
+        </div>
+      ) : notifications.length === 0 ? (
+        <div className="text-center py-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/20">
+          <Bell className="h-8 w-8 text-zinc-650 mx-auto mb-3" />
+          <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">No Alerts Active</p>
+          <p className="text-[10px] text-zinc-550 mt-1 max-w-xs mx-auto">Upload video footage to compile dynamic biomechanical alerts.</p>
+        </div>
+      ) : (
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="relative border-l border-white/[0.05] ml-6 pl-8 space-y-12"
+        >
+          {notifications.map((notif) => {
+            let icon = <Bell className="h-3 w-3 text-zinc-400" />;
+            let styles = {
+              glow: 'border-white/[0.05] bg-[#08080C]/40 hover:bg-[#08080C]/60 hover:border-white/[0.1] hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)]',
+              badge: 'text-zinc-400 bg-zinc-500/10',
+              iconBg: 'bg-zinc-550/20 border-zinc-700',
+              iconColor: 'text-zinc-500',
+            };
+            
+            if (notif.type === 'success') {
+              icon = <CheckCircle className="h-3 w-3 text-emerald-500" />;
+              styles = {
+                glow: 'border-white/[0.05] bg-[#08080C]/40 hover:bg-[#08080C]/60 hover:border-white/[0.1] hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)]',
+                badge: 'text-emerald-500 bg-emerald-500/10',
+                iconBg: 'bg-emerald-500/20 border-emerald-500',
+                iconColor: 'text-emerald-500',
+              };
+            } else if (notif.type === 'warning') {
+              icon = <ShieldAlert className="h-3 w-3 text-amber-500" />;
+              styles = {
+                glow: 'border-amber-500/10 bg-amber-500/5 hover:bg-amber-500/8 hover:border-amber-500/20',
+                badge: 'text-amber-500 bg-amber-500/10',
+                iconBg: 'bg-amber-500/20 border-amber-500',
+                iconColor: 'text-amber-500',
+              };
+            } else if (notif.type === 'danger') {
+              icon = <ShieldAlert className="h-3 w-3 text-red-500" />;
+              styles = {
+                glow: 'border-red-500/10 bg-red-500/5 hover:bg-red-500/8 hover:border-red-500/20',
+                badge: 'text-red-500 bg-red-500/10',
+                iconBg: 'bg-red-500/20 border-red-500',
+                iconColor: 'text-red-500',
+              };
+            } else if (notif.type === 'info') {
+              icon = <Activity className="h-3 w-3 text-blue-400" />;
+              styles = {
+                glow: 'border-white/[0.05] bg-[#08080C]/40 hover:bg-[#08080C]/60 hover:border-white/[0.1] hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)]',
+                badge: 'text-blue-400 bg-blue-500/10',
+                iconBg: 'bg-blue-500/20 border-blue-500',
+                iconColor: 'text-blue-500',
+              };
+            }
+            
+            return (
+              <motion.div key={notif.id} variants={itemVariants} className="relative group">
+                <div className={`absolute -left-[45px] top-1 h-6 w-6 rounded-full border flex items-center justify-center ring-4 ring-[#08080C] ${styles.iconBg}`}>
+                  {icon}
+                </div>
+                <div className={`border backdrop-blur-md rounded-xl p-6 transition-all duration-300 ${styles.glow}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> {notif.time}
+                    </span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${styles.badge}`}>
+                      {notif.badge}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-black text-white mb-2 uppercase tracking-tight">{notif.title}</h3>
+                  <p className="text-xs text-zinc-400 leading-relaxed">{notif.description}</p>
+                </div>
+              </motion.div>
+            );
+          })}
         </motion.div>
-
-        {/* Event 2 */}
-        <motion.div variants={itemVariants} className="relative group">
-          <div className="absolute -left-[45px] top-1 h-6 w-6 rounded-full bg-amber-500/20 border border-amber-500 flex items-center justify-center ring-4 ring-[#08080C]">
-            <ShieldAlert className="h-3 w-3 text-amber-500" />
-          </div>
-          <div className="bg-amber-500/5 border border-amber-500/20 backdrop-blur-md rounded-xl p-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-                <Clock className="h-3 w-3" /> 2 hours ago
-              </span>
-              <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">Warning</span>
-            </div>
-            <h3 className="text-lg font-black text-white mb-2 uppercase tracking-tight">Moderate Asymmetry Detected</h3>
-            <p className="text-xs text-amber-500/80 leading-relaxed">AI engine detected an 11.4% asymmetry in ground contact time between left and right foot strikes.</p>
-          </div>
-        </motion.div>
-
-        {/* Event 3 */}
-        <motion.div variants={itemVariants} className="relative group">
-          <div className="absolute -left-[45px] top-1 h-6 w-6 rounded-full bg-[#FF4F21]/20 border border-[#FF4F21] flex items-center justify-center ring-4 ring-[#08080C]">
-            <Target className="h-3 w-3 text-[#FF4F21]" />
-          </div>
-          <div className="bg-[#08080C]/40 border border-white/[0.05] shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md rounded-xl p-6 hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-                <Clock className="h-3 w-3" /> Yesterday
-              </span>
-              <span className="text-[10px] font-black text-[#FF4F21] bg-[#FF4F21]/10 px-2 py-0.5 rounded-full uppercase tracking-widest">Goal Reached</span>
-            </div>
-            <h3 className="text-lg font-black text-white mb-2 uppercase tracking-tight">Target GCT Reached</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">Congratulations! You successfully lowered your ground contact time below 220ms (210ms recorded).</p>
-          </div>
-        </motion.div>
-
-        {/* Event 4 */}
-        <motion.div variants={itemVariants} className="relative group">
-          <div className="absolute -left-[45px] top-1 h-6 w-6 rounded-full bg-blue-500/20 border border-blue-500 flex items-center justify-center ring-4 ring-[#08080C]">
-            <Zap className="h-3 w-3 text-blue-500" />
-          </div>
-          <div className="bg-[#08080C]/40 border border-white/[0.05] shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md rounded-xl p-6 hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-                <Clock className="h-3 w-3" /> 2 days ago
-              </span>
-              <span className="text-[10px] font-black text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full uppercase tracking-widest">AI Insight</span>
-            </div>
-            <h3 className="text-lg font-black text-white mb-2 uppercase tracking-tight">Cadence Improved by 5%</h3>
-            <p className="text-xs text-zinc-400 leading-relaxed">Your average cadence increased from 164 SPM to 172 SPM. Keep pushing towards the 185 SPM state benchmark.</p>
-          </div>
-        </motion.div>
-      </motion.div>
+      )}
     </div>
   );
 }

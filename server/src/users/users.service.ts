@@ -59,7 +59,9 @@ export class UsersService {
     const doc = await userRef.get();
 
     if (!doc.exists || doc.data()?.isDeleted) {
-      throw new NotFoundException('User profile not found. Cannot perform onboarding.');
+      throw new NotFoundException(
+        'User profile not found. Cannot perform onboarding.',
+      );
     }
 
     const now = new Date().toISOString();

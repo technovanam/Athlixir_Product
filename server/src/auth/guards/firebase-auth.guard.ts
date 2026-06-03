@@ -17,7 +17,7 @@ export class FirebaseAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    
+
     // First try to get token from cookie
     let token = request.cookies?.session;
 
@@ -34,14 +34,17 @@ export class FirebaseAuthGuard implements CanActivate {
       // Verify session cookie or ID token
       // verifySessionCookie is for cookies, verifyIdToken is for bearer tokens
       // We check if it's a cookie (usually long) or a bearer token
-      
+
       let decodedToken;
       if (request.cookies?.session) {
-        decodedToken = await this.firebaseService.auth.verifySessionCookie(token, false);
+        decodedToken = await this.firebaseService.auth.verifySessionCookie(
+          token,
+          true,
+        );
       } else {
         decodedToken = await this.firebaseService.auth.verifyIdToken(token);
       }
-      
+
       request.user = decodedToken;
       return true;
     } catch (error) {

@@ -78,7 +78,7 @@ export default function InjuryHistoryStep() {
         currentPain,
         severity: Number(severity),
       });
-      router.push('/onboarding/consent');
+      router.replace('/onboarding/consent');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save injury history.');
     } finally {
@@ -196,7 +196,7 @@ export default function InjuryHistoryStep() {
         <div className="flex justify-between items-center pt-6 border-t border-white/[0.05]">
           <button
             type="button"
-            onClick={() => router.push('/onboarding/goals')}
+            onClick={() => router.replace('/onboarding/goals')}
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white transition duration-200 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4 text-[#FF4F21]" />
