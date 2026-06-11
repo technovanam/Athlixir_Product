@@ -275,7 +275,7 @@ export class AiInsightsService {
       const profile = profileDoc.exists
         ? (profileDoc.data() as any)
         : { gender: 'male', primary_event: '100m' };
-      const name = profile.name || profile.username || 'Athlete';
+      const name = profile.full_name || profile.name || profile.username || 'Athlete';
 
       // 3. Fetch historical analyses to compute trend context
       const historySnapshot = await db
@@ -294,7 +294,11 @@ export class AiInsightsService {
       // 4. Construct prompts
       const prompts = buildAthleteChatPrompt(
         history,
-        { ...profile, name },
+        {
+          ...profile,
+          name,
+          injuryHistory: profile.injury_history || null,
+        },
         latestAnalysis,
         message,
       );
@@ -318,9 +322,11 @@ export class AiInsightsService {
           );
         } catch (geminiErr: any) {
           this.logger.error(
-            `Gemini chat failed as well: ${geminiErr.message}. Resolving with local expert guidelines.`,
+            `Gemini chat failed as well: ${geminiErr.message}.`,
           );
-          response = this.generateLocalExpertChatReply(message, latestAnalysis);
+          throw new Error(
+            'AI service is temporarily unavailable. Please verify API keys and try again.',
+          );
         }
       }
 
@@ -444,14 +450,13 @@ export class AiInsightsService {
         : 'u18';
 
       return {
-        name:
-          d.firstName && d.lastName
-            ? `${d.firstName} ${d.lastName}`
-            : d.username || 'Athlete',
+        name: d.full_name || d.username || 'Athlete',
         ageGroup,
         gender,
         event,
+        primary_event: d.primary_event || event,
         heightCm: d.height_cm,
+        injuryHistory: d.injury_history || null,
       };
     } catch (err) {
       return {

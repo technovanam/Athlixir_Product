@@ -36,6 +36,38 @@ export class AnalysisService {
     mkdirSync(this.localVideoDir, { recursive: true });
   }
 
+  private validateVideoCodec(buffer: Buffer): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const validCodecs = ['h264', 'hevc', 'mpeg4', 'h.264', 'h265'];
+      const bufferStr = buffer.toString('utf8', 0, Math.min(1000, buffer.length));
+
+      // Simple codec detection from file signature
+      if (bufferStr.includes('ftyp')) {
+        const type = bufferStr.substring(
+          bufferStr.indexOf('ftyp') + 4,
+          bufferStr.indexOf('ftyp') + 8,
+        );
+        if (
+          type.includes('isom') ||
+          type.includes('iso2') ||
+          type.includes('avc1') ||
+          type.includes('hev1') ||
+          type.includes('mmp4')
+        ) {
+          resolve('MP4 (H.264/HEVC)');
+        } else {
+          reject(new Error(`Unrecognized MP4 variant: ${type}`));
+        }
+      } else if (bufferStr.includes('mdat') || bufferStr.includes('moov')) {
+        resolve('MOV (QuickTime)');
+      } else if (buffer[0] === 0x00 && buffer[1] === 0x00) {
+        resolve('AVI');
+      } else {
+        reject(new Error('Video file format not recognized'));
+      }
+    });
+  }
+
   /**
    * Production flow: validate → store Firebase → create record → trigger AI.
    * Frontend never touches Firebase; playback uses GET /analysis/:id/video/:type.
@@ -65,6 +97,17 @@ export class AnalysisService {
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
         'Unsupported video format. Please upload MP4, MOV, or AVI.',
+      );
+    }
+
+    // Validate actual video codec (not just MIME type)
+    try {
+      const codecInfo = await this.validateVideoCodec(file.buffer);
+      this.logger.log(`Video codec validation passed: ${codecInfo}`);
+    } catch (err: any) {
+      this.logger.error(`Video codec validation failed: ${err.message}`);
+      throw new BadRequestException(
+        `Invalid video codec: ${err.message}. Use H.264, HEVC, or MPEG-4 codec.`,
       );
     }
 
@@ -947,111 +990,6 @@ export class AnalysisService {
     }
   }
 
-  private simulateAnalysisPipeline(analysisId: string) {
-    const stages = [
-      { status: 'QUEUED', progress: 5 },
-      { status: 'PROCESSING_POSE', progress: 20 },
-      { status: 'TRACKING_LANDMARKS', progress: 40 },
-      { status: 'DETECTING_FOOT_STRIKES', progress: 55 },
-      { status: 'CALCULATING_METRICS', progress: 70 },
-      { status: 'GENERATING_OVERLAY', progress: 85 },
-      {
-        status: 'COMPLETED',
-        progress: 100,
-        data: {
-          metrics: {
-            cadence: 178,
-            gct: 198,
-            strideLength: 2.05,
-            asymmetryIndex: 3.2,
-            symmetry: 87.2,
-            oscillation: 7.4,
-            overstrideAngle: 5.1,
-            postureAngle: 7.8,
-          },
-          benchmarks: {
-            profileKey: 'u18_male_100m',
-            profileLabel: 'U18 Male 100m Sprint',
-            cadenceLevel: 'State',
-            gctLevel: 'State',
-            strideLevel: 'National',
-            levels: {
-              cadence: 'State',
-              gct: 'State',
-              strideLength: 'National',
-            },
-          },
-          scores: {
-            performanceScore: 84,
-            efficiencyScore: 81,
-            biomechanicsScore: 86,
-            injuryRiskScore: 18,
-            athleteLevel: 'State Potential',
-            classification: 'State Potential',
-          },
-          classification: {
-            athleteLevel: 'State Potential',
-            classification: 'State Potential',
-          },
-          injuryRisk: {
-            level: 'Low',
-            riskArea: 'None',
-            score: 18,
-          },
-          injuryRisks: [
-            {
-              category: 'Movement Quality',
-              detected: false,
-              severity: 'none',
-              riskArea: 'None',
-              detail: 'No significant biomechanical risk flags detected',
-            },
-          ],
-          insights: {
-            strengths: [
-              'Cadence at 178 SPM — State benchmark level',
-              'Ground contact time shows efficient elastic response',
-            ],
-            weaknesses: [
-              'No major mechanical red flags in this analysis window',
-            ],
-            observations: [
-              'Movement profile is consistent across cadence, contact time, and stride metrics',
-            ],
-          },
-          recommendations: [
-            'Maintain current mechanics with periodic sprint-stride video checks.',
-            'Continue structured sprint training with weekly biomechanics check-ins.',
-          ],
-          progress: {
-            hasPrevious: false,
-            cadenceProgress: null,
-            gctProgress: null,
-          },
-          reportReady: false,
-          skeletonOverlayReady: true,
-          skeletonOverlayPath: `${process.env.FASTAPI_PUBLIC_URL || 'http://127.0.0.1:8000'}/outputs/${analysisId}_overlay.mp4`,
-        },
-      },
-    ];
-
-    // Play simulation steps
-    let currentStageIndex = 0;
-    const interval = setInterval(() => {
-      const stage = stages[currentStageIndex];
-      if (!stage) {
-        clearInterval(interval);
-        return;
-      }
-      this.updateStatus(
-        analysisId,
-        stage.status,
-        stage.progress,
-        (stage as any).data,
-      );
-      currentStageIndex++;
-    }, 1500);
-  }
 
   /**
    * Delegates contextual chat to the AI Sports Intelligence handler.

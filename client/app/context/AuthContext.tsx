@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter, usePathname } from 'next/navigation';
+import { getOnboardingProfile } from '../utils/api';
 
 export interface UserProfile {
   uid: string;
@@ -62,10 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!userData) return userData;
     try {
       const statusRes = await api.get('/onboarding/status');
-      let pData = statusRes.data;
-      while (pData && pData.data && typeof pData.data === 'object' && !pData.height_cm) {
-        pData = pData.data;
-      }
+      const pData = getOnboardingProfile(statusRes);
       if (pData && Object.keys(pData).length > 0) {
         userData.physicalProfile = pData;
       }

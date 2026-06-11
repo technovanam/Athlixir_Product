@@ -3,12 +3,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
-import { Mail, Lock, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, error, setError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -117,7 +118,7 @@ export default function LoginPage() {
                 <label htmlFor="password" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
                   Access Key
                 </label>
-                <Link href="#" className="text-[9px] font-bold uppercase tracking-wider text-[#FF4F21] hover:brightness-110 transition">
+                <Link href="/forgot-password" className="text-[9px] font-bold uppercase tracking-wider text-[#FF4F21] hover:brightness-110 transition">
                   Reset Key?
                 </Link>
               </div>
@@ -126,7 +127,7 @@ export default function LoginPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   value={password}
                   onChange={(e) => {
@@ -134,9 +135,21 @@ export default function LoginPage() {
                     setError(null);
                     setValidationError(null);
                   }}
-                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-600 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] tracking-[0.25em]"
+                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-12 py-3.5 text-xs text-white placeholder-zinc-600 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] tracking-[0.25em]"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-500 hover:text-[#FF4F21] transition"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
 

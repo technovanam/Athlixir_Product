@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
+import { getOnboardingProfile } from '../../utils/api';
 import { Target, Loader2, ArrowLeft, ArrowRight, AlertCircle, Check } from 'lucide-react';
 
 const GOALS_LIST = [
@@ -26,7 +27,7 @@ export default function GoalsStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = response.data?.data?.data || {};
+        const data = getOnboardingProfile(response);
         if (data.goals && Array.isArray(data.goals)) {
           setSelectedGoals(data.goals);
         }

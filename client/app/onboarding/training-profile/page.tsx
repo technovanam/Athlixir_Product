@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
+import { getOnboardingProfile } from '../../utils/api';
 import { BarChart2, Loader2, ArrowLeft, ArrowRight, AlertCircle, Clock } from 'lucide-react';
 
 export default function TrainingProfileStep() {
@@ -22,9 +23,9 @@ export default function TrainingProfileStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = response.data?.data?.data || {};
-        if (data.training_days) setTrainingDays(data.training_days);
-        if (data.training_duration) setTrainingDuration(data.training_duration);
+        const data = getOnboardingProfile(response);
+        if (data.training_days !== undefined) setTrainingDays(Number(data.training_days));
+        if (data.training_duration !== undefined) setTrainingDuration(Number(data.training_duration));
         if (data.experience_years !== undefined) setExperienceYears(data.experience_years);
         if (data.personal_best) setPersonalBest(data.personal_best);
         if (data.achievements) setAchievements(data.achievements);

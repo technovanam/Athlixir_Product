@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
+import { getOnboardingProfile } from '../../utils/api';
 import { Ruler, Loader2, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function BodyMetricsStep() {
@@ -19,9 +20,9 @@ export default function BodyMetricsStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = response.data?.data?.data || {};
-        if (data.height_cm) setHeightCm(data.height_cm);
-        if (data.weight_kg) setWeightKg(data.weight_kg);
+        const data = getOnboardingProfile(response);
+        if (data.height_cm !== undefined) setHeightCm(Number(data.height_cm));
+        if (data.weight_kg !== undefined) setWeightKg(Number(data.weight_kg));
       } catch (err) {
         // Safe to ignore
       }

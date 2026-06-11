@@ -169,7 +169,16 @@ function DashboardPageContent() {
           <Zap className="h-3.5 w-3.5" /> Quick Actions
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <button className="flex items-center gap-3.5 p-4 rounded-xl border border-[#FF4F21]/30 bg-[#FF4F21]/10 hover:bg-[#FF4F21]/20 transition-all duration-300 group shadow-[0_0_15px_rgba(255,79,33,0.05)] cursor-pointer">
+          <button
+            type="button"
+            onClick={() => {
+              document.getElementById('biomechanics-upload-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              setTimeout(() => {
+                document.getElementById('biomechanics-file-input')?.click();
+              }, 400);
+            }}
+            className="flex items-center gap-3.5 p-4 rounded-xl border border-[#FF4F21]/30 bg-[#FF4F21]/10 hover:bg-[#FF4F21]/20 transition-all duration-300 group shadow-[0_0_15px_rgba(255,79,33,0.05)] cursor-pointer"
+          >
             <div className="h-8 w-8 rounded-lg bg-[#FF4F21] flex items-center justify-center shadow-[0_2px_8px_rgba(255,79,33,0.3)]">
               <UploadCloud className="h-4 w-4 text-white" />
             </div>
@@ -212,7 +221,7 @@ function DashboardPageContent() {
       </section>
 
       {/* 3. LATEST ANALYSIS PANEL (Biomechanics Engine) */}
-      <section>
+      <section id="biomechanics-upload-section">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.25em] flex items-center gap-2">
             <PlayCircle className="h-3.5 w-3.5" /> Latest Analysis Feed

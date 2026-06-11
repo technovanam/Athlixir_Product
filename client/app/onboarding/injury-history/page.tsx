@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
+import { getOnboardingProfile } from '../../utils/api';
 import { Heart, Loader2, ArrowLeft, ArrowRight, AlertCircle, AlertTriangle } from 'lucide-react';
 
 const INJURY_OPTIONS = [
@@ -29,9 +30,9 @@ export default function InjuryHistoryStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = response.data?.data?.data || {};
+        const data = getOnboardingProfile(response);
         if (data.injury_history) {
-          const hist = data.injury_history;
+          const hist = data.injury_history as { injuries?: string[]; current_pain?: boolean; severity?: number };
           if (hist.injuries && Array.isArray(hist.injuries)) {
             setSelectedInjuries(hist.injuries);
           }

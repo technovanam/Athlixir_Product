@@ -491,6 +491,7 @@ export default function BiomechanicsPanel({
             }}
           >
             <input
+              id="biomechanics-file-input"
               ref={fileInputRef}
               type="file"
               accept="video/mp4,video/quicktime,video/x-msvideo"

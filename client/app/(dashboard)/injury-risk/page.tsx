@@ -16,6 +16,12 @@ export default function InjuryRiskPage() {
   const [loading, setLoading] = useState(true);
   const [activeDirective, setActiveDirective] = useState<number | null>(null);
 
+  const injuryHistory = user?.physicalProfile?.injury_history as
+    | { injuries?: string[]; current_pain?: boolean; severity?: number }
+    | undefined;
+  const hasNoPriorInjuries =
+    !injuryHistory?.injuries?.length || injuryHistory.injuries.includes('None');
+
   const fetchLatest = async () => {
     setLoading(true);
     try {
@@ -53,12 +59,18 @@ export default function InjuryRiskPage() {
     show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 260, damping: 22 } }
   };
 
-  // Determine actual risk levels and metrics from dynamic data or fallbacks
-  const rawRiskLevel = latestAnalysis?.injuryRisk?.level || 'MODERATE';
+  const rawRiskLevel = latestAnalysis?.injuryRisk?.level
+    ? latestAnalysis.injuryRisk.level
+    : hasNoPriorInjuries
+      ? 'LOW'
+      : 'WATCH';
   const riskLevel = rawRiskLevel.toUpperCase();
-  const riskArea = latestAnalysis?.injuryRisk?.riskArea && latestAnalysis.injuryRisk.riskArea !== 'None' 
-    ? latestAnalysis.injuryRisk.riskArea 
-    : 'Hamstring & Ankle';
+  const riskArea =
+    latestAnalysis?.injuryRisk?.riskArea && latestAnalysis.injuryRisk.riskArea !== 'None'
+      ? latestAnalysis.injuryRisk.riskArea
+      : hasNoPriorInjuries
+        ? 'No elevated risk areas'
+        : injuryHistory?.injuries?.filter((i) => i !== 'None').join(', ') || 'Prior injury profile';
 
   // Deriving asymmetry index dynamically or fallback to 11.4%
   const symmetry = latestAnalysis?.metrics?.symmetry;
@@ -79,6 +91,7 @@ export default function InjuryRiskPage() {
         };
       case 'LOW':
       case 'MINIMAL':
+      case 'WATCH':
         return {
           glow: 'from-emerald-500/10 to-[#08080C]/20 border-emerald-500/20',
           text: 'text-emerald-400',
@@ -97,54 +110,17 @@ export default function InjuryRiskPage() {
 
   const riskTheme = getRiskStyles(riskLevel);
 
-  // Dynamic mapped warnings list or premium fallback
-  const getWarningsList = () => {
-    if (latestAnalysis?.injuryRisks && latestAnalysis.injuryRisks.length > 0) {
-      return latestAnalysis.injuryRisks.filter((r: any) => r.detected);
-    }
-    // Premium Mock Fallback
-    return [
-      {
-        category: 'Left Hamstring Overload',
-        detail: 'Excessive forward hip posture combined with high ground contact time increases mechanical eccentric load on the left hamstring fibers during peak deceleration.',
-        severity: 'MEDIUM',
-        detected: true
-      },
-      {
-        category: 'Right Ankle Stiffness Deficiency',
-        detail: 'Dynamic joint power loss detected during active triple extension. Poor ankle stiffness is causing energy dispersion and compensatory knee strain.',
-        severity: 'HIGH',
-        detected: true
-      }
-    ];
-  };
+  const warnings =
+    latestAnalysis?.injuryRisks?.filter((r: { detected?: boolean }) => r.detected) || [];
 
-  const warnings = getWarningsList();
-
-  // Premium Fallback Prevention Protocols
-  const PREVENTION_DIRECTIVES = [
-    {
-      title: "Hamstring Eccentric Lengthening",
-      subtitle: "Nordic drops and slider leg curls targeting mechanical strength.",
-      description: "Perform 3 sets of 6-8 eccentric repetitions. Focus on a 4-second descending phase. This actively builds hamstring tissue tolerance against high eccentric force loads.",
-      duration: "15 Mins",
-      intensity: "Moderate"
-    },
-    {
-      title: "Reactive Tendon Stiffness Pogo Hops",
-      subtitle: "Low contact ankle jumps to rebuild spring stiffness.",
-      description: "Complete 3 sets of 20 quick pogo reps. Ensure minimal knee flex, using rapid ankle turnover. The goal is to minimize GCT while keeping the ankle joint locked.",
-      duration: "10 Mins",
-      intensity: "High"
-    },
-    {
-      title: "Hip Flexor Stability Protocol",
-      subtitle: "Isometric holds at peak extension for pelvic stabilization.",
-      description: "Implement 4 sets of 30-second isometric holds on each side. Stabilizing hip drops balances ground force distribution across both lower limbs.",
-      duration: "12 Mins",
-      intensity: "Light"
-    }
-  ];
+  const PREVENTION_DIRECTIVES =
+    latestAnalysis?.insights?.recommendations?.map((rec: string, i: number) => ({
+      title: `Protocol ${i + 1}`,
+      subtitle: 'From your latest biomechanics analysis',
+      description: rec,
+      duration: '—',
+      intensity: 'Moderate',
+    })) || [];
 
   return (
     <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-10 animate-fadeIn pb-24 text-white">
@@ -198,7 +174,21 @@ export default function InjuryRiskPage() {
               </h2>
             </div>
             <p className="text-xs font-bold text-zinc-300 leading-relaxed max-w-sm">
-              Focus area: <span className="text-white underline decoration-[#FF4F21]/60 font-black">{riskArea}</span>. Left pelvic drop metrics show mechanical anomalies causing compensation stresses.
+              {latestAnalysis ? (
+                <>
+                  Focus area: <span className="text-white underline decoration-[#FF4F21]/60 font-black">{riskArea}</span>.
+                  {warnings.length > 0
+                    ? ' Active movement warnings detected from your latest sprint analysis.'
+                    : ' No elevated overload patterns detected in your latest session.'}
+                </>
+              ) : hasNoPriorInjuries ? (
+                'No sprint analysis on file yet. Upload a session on the dashboard to receive biomechanical risk scoring.'
+              ) : (
+                <>
+                  Prior injury profile on record: <span className="text-white font-black">{riskArea}</span>.
+                  Upload a sprint video to correlate movement patterns with your history.
+                </>
+              )}
             </p>
           </div>
         </motion.div>
@@ -305,6 +295,13 @@ export default function InjuryRiskPage() {
               </h2>
             </div>
             <div className="p-6 space-y-4">
+              {warnings.length === 0 && (
+                <p className="text-[11px] text-zinc-400 font-medium italic">
+                  {latestAnalysis
+                    ? 'No active movement warnings from your latest analysis.'
+                    : 'Complete a sprint analysis to populate movement warnings.'}
+                </p>
+              )}
               {warnings.map((risk: any, i: number) => {
                 const isHigh = risk.severity === 'HIGH';
                 const cardBorder = isHigh ? 'border-l-[#FF4F21] border-[#FF4F21]/20 bg-[#FF4F21]/5 hover:bg-[#FF4F21]/8' : 'border-l-amber-500 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/8';
@@ -335,6 +332,11 @@ export default function InjuryRiskPage() {
             </div>
             
             <div className="divide-y divide-white/[0.03]">
+              {PREVENTION_DIRECTIVES.length === 0 && (
+                <p className="p-5 text-[11px] text-zinc-400 font-medium italic">
+                  Prevention protocols appear here after your sprint video is analyzed.
+                </p>
+              )}
               {PREVENTION_DIRECTIVES.map((directive, idx) => {
                 const isOpen = activeDirective === idx;
                 

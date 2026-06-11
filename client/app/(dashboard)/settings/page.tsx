@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth, api } from '../../context/AuthContext';
+import { getOnboardingProfile } from '../../utils/api';
 import { User, Shield, Sliders, Bell, LogOut, Trash2, Activity, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 const RUNNING_TYPES = [
@@ -50,7 +51,7 @@ export default function SettingsPage() {
     async function loadProfile() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = response.data?.data?.data || {};
+        const data = getOnboardingProfile(response);
         if (data.full_name) setFullName(data.full_name);
         if (data.dob) setDob(data.dob.split('T')[0]);
         if (data.gender) setGender(data.gender);

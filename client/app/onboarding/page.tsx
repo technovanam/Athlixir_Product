@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, useAuth } from '../context/AuthContext';
+import { getOnboardingCurrentStep } from '../utils/api';
 import { Loader2 } from 'lucide-react';
 
 export default function OnboardingIndexPage() {
@@ -15,7 +16,7 @@ export default function OnboardingIndexPage() {
     async function resumeOnboarding() {
       try {
         const response = await api.get('/onboarding/status');
-        const nextStep = response.data?.data?.currentStep || 'basic-info';
+        const nextStep = getOnboardingCurrentStep(response);
         router.replace(`/onboarding/${nextStep}`);
       } catch (err) {
         // Fallback to basic-info if any error occurs

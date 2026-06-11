@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, useAuth } from '../../context/AuthContext';
+import { getOnboardingProfile } from '../../utils/api';
 import { CheckCircle2, Loader2, ArrowLeft, AlertCircle, ShieldCheck } from 'lucide-react';
 
 export default function ConsentStep() {
@@ -15,6 +16,21 @@ export default function ConsentStep() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadSavedData() {
+      try {
+        const response = await api.get('/onboarding/status');
+        const data = getOnboardingProfile(response);
+        if (data.terms_accepted !== undefined) setTermsAccepted(!!data.terms_accepted);
+        if (data.ai_consent_accepted !== undefined) setAiAnalysisConsent(!!data.ai_consent_accepted);
+        if (data.data_consent_accepted !== undefined) setDataStorageConsent(!!data.data_consent_accepted);
+      } catch {
+        // Fresh profile
+      }
+    }
+    loadSavedData();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

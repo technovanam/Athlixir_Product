@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { api } from '../context/AuthContext';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -14,18 +15,15 @@ export default function ForgotPasswordPage() {
     if (!email) return;
 
     setStatus('loading');
-    
-    // Simulating Firebase password reset call
-    // In a real implementation, this would call auth.sendPasswordResetEmail(email)
-    setTimeout(() => {
-      if (email.includes('@')) {
-        setStatus('success');
-        setMessage('A password reset link has been sent to your email address.');
-      } else {
-        setStatus('error');
-        setMessage('Please enter a valid email address.');
-      }
-    }, 1500);
+
+    try {
+      await api.post('/auth/password/forgot', { email });
+      setStatus('success');
+      setMessage('A password reset link has been sent to your email address.');
+    } catch (err: any) {
+      setStatus('error');
+      setMessage(err.response?.data?.message || 'Failed to send reset email. Please try again.');
+    }
   };
 
   return (

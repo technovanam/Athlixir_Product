@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, api } from '../../context/AuthContext';
+import { getOnboardingProfile } from '../../utils/api';
 import { Award, ChevronRight, Sparkles, Activity, ShieldCheck, Ruler, Calendar } from 'lucide-react';
 
 export default function CompletedStep() {
@@ -14,7 +15,7 @@ export default function CompletedStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        setProfileData(response.data?.data?.data || {});
+        setProfileData(getOnboardingProfile(response));
       } catch (err) {
         // Safe to ignore
       }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, api } from '../../context/AuthContext';
+import { getOnboardingProfile, unwrapApiData } from '../../utils/api';
 import { User, Mail, Calendar, MapPin, Loader2, ArrowRight, Upload, AlertCircle } from 'lucide-react';
 
 export default function BasicInfoStep() {
@@ -25,7 +26,7 @@ export default function BasicInfoStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = response.data?.data?.data || {};
+        const data = getOnboardingProfile(response);
         if (data.full_name) setFullName(data.full_name);
         if (data.dob) setDob(data.dob.split('T')[0]); // YYYY-MM-DD
         if (data.gender) setGender(data.gender);
@@ -46,6 +47,9 @@ export default function BasicInfoStep() {
     setUploading(true);
     setError(null);
 
+    const previewUrl = URL.createObjectURL(file);
+    setProfilePhoto(previewUrl);
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -55,10 +59,20 @@ export default function BasicInfoStep() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      if (response.data?.data?.url) {
-        setProfilePhoto(response.data.data.url);
+      const result = unwrapApiData<{ url?: string }>(response);
+      if (result?.url) {
+        URL.revokeObjectURL(previewUrl);
+        setProfilePhoto(result.url);
       }
     } catch (err: any) {
+      URL.revokeObjectURL(previewUrl);
+      try {
+        const statusRes = await api.get('/onboarding/status');
+        const saved = getOnboardingProfile(statusRes);
+        setProfilePhoto((saved.profile_photo as string) || '');
+      } catch {
+        setProfilePhoto('');
+      }
       setError(err.response?.data?.message || 'Failed to upload photo.');
     } finally {
       setUploading(false);

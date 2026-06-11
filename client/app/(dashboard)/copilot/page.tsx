@@ -6,15 +6,22 @@ import {
   Send, Activity, User, ShieldAlert, Sparkles, TrendingUp, Compass, RefreshCcw, Brain, Bot, Lightbulb, Trophy, Gauge, Zap, ChevronRight, Target
 } from 'lucide-react';
 import { useAuth, api } from '../../context/AuthContext';
+import { unwrapApiData } from '../../utils/api';
+
+type ChatMessage = { id: string; role: string; content: string };
+
+function buildWelcomeMessage(analysis: any, athleteName: string): string {
+  const cadence = analysis?.metrics?.cadence ?? '—';
+  const gct = analysis?.metrics?.gct ?? '—';
+  const perf = analysis?.scores?.performanceScore ?? '—';
+  return `Hello ${athleteName}! I'm synced to your latest sprint analysis (cadence ${cadence} SPM, GCT ${gct} ms, performance score ${perf}). Ask me anything about your biomechanics, weaknesses, or training focus.`;
+}
 
 export default function CopilotPage() {
   const { user } = useAuth();
   const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [messages, setMessages] = useState([
-    { id: '1', role: 'system', content: 'ATHLIXIR AI Copilot initialized. Analyzing your recent biomechanics data...' },
-    { id: '2', role: 'assistant', content: 'Hello! I am your AI Athlete Assistant. Based on your last 3 sprint sessions, I noticed your Ground Contact Time (GCT) is slightly high at 210ms. How can I help you optimize your training today?' }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,9 +50,34 @@ export default function CopilotPage() {
     fetchLatest();
   }, []);
 
+  useEffect(() => {
+    if (!loading && latestAnalysis) {
+      setMessages([
+        {
+          id: 'welcome',
+          role: 'assistant',
+          content: buildWelcomeMessage(latestAnalysis, athleteName),
+        },
+      ]);
+    } else if (!loading && !latestAnalysis) {
+      setMessages([]);
+    }
+  }, [loading, latestAnalysis, athleteName]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !latestAnalysis) return;
+    if (!input.trim()) return;
+    if (!latestAnalysis) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `system-${Date.now()}`,
+          role: 'system',
+          content: 'Upload and complete a sprint video analysis on the dashboard before using the AI Copilot.',
+        },
+      ]);
+      return;
+    }
 
     const userMsgText = input;
     const newMessage = { 
@@ -59,7 +91,13 @@ export default function CopilotPage() {
 
     try {
       const res = await api.post(`/analysis/${latestAnalysis.id}/chat`, { message: userMsgText });
-      const aiResponse = res.data?.data?.reply || res.data?.reply || res.data;
+      const chatResult = unwrapApiData<{ reply?: string }>(res);
+      const aiResponse =
+        chatResult?.reply ||
+        (typeof chatResult === 'string' ? chatResult : null);
+      if (!aiResponse) {
+        throw new Error('Empty response from AI service');
+      }
       setMessages(prev => [...prev, { 
         id: `assistant-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, 
         role: 'assistant', 
@@ -67,10 +105,13 @@ export default function CopilotPage() {
       }]);
     } catch (err) {
       console.error('Failed to get copilot response', err);
+      const errMsg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Unable to reach the AI service. Check your connection and try again.';
       setMessages(prev => [...prev, {
         id: `error-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        role: 'assistant',
-        content: "I'm experiencing high latency connecting to the cloud biomechanics analyzer. Remember that targeting a ground contact time under 180ms and working on horizontal project stiffness via plyometrics are key focuses in your current sprint cycle!"
+        role: 'system',
+        content: errMsg,
       }]);
     } finally {
       setIsTyping(false);
@@ -122,11 +163,19 @@ export default function CopilotPage() {
         </div>
         <button
           onClick={() => {
-            setMessages([
-              { id: '1', role: 'system', content: 'ATHLIXIR AI Copilot re-initialized. Memory buffer flushed.' },
-              { id: '2', role: 'assistant', content: `Hello ${athleteName}! Ask me anything about your telemetry records, stride mechanics, or hamstring workload.` }
-            ]);
+            if (latestAnalysis) {
+              setMessages([
+                {
+                  id: 'welcome-reset',
+                  role: 'assistant',
+                  content: buildWelcomeMessage(latestAnalysis, athleteName),
+                },
+              ]);
+            } else {
+              setMessages([]);
+            }
           }}
+          disabled={!latestAnalysis}
           className="flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition px-3 py-2 rounded-xl border border-white/[0.05] bg-[#08080C]/40 hover:border-white/[0.1] hover:bg-[#08080C]/60"
         >
           <RefreshCcw className="h-3.5 w-3.5" />
@@ -231,23 +280,9 @@ export default function CopilotPage() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-2">
-                <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-1.5">Preset Training focus:</p>
-                {[
-                  "Optimize ground contact time (GCT)",
-                  "Unlock maximum speed strides",
-                  "Fix high speed lateral pelvic drop"
-                ].map((tip, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSelectSuggestion(`What core drills do you recommend to ${tip.toLowerCase()}?`)}
-                    className="w-full text-left p-3 rounded-lg border border-white/[0.05] bg-white/[0.01] hover:bg-white/[0.03] text-zinc-300 hover:border-zinc-700 text-[10px] font-medium transition duration-200 flex items-center justify-between group/w"
-                  >
-                    <span className="truncate pr-2">{tip}</span>
-                    <ChevronRight className="h-3 w-3 shrink-0 text-zinc-500 group-hover/w:translate-x-0.5 transition" />
-                  </button>
-                ))}
-              </div>
+              <p className="text-[10px] text-zinc-500 italic">
+                Weakness prompts unlock after your sprint video is analyzed.
+              </p>
             )}
           </div>
 
@@ -316,8 +351,15 @@ export default function CopilotPage() {
 
           {/* Input Area */}
           <div className="p-5 bg-zinc-950/60 border-t border-white/[0.05] backdrop-blur-xl z-10 shrink-0">
+
+            {!latestAnalysis && !loading && (
+              <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] text-amber-200 font-medium">
+                Upload and complete a sprint analysis on the dashboard to unlock the AI Copilot.
+              </div>
+            )}
             
             {/* Presets Suggestions */}
+            {latestAnalysis && (
             <div className="flex gap-2.5 mb-4 overflow-x-auto scrollbar-hide pb-1">
               {PRESET_PROMPTS.map((preset, idx) => {
                 const Icon = preset.icon;
@@ -333,6 +375,7 @@ export default function CopilotPage() {
                 );
               })}
             </div>
+            )}
 
             <form onSubmit={handleSend} className="relative flex items-center">
               <input
@@ -340,12 +383,17 @@ export default function CopilotPage() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask your biomechanical intelligence engine (e.g., 'Why is my GCT high?')..."
-                className="w-full bg-[#08080C]/80 border border-white/[0.05] rounded-xl pl-4 pr-14 py-3.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#FF4F21]/40 focus:ring-1 focus:ring-[#FF4F21]/40 transition duration-200 shadow-inner"
+                disabled={!latestAnalysis || isTyping}
+                placeholder={
+                  latestAnalysis
+                    ? "Ask about your analysis (e.g., 'Why is my GCT high?')"
+                    : 'Complete a sprint analysis to start chatting...'
+                }
+                className="w-full bg-[#08080C]/80 border border-white/[0.05] rounded-xl pl-4 pr-14 py-3.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#FF4F21]/40 focus:ring-1 focus:ring-[#FF4F21]/40 transition duration-200 shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button 
                 type="submit"
-                disabled={!input.trim() || isTyping}
+                disabled={!input.trim() || isTyping || !latestAnalysis}
                 className="absolute right-2 p-2.5 rounded-lg bg-zinc-900 border border-white/[0.05] text-[#FF4F21] hover:text-white hover:bg-[#FF4F21] hover:border-transparent disabled:opacity-50 disabled:hover:bg-zinc-900 disabled:hover:text-[#FF4F21] disabled:hover:border-white/[0.05] transition duration-200 cursor-pointer"
               >
                 <Send className="h-3.5 w-3.5" />

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
+import { getOnboardingProfile } from '../../utils/api';
 import { Activity, Loader2, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 
 const RUNNING_TYPES = [
@@ -41,7 +42,7 @@ export default function ClassificationStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = response.data?.data?.data || {};
+        const data = getOnboardingProfile(response);
         if (data.running_type) {
           setRunningType(data.running_type);
           const available = EVENTS_BY_TYPE[data.running_type] || [];

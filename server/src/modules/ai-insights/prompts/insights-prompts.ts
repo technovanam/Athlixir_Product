@@ -358,16 +358,24 @@ Allowed uncertainty language:
 
 Never use absolute language unless directly supported by measured values.`;
 
+  const injuryNote = profile.injuryHistory?.injuries?.length
+    ? profile.injuryHistory.injuries.includes('None')
+      ? '- Injury history: No prior injuries reported'
+      : `- Injury history: ${profile.injuryHistory.injuries.join(', ')}${profile.injuryHistory.current_pain ? ' (current pain reported)' : ''}`
+    : '- Injury history: Not provided';
+
   const user = `Athlete Profile:
+- Name: ${profile.name || 'Athlete'}
 - Gender: ${profile.gender || 'male'}
 - Primary Event: ${profile.primary_event || '100m'}
 - Target benchmarks: ${latestAnalysis?.benchmarks?.profileLabel || 'State level'}
+${injuryNote}
 
 Current Analysis Metrics (Session: ${latestAnalysis ? new Date(latestAnalysis.createdAt).toLocaleDateString() : 'None'}):
-- Cadence: ${latestAnalysis?.metrics?.cadence || '—'} SPM
-- GCT: ${latestAnalysis?.metrics?.gct || '—'} ms
-- Stride Length: ${latestAnalysis?.metrics?.strideLength || '—'} m
-- Symmetry: ${latestAnalysis?.metrics?.symmetry || '92'}%
+- Cadence: ${latestAnalysis?.metrics?.cadence ?? '—'} SPM
+- GCT: ${latestAnalysis?.metrics?.gct ?? '—'} ms
+- Stride Length: ${latestAnalysis?.metrics?.strideLength ?? '—'} m
+- Symmetry: ${latestAnalysis?.metrics?.symmetry ?? '—'}%
 - Form Qualities: Knee Drive (${latestAnalysis?.scores?.efficiencyScore || '—'}/100), Posture (${latestAnalysis?.metrics?.postureAngle || '—'}° lean)
 
 Historical Trend Overview:

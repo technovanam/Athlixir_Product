@@ -28,6 +28,7 @@ export default function RecommendationsPage() {
 
   const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadLatest() {
@@ -123,6 +124,60 @@ export default function RecommendationsPage() {
   };
 
   const schedulePlan = generatePlan(targetDays, planVariant);
+
+  const handleSyncToCalendar = () => {
+    const now = new Date();
+    const weekStart = new Date(now);
+    const dayOfWeek = now.getDay();
+    weekStart.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+    const dayOffset: Record<string, number> = {
+      Monday: 0,
+      Tuesday: 1,
+      Wednesday: 2,
+      Thursday: 3,
+      Friday: 4,
+      Saturday: 5,
+      Sunday: 6,
+    };
+
+    const events = schedulePlan.map((schedule) => {
+      const eventDate = new Date(weekStart);
+      eventDate.setDate(weekStart.getDate() + (dayOffset[schedule.day] ?? 0));
+      eventDate.setHours(7, 0, 0, 0);
+      const endDate = new Date(eventDate);
+      endDate.setHours(8, 0, 0, 0);
+      const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      return [
+        'BEGIN:VEVENT',
+        `UID:athlixir-${schedule.day}-${Date.now()}@athlixir.app`,
+        `DTSTART:${fmt(eventDate)}`,
+        `DTEND:${fmt(endDate)}`,
+        `SUMMARY:Athlixir - ${schedule.focus}`,
+        `DESCRIPTION:${schedule.type} session: ${schedule.focus}`,
+        'END:VEVENT',
+      ].join('\r\n');
+    });
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Athlixir//Training Plan//EN',
+      'CALSCALE:GREGORIAN',
+      ...events,
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'athlixir-training-plan.ics';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // Dynamic values based on telemetry
   const isCadenceLow = latestAnalysis?.metrics?.cadence && latestAnalysis.metrics.cadence < 175;
@@ -371,27 +426,50 @@ export default function RecommendationsPage() {
               )}
             </div>
           </div>
-          <button className="flex items-center gap-1.5 text-[#FF4F21] text-[10px] font-black uppercase tracking-widest hover:text-white transition duration-200 cursor-pointer border border-[#FF4F21]/20 bg-[#FF4F21]/10 px-3 py-1.5 rounded-lg shadow-[0_0_8px_rgba(255,79,33,0.1)]">
+          <button
+            type="button"
+            onClick={handleSyncToCalendar}
+            className="flex items-center gap-1.5 text-[#FF4F21] text-[10px] font-black uppercase tracking-widest hover:text-white transition duration-200 cursor-pointer border border-[#FF4F21]/20 bg-[#FF4F21]/10 px-3 py-1.5 rounded-lg shadow-[0_0_8px_rgba(255,79,33,0.1)]"
+          >
             Sync to Calendar <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
         <div className="divide-y divide-white/[0.03]">
           {schedulePlan.map((schedule, idx) => (
-            <div key={idx} className="flex items-center justify-between p-5 hover:bg-white/[0.02] transition duration-200 group cursor-pointer">
-              <div className="flex items-center gap-6">
-                <div className="w-20 text-[10px] font-black text-zinc-500 uppercase tracking-widest">{schedule.day}</div>
-                <div className="flex items-center gap-3">
-                  <span className={`inline-flex items-center gap-1.5 border px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${schedule.bg}`}>
-                    {getWeeklyIcon(schedule.type)}
-                    <span className={schedule.color}>{schedule.type}</span>
-                  </span>
-                  <div className="h-1 w-1 rounded-full bg-zinc-700"></div>
-                  <span className="text-xs font-bold text-zinc-300 group-hover:text-white transition duration-200 uppercase tracking-wider">{schedule.focus}</span>
+            <div key={idx}>
+              <button
+                type="button"
+                onClick={() => setExpandedDay(expandedDay === idx ? null : idx)}
+                className="w-full flex items-center justify-between p-5 hover:bg-white/[0.02] transition duration-200 group cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="w-20 text-[10px] font-black text-zinc-500 uppercase tracking-widest">{schedule.day}</div>
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-flex items-center gap-1.5 border px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${schedule.bg}`}>
+                      {getWeeklyIcon(schedule.type)}
+                      <span className={schedule.color}>{schedule.type}</span>
+                    </span>
+                    <div className="h-1 w-1 rounded-full bg-zinc-700"></div>
+                    <span className="text-xs font-bold text-zinc-300 group-hover:text-white transition duration-200 uppercase tracking-wider">{schedule.focus}</span>
+                  </div>
                 </div>
-              </div>
-              <div className="h-8 w-8 rounded-lg bg-[#08080C] border border-white/[0.05] flex items-center justify-center group-hover:border-[#FF4F21]/30 transition">
-                <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-[#FF4F21] group-hover:translate-x-0.5 transition duration-300" />
-              </div>
+                <div className="h-8 w-8 rounded-lg bg-[#08080C] border border-white/[0.05] flex items-center justify-center group-hover:border-[#FF4F21]/30 transition">
+                  <ChevronRight className={`h-4 w-4 text-zinc-500 group-hover:text-[#FF4F21] transition duration-300 ${expandedDay === idx ? 'rotate-90 text-[#FF4F21]' : 'group-hover:translate-x-0.5'}`} />
+                </div>
+              </button>
+              {expandedDay === idx && (
+                <div className="px-5 pb-5 pt-0 text-[11px] text-zinc-400 border-t border-white/[0.03] bg-black/20">
+                  <p className="pt-3 font-medium text-zinc-300">
+                    <span className="text-[#FF4F21] font-black uppercase text-[9px] tracking-widest mr-2">{schedule.type}</span>
+                    {schedule.focus}
+                  </p>
+                  <p className="mt-2 text-zinc-500">
+                    {schedule.type === 'Rest'
+                      ? 'Active recovery day — prioritize mobility and light movement.'
+                      : `Prescribed ${schedule.type.toLowerCase()} focus for ${schedule.day}. Align intensity with your current biomechanics plan.`}
+                  </p>
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -17,7 +17,7 @@ async function bootstrap() {
   // Cookie Parser
   app.use(cookieParser());
 
-  // Security Headers with strict CSP
+  // Security Headers with strict CSP and additional protections
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -45,6 +45,18 @@ async function bootstrap() {
           upgradeInsecureRequests: [],
         },
       },
+      frameguard: { action: 'deny' },
+      noSniff: true,
+      xssFilter: true,
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      crossOriginEmbedderPolicy: true,
+      crossOriginOpenerPolicy: true,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
 

@@ -31,7 +31,7 @@ export class ClaudeService {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: process.env.CLAUDE_MODEL || 'claude-haiku-4-5',
           max_tokens: 4000,
           system: systemPrompt,
           messages: [{ role: 'user', content: userPrompt }],
