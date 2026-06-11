@@ -42,7 +42,7 @@ export default function ClassificationStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = getOnboardingProfile(response);
+        const data = getOnboardingProfile(response) as any;
         if (data.running_type) {
           setRunningType(data.running_type);
           const available = EVENTS_BY_TYPE[data.running_type] || [];

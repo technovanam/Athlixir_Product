@@ -23,7 +23,7 @@ export default function TrainingProfileStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = getOnboardingProfile(response);
+        const data = getOnboardingProfile(response) as any;
         if (data.training_days !== undefined) setTrainingDays(Number(data.training_days));
         if (data.training_duration !== undefined) setTrainingDuration(Number(data.training_duration));
         if (data.experience_years !== undefined) setExperienceYears(data.experience_years);

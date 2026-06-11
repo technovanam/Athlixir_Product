@@ -26,7 +26,7 @@ export default function BasicInfoStep() {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
-        const data = getOnboardingProfile(response);
+        const data = getOnboardingProfile(response) as any;
         if (data.full_name) setFullName(data.full_name);
         if (data.dob) setDob(data.dob.split('T')[0]); // YYYY-MM-DD
         if (data.gender) setGender(data.gender);

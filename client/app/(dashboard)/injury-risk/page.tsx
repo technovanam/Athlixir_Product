@@ -9,6 +9,14 @@ import { useAuth, api } from '../../context/AuthContext';
 import { useDateFilter } from '../../context/DateFilterContext';
 import { Biomech3DCanvas } from '../../components/Biomech3DCanvas';
 
+interface PreventionDirective {
+  title: string;
+  subtitle: string;
+  description: string;
+  duration: string;
+  intensity: string;
+}
+
 export default function InjuryRiskPage() {
   const { user } = useAuth();
   const { dateRange } = useDateFilter();
@@ -113,8 +121,8 @@ export default function InjuryRiskPage() {
   const warnings =
     latestAnalysis?.injuryRisks?.filter((r: { detected?: boolean }) => r.detected) || [];
 
-  const PREVENTION_DIRECTIVES =
-    latestAnalysis?.insights?.recommendations?.map((rec: string, i: number) => ({
+  const PREVENTION_DIRECTIVES: PreventionDirective[] =
+    latestAnalysis?.insights?.recommendations?.map((rec: string, i: number): PreventionDirective => ({
       title: `Protocol ${i + 1}`,
       subtitle: 'From your latest biomechanics analysis',
       description: rec,
