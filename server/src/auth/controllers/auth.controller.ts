@@ -53,16 +53,16 @@ export class AuthController {
     response.cookie('session', sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: true,
+      sameSite: 'none',
     });
 
     // Set non-HttpOnly, client-readable indicator cookie to avoid redundant auth/me checks
     response.cookie('athlixir_logged_in', 'true', {
       maxAge: expiresIn,
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: true,
+      sameSite: 'none',
     });
 
     return {
@@ -94,16 +94,16 @@ export class AuthController {
     response.cookie('session', sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: true,
+      sameSite: 'none',
     });
 
     // Set non-HttpOnly, client-readable indicator cookie to avoid redundant auth/me checks
     response.cookie('athlixir_logged_in', 'true', {
       maxAge: expiresIn,
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: true,
+      sameSite: 'none',
     });
 
     return {
@@ -122,8 +122,8 @@ export class AuthController {
     if (sessionCookie) {
       await this.authService.revokeSession(sessionCookie);
     }
-    response.clearCookie('session');
-    response.clearCookie('athlixir_logged_in');
+    response.clearCookie('session', { secure: true, sameSite: 'none' });
+    response.clearCookie('athlixir_logged_in', { secure: true, sameSite: 'none' });
     return { message: 'Logged out successfully' };
   }
 
