@@ -50,9 +50,18 @@ export class AnalysisService {
         if (
           type.includes('isom') ||
           type.includes('iso2') ||
+          type.includes('iso4') ||
+          type.includes('iso5') ||
+          type.includes('iso6') ||
           type.includes('avc1') ||
           type.includes('hev1') ||
-          type.includes('mmp4')
+          type.includes('hvc1') ||
+          type.includes('mp41') ||
+          type.includes('mp42') ||
+          type.includes('mmp4') ||
+          type.includes('M4V ') ||
+          type.includes('M4A ') ||
+          type.includes('f4v ')
         ) {
           resolve('MP4 (H.264/HEVC)');
         } else {
@@ -548,14 +557,21 @@ export class AnalysisService {
     };
 
     if (data) {
-      Object.assign(updateData, data);
+      // Prevent Firestore from crashing due to undefined properties added by DTO validation
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== undefined)
+      );
+      Object.assign(updateData, cleanData);
     }
+
+    // Also strip any deeply nested undefined values or NaN just in case
+    const sanitizedUpdateData = JSON.parse(JSON.stringify(updateData, (k, v) => (v === undefined || Number.isNaN(v)) ? null : v));
 
     try {
       await this.firebaseService.firestore
         .collection(this.collectionName)
         .doc(analysisId)
-        .set(updateData, { merge: true });
+        .set(sanitizedUpdateData, { merge: true });
 
       if (status === 'COMPLETED' && data) {
         const doc = await this.firebaseService.firestore
@@ -922,71 +938,45 @@ export class AnalysisService {
     videoUrl: string,
     userId: string,
   ) {
-    this.logger.log(`Adding analysis job to queue for ${analysisId}`);
+    this.logger.log(`Triggering analysis directly via HTTP for ${analysisId}`);
 
     const athleteContext = await this.getAthleteContext(userId);
     const previousMetrics = await this.getPreviousMetrics(userId, analysisId);
 
     try {
-      if (!this.queueService.isReady()) {
-        throw new Error('Redis connection is offline');
-      }
-
-      // Add a 3-second timeout for the Queue addJob operation to prevent hanging if Redis becomes unresponsive
-      await Promise.race([
-        this.queueService.addJob('process-video', {
+      const response = await fetch(this.fastapiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.internalApiSecret}`,
+        },
+        body: JSON.stringify({
           analysisId,
           videoUrl,
           userId,
           athleteContext,
           previousMetrics,
         }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Queue add job timed out')), 3000),
-        ),
-      ]);
+      });
 
-      this.logger.log(`Job for ${analysisId} successfully added to the queue`);
-      await this.updateStatus(analysisId, 'PROCESSING_POSE', 15);
-    } catch (err: any) {
-      this.logger.warn(
-        `Failed to add job to Redis queue: ${err.message}. Falling back to direct HTTP trigger on ${this.fastapiUrl}`,
-      );
-      try {
-        const response = await fetch(this.fastapiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.internalApiSecret}`,
-          },
-          body: JSON.stringify({
-            analysisId,
-            videoUrl,
-            userId,
-            athleteContext,
-            previousMetrics,
-          }),
-        });
-
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(
-            `FastAPI responded with ${response.status}: ${errText}`,
-          );
-        }
-
-        this.logger.log(
-          `Successfully triggered analysis directly via HTTP for ${analysisId}`,
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(
+          `FastAPI responded with ${response.status}: ${errText}`,
         );
-        await this.updateStatus(analysisId, 'PROCESSING_POSE', 15);
-      } catch (httpErr: any) {
-        this.logger.error(
-          `Direct HTTP fallback also failed: ${httpErr.message}`,
-        );
-        await this.updateStatus(analysisId, 'FAILED', 0, {
-          errorMessage: `Failed to trigger analysis pipeline: ${httpErr.message}`,
-        });
       }
+
+      this.logger.log(
+        `Successfully triggered analysis directly via HTTP for ${analysisId}`,
+      );
+      await this.updateStatus(analysisId, 'PROCESSING_POSE', 15);
+    } catch (httpErr: any) {
+      this.logger.error(
+        `Direct HTTP trigger failed: ${httpErr.message}`,
+      );
+      await this.updateStatus(analysisId, 'FAILED', 0, {
+        errorMessage: `Failed to trigger analysis pipeline: ${httpErr.message}`,
+      });
     }
   }
 

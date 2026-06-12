@@ -41,7 +41,9 @@ def _send_update(analysis_id: str, status: str, progress: int, payload: dict = N
     if payload:
         data.update(payload)
     try:
-        requests.post(NESTJS_CALLBACK_URL, json=data, timeout=10)
+        secret = os.environ.get('INTERNAL_API_SECRET', '')
+        headers = {"Authorization": f"Bearer {secret}"}
+        requests.post(NESTJS_CALLBACK_URL, json=data, headers=headers, timeout=10)
     except Exception as e:
         print(f"[AI CALLBACK ERR] {e}")
 
@@ -50,9 +52,12 @@ def _upload_overlay(analysis_id: str, user_id: str, overlay_path: str) -> bool:
     if not os.path.exists(overlay_path) or os.path.getsize(overlay_path) < 1024:
         return False
     try:
+        secret = os.environ.get('INTERNAL_API_SECRET', '')
+        headers = {"Authorization": f"Bearer {secret}"}
         with open(overlay_path, "rb") as f:
             r = requests.post(
                 NESTJS_OVERLAY_URL,
+                headers=headers,
                 files={"file": ("skeleton_overlay.mp4", f, "video/mp4")},
                 data={"analysisId": analysis_id, "userId": user_id},
                 timeout=120,
@@ -67,8 +72,11 @@ def _upload_report(analysis_id: str, user_id: str, html: str) -> bool:
     if not html:
         return False
     try:
+        secret = os.environ.get('INTERNAL_API_SECRET', '')
+        headers = {"Authorization": f"Bearer {secret}"}
         r = requests.post(
             NESTJS_REPORT_URL,
+            headers=headers,
             files={"file": ("report.html", html.encode("utf-8"), "text/html")},
             data={"analysisId": analysis_id, "userId": user_id},
             timeout=60,
