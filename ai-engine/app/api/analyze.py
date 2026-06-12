@@ -4,7 +4,7 @@ import threading
 import time
 import requests
 import tempfile
-from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile, Depends, HTTPException
+from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Any, Optional
 
@@ -181,12 +181,11 @@ def run_analysis_from_path(
             overlay_url = f"{AI_ENGINE_URL}/outputs/{analysis_id}_overlay.mp4"
             skeleton_overlay_ready = True
 
-            # Safe Firebase background upload fallback
-            threading.Thread(
-                target=_upload_overlay,
-                args=(analysis_id, user_id, overlay_path),
-                daemon=True,
-            ).start()
+            # Upload overlay synchronously before the HTTP request finishes
+            try:
+                _upload_overlay(analysis_id, user_id, overlay_path)
+            except Exception as upload_err:
+                print(f"[AI OVERLAY UPLOAD BACKUP ERR] {upload_err}")
         except Exception as e:
             print(f"[AI OVERLAY ERR] {e}")
             overlay_url = ""
@@ -256,7 +255,6 @@ def run_analysis_pipeline(
 
 @router.post("/analyze/upload")
 async def analyze_upload(
-    background_tasks: BackgroundTasks,
     analysisId: str = Form(...),
     userId: str = Form(...),
     file: UploadFile = File(...),
@@ -266,32 +264,29 @@ async def analyze_upload(
     with open(temp_path, "wb") as out:
         shutil.copyfileobj(file.file, out)
 
-    background_tasks.add_task(run_analysis_from_path, analysisId, temp_path, userId)
-
-    def _cleanup():
-        time.sleep(120)
+    try:
+        run_analysis_from_path(analysisId, temp_path, userId)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
         try:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
             os.rmdir(temp_dir)
         except OSError:
             pass
 
-    background_tasks.add_task(_cleanup)
-    return {"success": True, "status": "PROCESSING_POSE"}
+    return {"success": True, "status": "COMPLETED"}
 
 
 @router.post("/analyze")
-def trigger_analysis(payload: AnalysisRequest, background_tasks: BackgroundTasks):
-    background_tasks.add_task(
-        run_analysis_pipeline,
+def trigger_analysis(payload: AnalysisRequest):
+    run_analysis_pipeline(
         payload.analysisId,
         payload.videoUrl,
         payload.userId,
         payload.athleteContext,
         payload.previousMetrics,
     )
-    return {"success": True, "status": "PROCESSING_POSE"}
+    return {"success": True, "status": "COMPLETED"}
 
 
 class IntelligenceRequest(BaseModel):
