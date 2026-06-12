@@ -61,7 +61,8 @@ jobs:
           gcloud run deploy athlixir-ai \
             --image asia-south1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-engine:latest \
             --region ${{ env.REGION }} \
-            --platform managed
+            --platform managed \
+            --update-env-vars BACKEND_URL=https://athlixir-backend-322940064773.asia-south1.run.app,INTERNAL_API_SECRET=${{ secrets.INTERNAL_API_SECRET }}
 
       # =====================================================================
       # STEP 2: Build & Deploy Backend (NestJS Server)
