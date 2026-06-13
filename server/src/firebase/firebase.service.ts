@@ -22,9 +22,11 @@ export class FirebaseService implements OnModuleInit {
       const clientEmail = this.configService.get<string>(
         'FIREBASE_CLIENT_EMAIL',
       );
-      const privateKey = this.configService
-        .get<string>('FIREBASE_PRIVATE_KEY')
-        ?.replace(/\\n/g, '\n');
+      let privateKey = this.configService.get<string>('FIREBASE_PRIVATE_KEY');
+      if (privateKey) {
+        // Remove wrapping quotes if they exist (common issue when pasting into Render/Vercel)
+        privateKey = privateKey.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+      }
 
       if (!projectId || !clientEmail || !privateKey) {
         this.logger.warn(

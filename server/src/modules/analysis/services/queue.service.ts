@@ -13,6 +13,7 @@ export class QueueService implements OnModuleDestroy {
     this.connection = new IORedis({
       host: process.env.REDIS_HOST || '127.0.0.1',
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      password: process.env.REDIS_PASSWORD || undefined,
       maxRetriesPerRequest: null,
       retryStrategy(times) {
         // Linear backoff starting at 1s, capped at 10s
