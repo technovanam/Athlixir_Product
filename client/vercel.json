@@ -6,14 +6,6 @@
   "env": {
     "NEXT_PUBLIC_API_URL": "@NEXT_PUBLIC_API_URL"
   },
-  "envs": {
-    "preview": {
-      "NEXT_PUBLIC_API_URL": "@NEXT_PUBLIC_API_URL_PREVIEW"
-    },
-    "production": {
-      "NEXT_PUBLIC_API_URL": "@NEXT_PUBLIC_API_URL_PRODUCTION"
-    }
-  },
   "git": {
     "deploymentEnabled": {
       "main": true
