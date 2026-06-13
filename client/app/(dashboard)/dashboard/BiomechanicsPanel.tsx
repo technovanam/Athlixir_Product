@@ -196,7 +196,7 @@ export default function BiomechanicsPanel({
 
   useEffect(() => {
     if (!analysisId) return;
-    if (localPreviewForId.current === analysisId && originalBlobUrl) return;
+    if (localPreviewForId.current === analysisId) return;
     if (currentAnalysis?.videoReady === false) return;
 
     let cancelled = false;

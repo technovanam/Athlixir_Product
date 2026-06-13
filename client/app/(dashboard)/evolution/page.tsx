@@ -157,7 +157,7 @@ export default function EvolutionPage() {
             </div>
             {evolution.aiInsights?.progressSummary && (
               <p className="text-[10px] text-zinc-400 italic mt-3 border-t border-white/[0.03] pt-3 leading-relaxed">
-                "{evolution.aiInsights.progressSummary}"
+                &quot;{evolution.aiInsights.progressSummary}&quot;
               </p>
             )}
           </div>

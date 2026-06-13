@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth, api } from '../../context/AuthContext';
 import { getOnboardingProfile, unwrapApiData } from '../../utils/api';
@@ -134,7 +135,7 @@ export default function BasicInfoStep() {
           <div className="relative group shrink-0">
             <div className="h-20 w-20 rounded-full border border-white/[0.08] bg-[#08080C]/40 flex items-center justify-center overflow-hidden shadow-inner relative z-10">
               {profilePhoto ? (
-                <img src={profilePhoto} alt="Profile" className="h-full w-full object-cover" />
+                <Image src={profilePhoto} alt="Profile" fill className="h-full w-full object-cover" />
               ) : uploading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-[#FF4F21]" />
               ) : (

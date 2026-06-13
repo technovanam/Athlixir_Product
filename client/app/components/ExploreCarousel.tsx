@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
@@ -131,9 +132,11 @@ const ExploreCarousel: React.FC = () => {
               className="min-w-[270px] sm:min-w-[300px] md:min-w-[370px] h-[400px] md:h-[460px] relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 group bg-white/[0.02] flex-shrink-0 cursor-grab active:cursor-grabbing hover:border-primary/40 transition-all duration-500"
             >
               {/* Premium Card Image - high brightness */}
-              <img
+              <Image
                 src={card.img}
                 alt={card.title}
+                fill
+                unoptimized
                 className="absolute inset-0 w-full h-full object-cover opacity-80 md:opacity-85 transform transition-transform duration-1000 group-hover:scale-105"
               />
 

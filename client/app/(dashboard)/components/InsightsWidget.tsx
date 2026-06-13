@@ -207,7 +207,7 @@ export default function InsightsWidget({ analysis }: { analysis: any }) {
 
             {aiSummary && (
               <div className="mb-4 p-3.5 rounded-xl border border-[#FF4F21]/20 bg-[#FF4F21]/5 text-xs text-zinc-300 font-medium leading-relaxed italic shadow-[inset_0_1px_1px_rgba(255,79,33,0.03)]">
-                "{aiSummary}"
+                &quot;{aiSummary}&quot;
               </div>
             )}
 

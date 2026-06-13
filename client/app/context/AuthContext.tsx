@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useRouter, usePathname } from 'next/navigation';
 import { getOnboardingProfile } from '../utils/api';
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return userData;
   };
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const response = await api.get('/auth/me');
       let userData = null;
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (response.data && response.data.data && response.data.data.user) {
         userData = response.data.data.user;
       }
-      
+
       if (userData) {
         userData = await fetchAndAttachProfile(userData);
         setUser(userData);
@@ -94,11 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshUser();
-  }, []);
+  }, [refreshUser]);
 
   const signup = async (username: string, email: string, password: string) => {
     setError(null);

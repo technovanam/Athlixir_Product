@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Activity, BarChart3, TrendingUp } from 'lucide-react';
 
@@ -71,9 +72,11 @@ const TargetAudience = () => {
               style={{ transform: "translate3d(0,0,0)" }}
             >
               {/* Full-visible background photo */}
-              <img
+              <Image
                 src={item.bgImg}
                 alt={item.title}
+                fill
+                unoptimized
                 className="absolute inset-0 w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105 pointer-events-none select-none"
               />
 

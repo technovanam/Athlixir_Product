@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
@@ -10,9 +11,11 @@ const FinalCTA = () => {
       
       {/* Background ambient overlays */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none">
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1305&auto=format&fit=crop&ixlib=rb-4.1.0"
           alt="Stadium lights backdrop"
+          fill
+          unoptimized
           className="w-full h-full object-cover opacity-35"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black" />

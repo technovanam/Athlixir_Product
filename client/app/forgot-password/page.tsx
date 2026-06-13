@@ -43,7 +43,7 @@ export default function ForgotPasswordPage() {
           
           <h1 className="text-2xl font-extrabold tracking-tight mb-2">Reset Password</h1>
           <p className="text-zinc-400 text-sm mb-8">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
 
           {status === 'success' ? (
