@@ -3,7 +3,6 @@
   "outputDirectory": ".next",
   "installCommand": "pnpm install",
   "framework": "nextjs",
-  "nodeVersion": "20.x",
   "env": {
     "NEXT_PUBLIC_API_URL": "@NEXT_PUBLIC_API_URL"
   },
