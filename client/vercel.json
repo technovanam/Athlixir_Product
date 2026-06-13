@@ -1,0 +1,30 @@
+{
+  "buildCommand": "pnpm build",
+  "outputDirectory": ".next",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "nodeVersion": "20.x",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@NEXT_PUBLIC_API_URL"
+  },
+  "envs": {
+    "preview": {
+      "NEXT_PUBLIC_API_URL": "@NEXT_PUBLIC_API_URL_PREVIEW"
+    },
+    "production": {
+      "NEXT_PUBLIC_API_URL": "@NEXT_PUBLIC_API_URL_PRODUCTION"
+    }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "regions": ["iad1"],
+  "functions": {
+    "api/**": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
+}
