@@ -16,6 +16,53 @@ def _raw_cadence_spm(foot_strikes: list[dict], duration_sec: float) -> float:
     return (len(foot_strikes) / duration_sec) * 60.0
 
 
+def _active_strike_window_sec(foot_strikes: list[dict]) -> float:
+    if len(foot_strikes) < 2:
+        return 0.0
+    return max(
+        foot_strikes[-1]["timestamp"] - foot_strikes[0]["timestamp"],
+        0.0,
+    )
+
+
+def _interval_cadence_spm(foot_strikes: list[dict]) -> float:
+    """
+    Steps per minute from median time between consecutive foot strikes.
+    More reliable than dividing strike count by full clip duration.
+    """
+    if len(foot_strikes) < 2:
+        return 0.0
+    intervals = np.diff([s["timestamp"] for s in foot_strikes])
+    intervals = intervals[intervals > 0.05]
+    if len(intervals) == 0:
+        return 0.0
+    median_interval = float(np.median(intervals))
+    if median_interval <= 0:
+        return 0.0
+    return 60.0 / median_interval
+
+
+def _effective_running_cadence(
+    foot_strikes: list[dict],
+    tracker_duration_sec: float,
+) -> float:
+    interval_cadence = _interval_cadence_spm(foot_strikes)
+    strike_window = _active_strike_window_sec(foot_strikes)
+    density_cadence = 0.0
+    if strike_window >= 0.25:
+        density_cadence = _raw_cadence_spm(foot_strikes, strike_window)
+    elif tracker_duration_sec > 0:
+        density_cadence = _raw_cadence_spm(foot_strikes, tracker_duration_sec)
+
+    candidates = [c for c in (interval_cadence, density_cadence) if c > 0]
+    if not candidates:
+        return 0.0
+    # Prefer interval timing; use density when strikes are spread across the clip.
+    if interval_cadence > 0:
+        return interval_cadence
+    return density_cadence
+
+
 def _alternating_gait_ratio(foot_strikes: list[dict]) -> float:
     if len(foot_strikes) < 2:
         return 0.0
@@ -109,14 +156,21 @@ def validate_running_activity(tracker, foot_strikes: list[dict], fps: float) -> 
             "This video appears to be a non-running activity."
         )
 
-    raw_cadence = _raw_cadence_spm(foot_strikes, duration_sec)
-    if raw_cadence < 110 or raw_cadence > 320:
+    interval_cv = _stride_interval_cv(foot_strikes)
+
+    raw_cadence = _effective_running_cadence(foot_strikes, duration_sec)
+    gait_strong = (
+        alternating >= 0.65
+        and _minor_foot_share(foot_strikes) >= 0.25
+        and interval_cv <= 0.42
+    )
+    min_cadence = 65 if gait_strong else 80
+    if raw_cadence < min_cadence or raw_cadence > 340:
         return False, (
             "Step rate is outside a running range. "
             "Upload side-view sprint or running footage (not dance or gym drills)."
         )
 
-    interval_cv = _stride_interval_cv(foot_strikes)
     if interval_cv > 0.45:
         return False, (
             "Stride timing is too irregular for running analysis. "

@@ -6,6 +6,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from app.validation.running_activity_validator import (
     _alternating_gait_ratio,
+    _effective_running_cadence,
+    _interval_cadence_spm,
     _max_consecutive_same_foot,
     validate_running_activity,
 )
@@ -32,6 +34,21 @@ class _FakeTracker:
 
 
 class TestRunningActivityValidator(unittest.TestCase):
+    def test_interval_cadence_not_diluted_by_full_clip(self):
+        strikes = [
+            {"foot": "left", "timestamp": 3.0, "index": 0},
+            {"foot": "right", "timestamp": 3.35, "index": 5},
+            {"foot": "left", "timestamp": 3.7, "index": 10},
+            {"foot": "right", "timestamp": 4.05, "index": 15},
+            {"foot": "left", "timestamp": 4.4, "index": 20},
+            {"foot": "right", "timestamp": 4.75, "index": 25},
+        ]
+        # Full clip is 5s but only ~1.75s of strikes -> old density was ~206 spm over 5s = fail
+        diluted = (len(strikes) / 5.0) * 60.0
+        self.assertLess(diluted, 110)
+        self.assertGreaterEqual(_interval_cadence_spm(strikes), 150)
+        self.assertGreaterEqual(_effective_running_cadence(strikes, 5.0), 150)
+
     def test_alternating_running_strikes_pass_helper_metrics(self):
         strikes = [
             {"foot": "left", "timestamp": 0.0, "index": 0},
