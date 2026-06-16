@@ -80,7 +80,41 @@ type AnalysisRecord = {
   hasOverlay?: boolean;
   skeletonOverlayReady?: boolean;
   errorMessage?: string;
+  statusMessage?: string;
 };
+
+const TERMINAL_STATUSES = new Set(['COMPLETED', 'FAILED']);
+
+function isActiveStatus(status?: string): boolean {
+  return Boolean(status && !TERMINAL_STATUSES.has(status));
+}
+
+function formatAnalysisStatus(
+  status?: string | null,
+  statusMessage?: string | null,
+): string {
+  if (statusMessage) return statusMessage;
+  switch (status) {
+    case 'WAKING_AI_ENGINE':
+      return 'Connecting to analysis engine… Please wait.';
+    case 'UPLOADING':
+      return 'Uploading your running video…';
+    case 'QUEUED':
+      return 'Queued for biomechanics analysis…';
+    case 'PROCESSING_POSE':
+      return 'Detecting running pose…';
+    case 'TRACKING_LANDMARKS':
+      return 'Tracking body landmarks…';
+    case 'DETECTING_FOOT_STRIKES':
+      return 'Detecting foot strikes…';
+    case 'CALCULATING_METRICS':
+      return 'Calculating sprint metrics…';
+    case 'GENERATING_OVERLAY':
+      return 'Generating skeleton overlay…';
+    default:
+      return status || 'Processing…';
+  }
+}
 
 const NORM_LEVEL_SCORE: Record<string, number> = {
   'Below District': 20,
@@ -101,6 +135,7 @@ export default function BiomechanicsPanel({
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisRecord | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatusMessage, setUploadStatusMessage] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [socketStatus, setSocketStatus] = useState<string | null>(null);
@@ -117,8 +152,16 @@ export default function BiomechanicsPanel({
   const analysisId =
     currentAnalysis?.analysisId || currentAnalysis?.id || '';
   const effectiveStatus = currentAnalysis?.status || socketStatus;
-  const isProcessing =
-    Boolean(effectiveStatus && !['COMPLETED', 'FAILED'].includes(effectiveStatus));
+  const isProcessing = isActiveStatus(effectiveStatus ?? undefined);
+  const activeAnalysis = analysesList.find((item) =>
+    isActiveStatus(item.status),
+  );
+  const hasActiveAnalysis = Boolean(activeAnalysis) || isProcessing;
+  const activeAnalysisId =
+    activeAnalysis?.analysisId || activeAnalysis?.id || analysisId || '';
+  const displayStatusMessage =
+    currentAnalysis?.statusMessage ||
+    formatAnalysisStatus(effectiveStatus, currentAnalysis?.statusMessage);
 
   const fetchAnalyses = useCallback(async () => {
     if (onAnalysesUpdated) {
@@ -358,6 +401,7 @@ export default function BiomechanicsPanel({
           progressData: payload.data?.progressData ?? prev?.progressData,
           progress: payload.data?.progress ?? payload.progress ?? prev?.progress,
           reportReady: payload.data?.reportReady ?? prev?.reportReady,
+          statusMessage: payload.data?.statusMessage ?? prev?.statusMessage,
         }));
       } else {
         setCurrentAnalysis((prev) =>
@@ -406,9 +450,25 @@ export default function BiomechanicsPanel({
 
   const handleUpload = async () => {
     if (!selectedFile) return;
+    if (hasActiveAnalysis) {
+      setErrorMsg(
+        'An analysis is already running. Only your current running video can be processed — wait for it to finish before uploading another.',
+      );
+      return;
+    }
 
     setUploading(true);
     setErrorMsg(null);
+    setUploadStatusMessage('Uploading your running video…');
+
+    const uploadMsgTimer1 = window.setTimeout(() => {
+      setUploadStatusMessage('Still connecting — please wait…');
+    }, 8000);
+    const uploadMsgTimer2 = window.setTimeout(() => {
+      setUploadStatusMessage(
+        'This is taking longer than usual — please wait…',
+      );
+    }, 20000);
 
     const formData = new FormData();
     formData.append('file', selectedFile);
@@ -416,6 +476,7 @@ export default function BiomechanicsPanel({
     try {
       const response = await api.post('/analysis/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
       });
 
       const result = response.data?.data ?? response.data;
@@ -447,19 +508,42 @@ export default function BiomechanicsPanel({
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err: unknown) {
-      const message =
+      const responseData =
         err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data
-              ?.message
+          ? (err as { response?: { status?: number; data?: { message?: string | string[] } } })
+              .response
           : null;
-      setErrorMsg(message || 'Upload failed. Check that NestJS and the AI engine are running.');
+      const rawMessage = responseData?.data?.message;
+      const message = Array.isArray(rawMessage) ? rawMessage[0] : rawMessage;
+      if (responseData?.status === 409) {
+        setErrorMsg(
+          message ||
+            'An analysis is already running. Wait for your current running video to finish before uploading another.',
+        );
+      } else {
+        setErrorMsg(
+          message ||
+            'Upload failed. Please try again in a moment.',
+        );
+      }
     } finally {
+      window.clearTimeout(uploadMsgTimer1);
+      window.clearTimeout(uploadMsgTimer2);
+      setUploadStatusMessage(null);
       setUploading(false);
     }
   };
 
   const handleFileSelect = (file: File | null) => {
     if (!file) return;
+    if (hasActiveAnalysis) {
+      setErrorMsg(
+        'An analysis is already running. Only the current running video is accepted until processing finishes.',
+      );
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setSelectedFile(file);
     setErrorMsg(null);
   };
@@ -475,18 +559,26 @@ export default function BiomechanicsPanel({
           {/* Upload */}
           <div
             className={`rounded-2xl border-2 border-dashed p-8 text-center transition ${
-              dragOver
+              dragOver && !hasActiveAnalysis
                 ? 'border-[#FF4F21] bg-[#FF4F21]/5'
-                : 'border-zinc-700 bg-zinc-950/40'
+                : hasActiveAnalysis
+                  ? 'border-zinc-800 bg-zinc-950/20 opacity-60'
+                  : 'border-zinc-700 bg-zinc-950/40'
             }`}
             onDragOver={(e) => {
               e.preventDefault();
-              setDragOver(true);
+              if (!hasActiveAnalysis) setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => {
               e.preventDefault();
               setDragOver(false);
+              if (hasActiveAnalysis) {
+                setErrorMsg(
+                  'An analysis is already running. Only the current running video can be processed.',
+                );
+                return;
+              }
               const file = e.dataTransfer.files?.[0];
               if (file?.type.startsWith('video/')) handleFileSelect(file);
             }}
@@ -497,6 +589,7 @@ export default function BiomechanicsPanel({
               type="file"
               accept="video/mp4,video/quicktime,video/x-msvideo"
               className="hidden"
+              disabled={hasActiveAnalysis || uploading}
               onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
             />
             <UploadCloud className="h-10 w-10 text-[#FF4F21] mx-auto mb-4" />
@@ -506,6 +599,18 @@ export default function BiomechanicsPanel({
             <p className="text-[10px] text-zinc-500 mb-4">
               Side-view sprint · MP4/MOV · 60+ FPS recommended
             </p>
+            {hasActiveAnalysis ? (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 mb-3 text-left">
+                <p className="text-xs text-amber-300 font-semibold">
+                  Analysis in progress
+                </p>
+                <p className="text-[10px] text-amber-200/80 mt-1">
+                  Only your current running video is being processed
+                  {activeAnalysisId ? ` (${activeAnalysisId.slice(0, 8)}…)` : ''}.
+                  Wait until it completes before uploading another clip.
+                </p>
+              </div>
+            ) : null}
             {selectedFile ? (
               <p className="text-xs text-[#FF4F21] mb-3 truncate">
                 {selectedFile.name}
@@ -514,17 +619,22 @@ export default function BiomechanicsPanel({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="text-xs text-zinc-400 hover:text-white underline mb-3 block mx-auto"
+              disabled={hasActiveAnalysis || uploading}
+              className="text-xs text-zinc-400 hover:text-white underline mb-3 block mx-auto disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Choose file
             </button>
             <button
               type="button"
-              disabled={!selectedFile || uploading}
+              disabled={!selectedFile || uploading || hasActiveAnalysis}
               onClick={handleUpload}
               className="w-full rounded-xl bg-[#FF4F21] hover:bg-[#FF4F21]/80 disabled:opacity-40 disabled:cursor-not-allowed py-2.5 text-xs font-bold text-white transition"
             >
-              {uploading ? 'Uploading…' : 'Analyze biomechanics'}
+              {uploading
+                ? uploadStatusMessage || 'Uploading…'
+                : hasActiveAnalysis
+                  ? 'Analysis running…'
+                  : 'Analyze biomechanics'}
             </button>
           </div>
 
@@ -603,12 +713,22 @@ export default function BiomechanicsPanel({
                 Upload a video or pick a past scan from the list to view metrics and playback.
               </p>
             </div>
-          ) : isProcessing || (socketStatus && !['COMPLETED', 'FAILED'].includes(socketStatus)) ? (
+          ) : isProcessing || (socketStatus && isActiveStatus(socketStatus)) ? (
             <div className="space-y-6">
               <div className="rounded-2xl border border-zinc-800 bg-zinc-950/30 p-8 text-center space-y-4">
                 <TrendingUp className="h-10 w-10 text-[#FF4F21] mx-auto animate-pulse" />
-                <h3 className="text-sm font-bold text-white">Processing biomechanics</h3>
-                <p className="text-xs text-zinc-500">{socketStatus || currentAnalysis.status}</p>
+                <h3 className="text-sm font-bold text-white">
+                  {effectiveStatus === 'WAKING_AI_ENGINE'
+                    ? 'Connecting to analysis engine'
+                    : 'Processing biomechanics'}
+                </h3>
+                <p className="text-xs text-zinc-400">{displayStatusMessage}</p>
+                {effectiveStatus === 'WAKING_AI_ENGINE' ? (
+                  <p className="text-[10px] text-amber-400/90 max-w-sm mx-auto">
+                    Your running video is queued. Do not upload another until
+                    this finishes.
+                  </p>
+                ) : null}
                 <div className="w-full max-w-xs mx-auto h-2 bg-zinc-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#FF4F21] transition-all duration-500"
@@ -616,7 +736,9 @@ export default function BiomechanicsPanel({
                   />
                 </div>
                 <p className="text-[10px] text-zinc-600">
-                  Metrics in ~5s · skeleton overlay follows
+                  {effectiveStatus === 'WAKING_AI_ENGINE'
+                    ? 'Please wait while we connect to the analysis engine'
+                    : 'Metrics in ~5s · skeleton overlay follows'}
                 </p>
               </div>
               {originalBlobUrl && (

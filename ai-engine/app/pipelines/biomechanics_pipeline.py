@@ -34,6 +34,12 @@ def run_biomechanics_extraction_pipeline(
             "Use stable side-view sprint footage."
         )
 
+    from app.validation.running_activity_validator import validate_running_activity
+
+    is_running, reject_reason = validate_running_activity(tracker, foot_strikes, fps)
+    if not is_running:
+        raise ValueError(reject_reason)
+
     cadence = calculate_cadence(foot_strikes, duration_sec)
     gct_data = calculate_gct(foot_strikes, tracker, fps)
     stride_data = calculate_stride_length(

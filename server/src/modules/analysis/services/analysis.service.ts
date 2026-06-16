@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { FirebaseService } from '../../../firebase/firebase.service';
@@ -19,6 +20,8 @@ import {
 } from '../../../core/config/service-urls.config';
 
 type PendingVideo = { buffer: Buffer; mimetype: string; expiresAt: number };
+
+const TERMINAL_ANALYSIS_STATUSES = new Set(['COMPLETED', 'FAILED']);
 
 @Injectable()
 export class AnalysisService {
@@ -80,6 +83,36 @@ export class AnalysisService {
     });
   }
 
+  private isActiveAnalysisStatus(status?: string): boolean {
+    return Boolean(status && !TERMINAL_ANALYSIS_STATUSES.has(status));
+  }
+
+  private async getActiveAnalysisForUser(
+    userId: string,
+  ): Promise<{ analysisId: string; status: string } | null> {
+    const snapshot = await this.firebaseService.firestore
+      .collection(this.collectionName)
+      .where('userId', '==', userId)
+      .get();
+
+    const active = snapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          analysisId: (data.analysisId as string) || doc.id,
+          status: data.status as string,
+          updatedAt: (data.updatedAt as string) || (data.createdAt as string),
+        };
+      })
+      .filter((item) => this.isActiveAnalysisStatus(item.status))
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      );
+
+    return active[0] ?? null;
+  }
+
   /**
    * Production flow: validate → store Firebase → create record → trigger AI.
    * Frontend never touches Firebase; playback uses GET /analysis/:id/video/:type.
@@ -94,6 +127,14 @@ export class AnalysisService {
     },
   ) {
     this.logger.log(`Upload request for user ${userId}`);
+
+    const activeAnalysis = await this.getActiveAnalysisForUser(userId);
+    if (activeAnalysis) {
+      throw new ConflictException(
+        `An analysis is already running (${activeAnalysis.analysisId.slice(0, 8)}…). ` +
+          'Only one running video can be processed at a time. Wait for it to finish before uploading another.',
+      );
+    }
 
     if (file.size > 100 * 1024 * 1024) {
       throw new BadRequestException(
@@ -967,6 +1008,25 @@ export class AnalysisService {
     );
   }
 
+  private isAiEngineWakeUpError(err: unknown, status?: number): boolean {
+    if (status === 502 || status === 503 || status === 504 || status === 408) {
+      return true;
+    }
+    const message = (
+      err instanceof Error ? err.message : String(err ?? '')
+    ).toLowerCase();
+    return (
+      message.includes('econnrefused') ||
+      message.includes('econnreset') ||
+      message.includes('etimedout') ||
+      message.includes('fetch failed') ||
+      message.includes('network') ||
+      message.includes('timeout') ||
+      message.includes('bad gateway') ||
+      message.includes('service unavailable')
+    );
+  }
+
   private async triggerPythonEngine(
     analysisId: string,
     videoUrl: string,
@@ -976,40 +1036,84 @@ export class AnalysisService {
 
     const athleteContext = await this.getAthleteContext(userId);
     const previousMetrics = await this.getPreviousMetrics(userId, analysisId);
+    const maxAttempts = 8;
+    const retryDelaysMs = [2000, 4000, 6000, 8000, 10000, 12000, 15000, 15000];
 
-    try {
-      const response = await fetch(this.fastapiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.internalApiSecret}`,
-        },
-        body: JSON.stringify({
-          analysisId,
-          videoUrl,
-          userId,
-          athleteContext,
-          previousMetrics,
-        }),
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(
-          `FastAPI responded with ${response.status}: ${errText}`,
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        await this.updateStatus(analysisId, 'WAKING_AI_ENGINE', Math.min(12 + attempt * 2, 22), {
+          statusMessage:
+            'Connecting to analysis engine… Your running video is queued — please wait.',
+        });
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelaysMs[attempt - 1]),
         );
       }
 
-      this.logger.log(
-        `Successfully triggered analysis directly via HTTP for ${analysisId}`,
-      );
-    } catch (httpErr: any) {
-      this.logger.error(
-        `Direct HTTP trigger failed: ${httpErr.message}`,
-      );
-      await this.updateStatus(analysisId, 'FAILED', 0, {
-        errorMessage: `Failed to trigger analysis pipeline: ${httpErr.message}`,
-      });
+      try {
+        const response = await fetch(this.fastapiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.internalApiSecret}`,
+          },
+          body: JSON.stringify({
+            analysisId,
+            videoUrl,
+            userId,
+            athleteContext,
+            previousMetrics,
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          const wakeUp = this.isAiEngineWakeUpError(null, response.status);
+          if (wakeUp && attempt < maxAttempts - 1) {
+            this.logger.warn(
+              `AI engine wake-up retry ${attempt + 1}/${maxAttempts} for ${analysisId}: HTTP ${response.status}`,
+            );
+            continue;
+          }
+          throw new Error(
+            `FastAPI responded with ${response.status}: ${errText}`,
+          );
+        }
+
+        const accepted =
+          response.status === 202 ||
+          (await response.json().catch(() => null))?.status === 'ACCEPTED';
+
+        if (attempt > 0) {
+          await this.updateStatus(analysisId, 'QUEUED', 12, {
+            statusMessage: null,
+          });
+        }
+
+        this.logger.log(
+          accepted
+            ? `Analysis ${analysisId} accepted by AI engine (running in background)`
+            : `Successfully triggered analysis directly via HTTP for ${analysisId}`,
+        );
+        return;
+      } catch (httpErr: unknown) {
+        const message =
+          httpErr instanceof Error ? httpErr.message : String(httpErr);
+        const wakeUp = this.isAiEngineWakeUpError(httpErr);
+        if (wakeUp && attempt < maxAttempts - 1) {
+          this.logger.warn(
+            `AI engine wake-up retry ${attempt + 1}/${maxAttempts} for ${analysisId}: ${message}`,
+          );
+          continue;
+        }
+
+        this.logger.error(`Direct HTTP trigger failed: ${message}`);
+        await this.updateStatus(analysisId, 'FAILED', 0, {
+          errorMessage: `Failed to trigger analysis pipeline: ${message}`,
+        });
+        return;
+      }
     }
   }
 

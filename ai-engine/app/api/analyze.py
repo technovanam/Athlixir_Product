@@ -17,6 +17,9 @@ from app.pose.skeleton_overlay import render_skeleton_overlay_video
 
 router = APIRouter()
 
+_active_analyses: set[str] = set()
+_active_lock = threading.Lock()
+
 class AthleteContext(BaseModel):
     ageGroup: Optional[str] = None
     gender: Optional[str] = None
@@ -261,7 +264,71 @@ def run_analysis_pipeline(
         threading.Thread(target=_cleanup, daemon=True).start()
 
 
-@router.post("/analyze/upload")
+def _start_analysis_background(
+    analysis_id: str,
+    video_url: str,
+    user_id: str,
+    athlete_context: AthleteContext | None = None,
+    previous_metrics: dict | None = None,
+) -> bool:
+    with _active_lock:
+        if analysis_id in _active_analyses:
+            print(f"[AI PIPELINE] Duplicate trigger ignored for {analysis_id}")
+            return False
+        _active_analyses.add(analysis_id)
+
+    def _run():
+        try:
+            run_analysis_pipeline(
+                analysis_id,
+                video_url,
+                user_id,
+                athlete_context,
+                previous_metrics,
+            )
+        finally:
+            with _active_lock:
+                _active_analyses.discard(analysis_id)
+
+    threading.Thread(target=_run, daemon=True, name=f"analysis-{analysis_id}").start()
+    return True
+
+
+def _start_upload_background(
+    analysis_id: str,
+    user_id: str,
+    temp_path: str,
+    temp_dir: str,
+):
+    with _active_lock:
+        if analysis_id in _active_analyses:
+            print(f"[AI PIPELINE] Duplicate upload ignored for {analysis_id}")
+            try:
+                os.remove(temp_path)
+                os.rmdir(temp_dir)
+            except OSError:
+                pass
+            return False
+        _active_analyses.add(analysis_id)
+
+    def _run():
+        try:
+            run_analysis_from_path(analysis_id, temp_path, user_id)
+        finally:
+            with _active_lock:
+                _active_analyses.discard(analysis_id)
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            try:
+                os.rmdir(temp_dir)
+            except OSError:
+                pass
+
+    threading.Thread(target=_run, daemon=True, name=f"upload-{analysis_id}").start()
+    return True
+
+
+@router.post("/analyze/upload", status_code=202)
 async def analyze_upload(
     analysisId: str = Form(...),
     userId: str = Form(...),
@@ -272,29 +339,28 @@ async def analyze_upload(
     with open(temp_path, "wb") as out:
         shutil.copyfileobj(file.file, out)
 
-    try:
-        run_analysis_from_path(analysisId, temp_path, userId)
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        try:
-            os.rmdir(temp_dir)
-        except OSError:
-            pass
-
-    return {"success": True, "status": "COMPLETED"}
+    started = _start_upload_background(analysisId, userId, temp_path, temp_dir)
+    return {
+        "success": True,
+        "status": "ACCEPTED" if started else "ALREADY_RUNNING",
+        "analysisId": analysisId,
+    }
 
 
-@router.post("/analyze")
+@router.post("/analyze", status_code=202, dependencies=[Depends(check_internal_secret)])
 def trigger_analysis(payload: AnalysisRequest):
-    run_analysis_pipeline(
+    started = _start_analysis_background(
         payload.analysisId,
         payload.videoUrl,
         payload.userId,
         payload.athleteContext,
         payload.previousMetrics,
     )
-    return {"success": True, "status": "COMPLETED"}
+    return {
+        "success": True,
+        "status": "ACCEPTED" if started else "ALREADY_RUNNING",
+        "analysisId": payload.analysisId,
+    }
 
 
 class IntelligenceRequest(BaseModel):
