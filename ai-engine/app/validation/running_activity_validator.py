@@ -26,10 +26,7 @@ def _active_strike_window_sec(foot_strikes: list[dict]) -> float:
 
 
 def _interval_cadence_spm(foot_strikes: list[dict]) -> float:
-    """
-    Steps per minute from median time between consecutive foot strikes.
-    More reliable than dividing strike count by full clip duration.
-    """
+    """Steps per minute from median time between consecutive foot strikes."""
     if len(foot_strikes) < 2:
         return 0.0
     intervals = np.diff([s["timestamp"] for s in foot_strikes])
@@ -42,25 +39,43 @@ def _interval_cadence_spm(foot_strikes: list[dict]) -> float:
     return 60.0 / median_interval
 
 
+def _stride_based_cadence_spm(foot_strikes: list[dict], foot: str) -> float:
+    """
+    Estimate cadence from same-foot strike spacing (full stride cycle).
+    More stable when alternate-foot detections are sparse (common at 30 FPS).
+    """
+    strikes = [s for s in foot_strikes if s["foot"] == foot]
+    if len(strikes) < 2:
+        return 0.0
+    intervals = np.diff([s["timestamp"] for s in strikes])
+    intervals = intervals[intervals > 0.12]
+    if len(intervals) == 0:
+        return 0.0
+    stride_period = float(np.median(intervals))
+    if stride_period <= 0:
+        return 0.0
+    return 120.0 / stride_period
+
+
 def _effective_running_cadence(
     foot_strikes: list[dict],
     tracker_duration_sec: float,
 ) -> float:
-    interval_cadence = _interval_cadence_spm(foot_strikes)
     strike_window = _active_strike_window_sec(foot_strikes)
-    density_cadence = 0.0
-    if strike_window >= 0.25:
-        density_cadence = _raw_cadence_spm(foot_strikes, strike_window)
+    estimates = [
+        _interval_cadence_spm(foot_strikes),
+        _stride_based_cadence_spm(foot_strikes, "left"),
+        _stride_based_cadence_spm(foot_strikes, "right"),
+    ]
+    if strike_window >= 0.2:
+        estimates.append(_raw_cadence_spm(foot_strikes, strike_window))
     elif tracker_duration_sec > 0:
-        density_cadence = _raw_cadence_spm(foot_strikes, tracker_duration_sec)
+        estimates.append(_raw_cadence_spm(foot_strikes, tracker_duration_sec))
 
-    candidates = [c for c in (interval_cadence, density_cadence) if c > 0]
-    if not candidates:
+    valid = [e for e in estimates if e > 0]
+    if not valid:
         return 0.0
-    # Prefer interval timing; use density when strikes are spread across the clip.
-    if interval_cadence > 0:
-        return interval_cadence
-    return density_cadence
+    return float(np.median(valid))
 
 
 def _alternating_gait_ratio(foot_strikes: list[dict]) -> float:
@@ -138,65 +153,83 @@ def validate_running_activity(tracker, foot_strikes: list[dict], fps: float) -> 
         )
 
     alternating = _alternating_gait_ratio(foot_strikes)
-    if alternating < 0.55:
+    if alternating < 0.5:
         return False, (
             "Foot strike pattern does not match running gait. "
             "Only side-view running or sprint videos are accepted."
         )
 
-    if _max_consecutive_same_foot(foot_strikes) > 3:
+    if _max_consecutive_same_foot(foot_strikes) > 4:
         return False, (
             "Repeated same-foot contacts detected — this does not look like running. "
             "Upload a side-view running or sprint clip."
         )
 
-    if _minor_foot_share(foot_strikes) < 0.2:
+    minor_foot = _minor_foot_share(foot_strikes)
+    if minor_foot < 0.18:
         return False, (
             "Both feet must alternate during a run. "
             "This video appears to be a non-running activity."
         )
 
     interval_cv = _stride_interval_cv(foot_strikes)
-
+    ankle_rom = _ankle_vertical_range(tracker)
     raw_cadence = _effective_running_cadence(foot_strikes, duration_sec)
+
     gait_strong = (
-        alternating >= 0.65
-        and _minor_foot_share(foot_strikes) >= 0.25
-        and interval_cv <= 0.42
+        alternating >= 0.6
+        and minor_foot >= 0.22
+        and interval_cv <= 0.55
+        and ankle_rom >= 0.025
     )
-    min_cadence = 65 if gait_strong else 80
-    if raw_cadence < min_cadence or raw_cadence > 340:
+
+    # Clear alternating gait with visible leg motion — accept even if cadence is noisy
+    # (common for portrait / 30 FPS social clips with sparse pose detections).
+    if gait_strong and len(foot_strikes) >= 4:
+        knee_corr = _knee_correlation(tracker)
+        if knee_corr <= 0.82:
+            return True, ""
+
+    cadence_lo = 42 if gait_strong else 55
+    cadence_hi = 390 if fps < 45 else 360
+    cadence_ok = cadence_lo <= raw_cadence <= cadence_hi if raw_cadence > 0 else False
+
+    if not cadence_ok:
+        print(
+            f"[Running Validator] Rejected cadence={raw_cadence:.1f} spm "
+            f"(alt={alternating:.2f}, cv={interval_cv:.2f}, fps={fps:.1f})"
+        )
         return False, (
             "Step rate is outside a running range. "
             "Upload side-view sprint or running footage (not dance or gym drills)."
         )
 
-    if interval_cv > 0.45:
+    cv_limit = 0.58 if fps < 45 else 0.48
+    if interval_cv > cv_limit:
         return False, (
             "Stride timing is too irregular for running analysis. "
             "Use continuous side-view running or sprint video."
         )
 
     knee_corr = _knee_correlation(tracker)
-    if knee_corr > 0.78:
+    if knee_corr > 0.82:
         return False, (
             "Leg movement pattern matches bilateral exercise, not running. "
             "Only running or sprint videos are analyzed."
         )
 
-    ankle_rom = _ankle_vertical_range(tracker)
-    if ankle_rom < 0.04:
+    if ankle_rom < 0.025:
         return False, (
             "Not enough running stride motion detected. "
             "Use side-view footage with visible leg swing and foot contacts."
         )
 
-    if fps > 0:
+    if fps >= 45:
         from app.biomechanics.gct import calculate_gct
 
         gct = calculate_gct(foot_strikes, tracker, fps)
         avg_gct = float(gct.get("avg") or 0)
-        if avg_gct > 0 and (avg_gct < 70 or avg_gct > 450):
+        if avg_gct > 0 and (avg_gct < 60 or avg_gct > 480):
             return False, (
                 "Ground contact timing does not match running mechanics. "
                 "Upload side-view sprint or running video only."

@@ -49,6 +49,27 @@ class TestRunningActivityValidator(unittest.TestCase):
         self.assertGreaterEqual(_interval_cadence_spm(strikes), 150)
         self.assertGreaterEqual(_effective_running_cadence(strikes, 5.0), 150)
 
+    def test_sparse_30fps_portrait_running_passes(self):
+        """Simulates missed detections common in portrait 30 FPS track clips."""
+        strikes = [
+            {"foot": "left", "timestamp": 0.5, "index": 0},
+            {"foot": "right", "timestamp": 0.95, "index": 4},
+            {"foot": "left", "timestamp": 1.85, "index": 10},
+            {"foot": "right", "timestamp": 2.3, "index": 14},
+            {"foot": "left", "timestamp": 3.2, "index": 20},
+            {"foot": "right", "timestamp": 3.65, "index": 24},
+        ]
+        n = 40
+        tracker = _FakeTracker(
+            4.5,
+            left_knee_y=[0.5 + (i % 7) * 0.025 for i in range(n)],
+            right_knee_y=[0.52 - (i % 7) * 0.025 for i in range(n)],
+            left_ankle_y=[0.68 + (i % 9) * 0.035 for i in range(n)],
+            right_ankle_y=[0.70 - (i % 9) * 0.035 for i in range(n)],
+        )
+        ok, reason = validate_running_activity(tracker, strikes, 30.0)
+        self.assertTrue(ok, reason)
+
     def test_alternating_running_strikes_pass_helper_metrics(self):
         strikes = [
             {"foot": "left", "timestamp": 0.0, "index": 0},
