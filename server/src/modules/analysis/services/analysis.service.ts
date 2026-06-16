@@ -30,6 +30,7 @@ export class AnalysisService {
   private readonly logger = new Logger(AnalysisService.name);
   private readonly collectionName = 'analyses';
   private readonly cancelledAnalyses = new Set<string>();
+  private aiEnginePrewarmPromise: Promise<boolean> | null = null;
   private readonly athleteProfilesCollection = 'athlete_profiles';
   private readonly fastapiUrl = getFastApiUrl();
   private readonly internalApiSecret = process.env.INTERNAL_API_SECRET;
@@ -161,6 +162,8 @@ export class AnalysisService {
     },
   ) {
     this.logger.log(`Upload request for user ${userId}`);
+
+    this.startAiEnginePrewarm();
 
     await this.failStaleActiveAnalysis(userId);
 
@@ -1129,6 +1132,32 @@ export class AnalysisService {
     return `${getFastApiPublicUrl()}/health`;
   }
 
+  private getHealthCheckTimeoutMs(attempt: number): number {
+    if (attempt === 0) return 120_000;
+    if (attempt === 1) return 90_000;
+    if (attempt === 2) return 60_000;
+    return 45_000;
+  }
+
+  private async probeAiEngineHealth(timeoutMs: number): Promise<boolean> {
+    const healthUrl = this.getFastApiHealthUrl();
+    try {
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      return response.ok;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`AI engine health probe failed: ${message}`);
+      return false;
+    }
+  }
+
+  private startAiEnginePrewarm(): void {
+    this.aiEnginePrewarmPromise = this.probeAiEngineHealth(120_000);
+  }
+
   private isAiEngineWakeUpError(err: unknown, status?: number): boolean {
     if (status === 502 || status === 503 || status === 504 || status === 408) {
       return true;
@@ -1149,11 +1178,20 @@ export class AnalysisService {
   }
 
   private async wakeAiEngine(analysisId: string): Promise<boolean> {
+    if (this.aiEnginePrewarmPromise) {
+      const prewarmed = await this.aiEnginePrewarmPromise;
+      this.aiEnginePrewarmPromise = null;
+      if (prewarmed) {
+        this.logger.log(
+          `AI engine ready via upload prewarm for ${analysisId}`,
+        );
+        return true;
+      }
+    }
+
     const healthUrl = this.getFastApiHealthUrl();
-    const maxAttempts = 10;
-    const retryDelaysMs = [
-      1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 12000, 15000,
-    ];
+    const maxAttempts = 6;
+    const retryDelaysMs = [2000, 3000, 5000, 8000, 10000, 12000];
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (await this.isAnalysisCancelled(analysisId)) {
@@ -1176,17 +1214,22 @@ export class AnalysisService {
         );
       }
 
+      const timeoutMs = this.getHealthCheckTimeoutMs(attempt);
       try {
         const response = await fetch(healthUrl, {
           method: 'GET',
-          signal: AbortSignal.timeout(12000),
+          signal: AbortSignal.timeout(timeoutMs),
         });
         if (response.ok) {
           this.logger.log(
-            `AI engine health check passed on attempt ${attempt + 1} for ${analysisId}`,
+            `AI engine health check passed on attempt ${attempt + 1} for ${analysisId} (${timeoutMs}ms timeout)`,
           );
           return true;
         }
+
+        this.logger.warn(
+          `AI engine health HTTP ${response.status} on attempt ${attempt + 1} for ${analysisId}`,
+        );
         if (
           !this.isAiEngineWakeUpError(null, response.status) &&
           attempt >= maxAttempts - 1
@@ -1196,7 +1239,7 @@ export class AnalysisService {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         this.logger.warn(
-          `AI engine health attempt ${attempt + 1}/${maxAttempts} for ${analysisId}: ${message}`,
+          `AI engine health attempt ${attempt + 1}/${maxAttempts} for ${analysisId} (${timeoutMs}ms): ${message}`,
         );
         if (!this.isAiEngineWakeUpError(err) && attempt >= maxAttempts - 1) {
           return false;
@@ -1254,7 +1297,7 @@ export class AnalysisService {
             athleteContext,
             previousMetrics,
           }),
-          signal: AbortSignal.timeout(45000),
+          signal: AbortSignal.timeout(60_000),
         });
 
         if (!response.ok) {
@@ -1264,6 +1307,7 @@ export class AnalysisService {
             this.logger.warn(
               `AI analyze retry ${attempt + 1}/${maxTriggerAttempts} for ${analysisId}: HTTP ${response.status}`,
             );
+            await this.probeAiEngineHealth(90_000);
             continue;
           }
           throw new Error(
