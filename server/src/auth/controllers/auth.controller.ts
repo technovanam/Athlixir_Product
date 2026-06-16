@@ -15,7 +15,9 @@ import { AuthService } from '../services/auth.service';
 import { SignupDto } from '../dto/signup.dto';
 import { LoginDto } from '../dto/login.dto';
 import { FirebaseAuthGuard } from '../guards/firebase-auth.guard';
+import { OptionalFirebaseAuthGuard } from '../guards/optional-firebase-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { setAuthCookies, clearAuthCookies } from '../utils/auth-cookies';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -47,27 +49,13 @@ export class AuthController {
       loginResult.idToken,
     );
 
-    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-
-    // Set secure HttpOnly session cookie
-    response.cookie('session', sessionCookie, {
-      maxAge: expiresIn,
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-
-    // Set non-HttpOnly, client-readable indicator cookie to avoid redundant auth/me checks
-    response.cookie('athlixir_logged_in', 'true', {
-      maxAge: expiresIn,
-      httpOnly: false,
-      secure: true,
-      sameSite: 'none',
-    });
+    setAuthCookies(response, sessionCookie);
 
     return {
       message: 'Registration and login successful',
       user: loginResult.userProfile,
+      idToken: loginResult.idToken,
+      refreshToken: loginResult.refreshToken,
     };
   }
 
@@ -85,30 +73,17 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    const { idToken, userProfile } = await this.authService.login(loginDto);
+    const { idToken, refreshToken, userProfile } =
+      await this.authService.login(loginDto);
     const sessionCookie = await this.authService.createSessionCookie(idToken);
 
-    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-
-    // Set secure HttpOnly session cookie
-    response.cookie('session', sessionCookie, {
-      maxAge: expiresIn,
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-
-    // Set non-HttpOnly, client-readable indicator cookie to avoid redundant auth/me checks
-    response.cookie('athlixir_logged_in', 'true', {
-      maxAge: expiresIn,
-      httpOnly: false,
-      secure: true,
-      sameSite: 'none',
-    });
+    setAuthCookies(response, sessionCookie);
 
     return {
       message: 'Login successful',
       user: userProfile,
+      idToken,
+      refreshToken,
     };
   }
 
@@ -122,15 +97,37 @@ export class AuthController {
     if (sessionCookie) {
       await this.authService.revokeSession(sessionCookie);
     }
-    response.clearCookie('session', { secure: true, sameSite: 'none' });
-    response.clearCookie('athlixir_logged_in', { secure: true, sameSite: 'none' });
+    clearAuthCookies(response);
     return { message: 'Logged out successfully' };
   }
 
+  @Post('refresh')
+  @ApiOperation({ summary: 'Refresh Firebase ID token for cross-origin clients' })
+  async refresh(
+    @Body() body: { refreshToken: string },
+    @Res({ passthrough: true }) response: express.Response,
+  ) {
+    const { idToken, refreshToken } = await this.authService.refreshIdToken(
+      body.refreshToken,
+    );
+    const sessionCookie = await this.authService.createSessionCookie(idToken);
+    setAuthCookies(response, sessionCookie);
+
+    return {
+      message: 'Token refreshed',
+      idToken,
+      refreshToken,
+    };
+  }
+
   @Get('me')
-  @UseGuards(FirebaseAuthGuard)
+  @UseGuards(OptionalFirebaseAuthGuard)
   @ApiOperation({ summary: 'Retrieve verified user profile session details' })
   async getProfile(@CurrentUser() user: any) {
+    if (!user?.uid) {
+      return { user: null };
+    }
+
     const profile = await this.authService.getUserProfile(user.uid);
     return {
       user: profile || user,

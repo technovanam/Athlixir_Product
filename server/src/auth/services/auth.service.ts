@@ -63,7 +63,7 @@ export class AuthService {
 
   async login(
     loginDto: LoginDto,
-  ): Promise<{ idToken: string; userProfile: any }> {
+  ): Promise<{ idToken: string; refreshToken: string; userProfile: any }> {
     const { email, password } = loginDto;
     const apiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
 
@@ -131,6 +131,7 @@ export class AuthService {
 
       return {
         idToken,
+        refreshToken: data.refreshToken,
         userProfile: updatedProfile,
       };
     } catch (error: any) {
@@ -156,6 +157,35 @@ export class AuthService {
     } catch (error: any) {
       throw new UnauthorizedException('Failed to establish a secure session');
     }
+  }
+
+  async refreshIdToken(
+    refreshToken: string,
+  ): Promise<{ idToken: string; refreshToken: string }> {
+    const apiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
+
+    if (!apiKey) {
+      throw new InternalServerErrorException(
+        'Firebase Web API Key is missing. Token refresh cannot be completed.',
+      );
+    }
+
+    const url = `https://securetoken.googleapis.com/v1/token?key=${apiKey}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(refreshToken)}`,
+    });
+
+    if (!response.ok) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    const data = await response.json();
+    return {
+      idToken: data.id_token,
+      refreshToken: data.refresh_token,
+    };
   }
 
   async revokeSession(sessionCookie: string): Promise<void> {

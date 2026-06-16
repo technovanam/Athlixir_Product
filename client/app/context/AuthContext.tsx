@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useRouter, usePathname } from 'next/navigation';
 import { getOnboardingProfile } from '../utils/api';
 import { getApiBaseUrl } from '../config/service-urls';
+import { clearAuthToken, ensureValidAuthToken, getAuthToken, setAuthSession } from '../utils/auth-token';
 
 export interface UserProfile {
   uid: string;
@@ -53,6 +54,27 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+api.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+function extractAuthPayload(responseData: any) {
+  return responseData?.data ?? responseData;
+}
+
+async function refreshAuthTokens(refreshToken: string) {
+  const response = await api.post('/auth/refresh', { refreshToken });
+  const payload = extractAuthPayload(response.data);
+  return {
+    idToken: payload.idToken as string,
+    refreshToken: payload.refreshToken as string | undefined,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,13 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
+      await ensureValidAuthToken(refreshAuthTokens);
       const response = await api.get('/auth/me');
-      let userData = null;
-      if (response.data && response.data.user) {
-        userData = response.data.user;
-      } else if (response.data && response.data.data && response.data.data.user) {
-        userData = response.data.data.user;
-      }
+      const payload = extractAuthPayload(response.data);
+      let userData = payload?.user ?? null;
 
       if (userData) {
         userData = await fetchAndAttachProfile(userData);
@@ -106,7 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const response = await api.post('/auth/signup', { username, email, password });
-      let userData = response.data?.data?.user || response.data?.user;
+      const payload = extractAuthPayload(response.data);
+      if (payload?.idToken) {
+        setAuthSession(payload.idToken, payload.refreshToken);
+      }
+      let userData = payload?.user;
       userData = await fetchAndAttachProfile(userData);
       setUser(userData);
       
@@ -126,7 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', { email, password });
-      let userData = response.data?.data?.user || response.data?.user;
+      const payload = extractAuthPayload(response.data);
+      if (payload?.idToken) {
+        setAuthSession(payload.idToken, payload.refreshToken);
+      }
+      let userData = payload?.user;
       userData = await fetchAndAttachProfile(userData);
       setUser(userData);
 
@@ -150,9 +177,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       await api.post('/auth/logout');
+      clearAuthToken();
       setUser(null);
       router.push('/login');
     } catch (err) {
+      clearAuthToken();
       setUser(null);
       router.push('/login');
     } finally {
