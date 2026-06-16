@@ -108,7 +108,8 @@ export function buildAnalysisPrompt(
   metricFlags: string[],
   confidence: number,
 ): string {
-  const symmetryVal = input.metrics.symmetry;
+  const metrics = input.metrics || {};
+  const symmetryVal = metrics.symmetry;
 
   const telemetryData = {
     athlete: {
@@ -121,7 +122,7 @@ export function buildAnalysisPrompt(
     metricFlags: metricFlags,
     metrics: {
       cadence: {
-        value: input.metrics.cadence,
+        value: metrics.cadence,
         definition:
           'turnover frequency measured in Strides Per Minute (SPM). Higher is typically better, representing faster leg turnover.',
         benchmarks: {
@@ -131,7 +132,7 @@ export function buildAnalysisPrompt(
         },
       },
       gct: {
-        value: input.metrics.gct,
+        value: metrics.gct,
         definition:
           'Ground Contact Time in milliseconds (ms). Lower is better, representing higher reactive ankle stiffness and faster force application.',
         benchmarks: {
@@ -141,7 +142,7 @@ export function buildAnalysisPrompt(
         },
       },
       strideLength: {
-        value: input.metrics.strideLength,
+        value: metrics.strideLength,
         definition:
           'stride amplitude measured in meters (m). Higher is generally better for ground coverage, assuming it is not achieved via overstriding.',
         benchmarks: {

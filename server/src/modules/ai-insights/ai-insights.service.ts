@@ -18,6 +18,7 @@ export class AiInsightsService {
   private readonly logger = new Logger(AiInsightsService.name);
   private readonly collectionName = 'analyses';
   private readonly profileCollectionName = 'athlete_profiles';
+  private readonly enrichingAnalyses = new Set<string>();
 
   constructor(
     private readonly firebaseService: FirebaseService,
@@ -40,12 +41,28 @@ export class AiInsightsService {
       `Running AI Sports Intelligence Orchestrator for analysis: ${analysisId}`,
     );
 
-    const metrics = rawData.metrics || {};
+    if (this.enrichingAnalyses.has(analysisId)) {
+      this.logger.warn(
+        `Skipping duplicate intelligence orchestration for ${analysisId}`,
+      );
+      return {};
+    }
+
+    this.enrichingAnalyses.add(analysisId);
+
+    const metrics = rawData?.metrics || {};
     const scores = rawData.scores || {};
     const injuryRisks = rawData.injuryRisks || [];
-    const benchmarks = rawData.benchmarks || {
-      profileLabel: 'State Sprint Benchmark',
-      levels: { cadence: 'State', gct: 'State', strideLength: 'State' },
+    const benchmarks = {
+      profileLabel:
+        rawData.benchmarks?.profileLabel ?? 'State Sprint Benchmark',
+      ...(rawData.benchmarks || {}),
+      levels: {
+        cadence: 'State',
+        gct: 'State',
+        strideLength: 'State',
+        ...(rawData.benchmarks?.levels || {}),
+      },
     };
     const progress = rawData.progress || null;
 
@@ -239,6 +256,8 @@ export class AiInsightsService {
         .set(aiEmergencyUpdate, { merge: true });
 
       return aiEmergencyUpdate;
+    } finally {
+      this.enrichingAnalyses.delete(analysisId);
     }
   }
 

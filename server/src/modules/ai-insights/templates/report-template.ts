@@ -23,6 +23,13 @@ export function generateSportsScienceReportHtml(
     day: 'numeric',
   });
 
+  const metrics = data.metrics || {};
+  const benchmarkLevels = data.benchmarks?.levels || {
+    cadence: 'State',
+    gct: 'State',
+    strideLength: 'State',
+  };
+
   const timelineItemsHtml = (data.aiTimeline || [])
     .map(
       (item) => `
@@ -561,22 +568,22 @@ export function generateSportsScienceReportHtml(
         <tbody>
           <tr>
             <td class="metric-name">Turnover Cadence</td>
-            <td class="metric-value" style="color: var(--primary);">${data.metrics.cadence} <span style="font-size: 8px;">SPM</span></td>
-            <td><span class="badge ${data.benchmarks.levels.cadence.toLowerCase()}">${data.benchmarks.levels.cadence}</span></td>
+            <td class="metric-value" style="color: var(--primary);">${metrics.cadence ?? '—'} <span style="font-size: 8px;">SPM</span></td>
+            <td><span class="badge ${String(benchmarkLevels.cadence ?? 'State').toLowerCase()}">${benchmarkLevels.cadence ?? 'State'}</span></td>
           </tr>
           <tr>
             <td class="metric-name">Ground Contact (GCT)</td>
-            <td class="metric-value" style="color: var(--cyan);">${data.metrics.gct} <span style="font-size: 8px;">ms</span></td>
-            <td><span class="badge ${data.benchmarks.levels.gct.toLowerCase()}">${data.benchmarks.levels.gct}</span></td>
+            <td class="metric-value" style="color: var(--cyan);">${metrics.gct ?? '—'} <span style="font-size: 8px;">ms</span></td>
+            <td><span class="badge ${String(benchmarkLevels.gct ?? 'State').toLowerCase()}">${benchmarkLevels.gct ?? 'State'}</span></td>
           </tr>
           <tr>
             <td class="metric-name">Stride Amplitude</td>
-            <td class="metric-value">${data.metrics.strideLength} <span style="font-size: 8px;">m</span></td>
-            <td><span class="badge ${data.benchmarks.levels.strideLength.toLowerCase()}">${data.benchmarks.levels.strideLength}</span></td>
+            <td class="metric-value">${metrics.strideLength ?? '—'} <span style="font-size: 8px;">m</span></td>
+            <td><span class="badge ${String(benchmarkLevels.strideLength ?? 'State').toLowerCase()}">${benchmarkLevels.strideLength ?? 'State'}</span></td>
           </tr>
           <tr>
             <td class="metric-name">Symmetry Metric</td>
-            <td class="metric-value" style="color: var(--emerald);">${data.metrics.symmetry}%</td>
+            <td class="metric-value" style="color: var(--emerald);">${metrics.symmetry ?? '—'}%</td>
             <td><span class="badge elite">Elite</span></td>
           </tr>
           <tr>

@@ -353,16 +353,21 @@ export class OnboardingService {
         },
       });
 
-      // Try making the object public. If permissions restrict it, we will default to standard public access URL
+      let photoUrl: string;
+
       try {
         await fileRef.makePublic();
+        photoUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
       } catch (err) {
         this.logger.warn(
-          `Could not make storage file public (usually fine in developer environments): ${err.message}`,
+          `Could not make storage file public, using signed URL: ${err.message}`,
         );
+        const [signedUrl] = await fileRef.getSignedUrl({
+          action: 'read',
+          expires: Date.now() + 1000 * 60 * 60 * 24 * 365 * 5,
+        });
+        photoUrl = signedUrl;
       }
-
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
 
       // Save url to profile doc
       const profileRef = this.firebaseService.firestore
@@ -372,21 +377,21 @@ export class OnboardingService {
       const doc = await profileRef.get();
       if (doc.exists) {
         await profileRef.update({
-          profile_photo: publicUrl,
+          profile_photo: photoUrl,
           updated_at: new Date().toISOString(),
         });
       } else {
         await profileRef.set({
           id: uid,
           user_id: uid,
-          profile_photo: publicUrl,
+          profile_photo: photoUrl,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           onboarding_completed: false,
         });
       }
 
-      return publicUrl;
+      return photoUrl;
     } catch (error) {
       this.logger.error(
         'Failed uploading photo to Firebase storage, falling back to data URI representation',

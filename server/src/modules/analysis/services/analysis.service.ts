@@ -549,6 +549,24 @@ export class AnalysisService {
     progress: number,
     data?: Record<string, unknown>,
   ) {
+    const docRef = this.firebaseService.firestore
+      .collection(this.collectionName)
+      .doc(analysisId);
+    const existingDoc = await docRef.get();
+    const existingStatus = existingDoc.data()?.status as string | undefined;
+
+    const isRegression =
+      existingStatus === 'COMPLETED' &&
+      status !== 'COMPLETED' &&
+      status !== 'FAILED';
+
+    if (isRegression) {
+      this.logger.warn(
+        `Ignoring stale status downgrade for ${analysisId}: ${existingStatus} -> ${status} (${progress}%)`,
+      );
+      return;
+    }
+
     this.logger.log(`Updating ${analysisId}: ${status} (${progress}%)`);
 
     const updateData: Record<string, unknown> = {
@@ -569,17 +587,14 @@ export class AnalysisService {
     const sanitizedUpdateData = JSON.parse(JSON.stringify(updateData, (k, v) => (v === undefined || Number.isNaN(v)) ? null : v));
 
     try {
-      await this.firebaseService.firestore
-        .collection(this.collectionName)
-        .doc(analysisId)
-        .set(sanitizedUpdateData, { merge: true });
+      await docRef.set(sanitizedUpdateData, { merge: true });
 
-      if (status === 'COMPLETED' && data) {
-        const doc = await this.firebaseService.firestore
-          .collection(this.collectionName)
-          .doc(analysisId)
-          .get();
-        const userId = (doc.data() as { userId?: string })?.userId;
+      const hasFullResults =
+        Boolean(data?.metrics) && typeof data?.metrics === 'object';
+
+      if (status === 'COMPLETED' && data && hasFullResults) {
+        const userId = (existingDoc.data() as { userId?: string })?.userId
+          ?? (await docRef.get()).data()?.userId;
         if (userId) {
           await this.persistIntelligenceArtifacts(analysisId, userId, data);
 
@@ -823,11 +838,29 @@ export class AnalysisService {
       file.mimetype || 'video/mp4',
     );
 
-    await this.updateStatus(analysisId, 'COMPLETED', 100, {
+    const overlayUpdate = {
       skeletonOverlayPath: storagePath,
       storageBucket: bucketName,
       skeletonOverlayReady: true,
-    });
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.firebaseService.firestore
+      .collection(this.collectionName)
+      .doc(analysisId)
+      .set(overlayUpdate, { merge: true });
+
+    const doc = await this.firebaseService.firestore
+      .collection(this.collectionName)
+      .doc(analysisId)
+      .get();
+
+    this.analysisGateway.broadcastStatus(
+      analysisId,
+      (doc.data()?.status as string) || 'COMPLETED',
+      typeof doc.data()?.progress === 'number' ? (doc.data()?.progress as number) : 100,
+      this.sanitizeForClient({ id: analysisId, ...doc.data(), ...overlayUpdate }),
+    );
 
     return { success: true };
   }
@@ -970,7 +1003,6 @@ export class AnalysisService {
       this.logger.log(
         `Successfully triggered analysis directly via HTTP for ${analysisId}`,
       );
-      await this.updateStatus(analysisId, 'PROCESSING_POSE', 15);
     } catch (httpErr: any) {
       this.logger.error(
         `Direct HTTP trigger failed: ${httpErr.message}`,

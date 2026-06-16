@@ -97,7 +97,7 @@ export default function BasicInfoStep() {
         gender,
         state,
         city,
-        profilePhoto,
+        profilePhoto: profilePhoto.startsWith('http') ? profilePhoto : undefined,
       });
       router.replace('/onboarding/classification');
     } catch (err: any) {
@@ -135,7 +135,23 @@ export default function BasicInfoStep() {
           <div className="relative group shrink-0">
             <div className="h-20 w-20 rounded-full border border-white/[0.08] bg-[#08080C]/40 flex items-center justify-center overflow-hidden shadow-inner relative z-10">
               {profilePhoto ? (
-                <Image src={profilePhoto} alt="Profile" fill className="h-full w-full object-cover" />
+                profilePhoto.startsWith('blob:') || profilePhoto.startsWith('data:') ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profilePhoto}
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={profilePhoto}
+                    alt="Profile"
+                    fill
+                    sizes="80px"
+                    unoptimized
+                    className="h-full w-full object-cover"
+                  />
+                )
               ) : uploading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-[#FF4F21]" />
               ) : (
