@@ -51,12 +51,28 @@ def _send_update(analysis_id: str, status: str, progress: int, payload: dict = N
     data = {"analysisId": analysis_id, "status": status, "progress": progress}
     if payload:
         data.update(payload)
-    try:
-        secret = os.environ.get('INTERNAL_API_SECRET', '')
-        headers = {"Authorization": f"Bearer {secret}"}
-        requests.post(NESTJS_CALLBACK_URL, json=data, headers=headers, timeout=10)
-    except Exception as e:
-        print(f"[AI CALLBACK ERR] {e}")
+    secret = os.environ.get('INTERNAL_API_SECRET', '')
+    headers = {"Authorization": f"Bearer {secret}"}
+    retry_delays_sec = (0, 1, 2, 4, 8, 12)
+
+    for attempt, delay in enumerate(retry_delays_sec):
+        if delay:
+            time.sleep(delay)
+        try:
+            response = requests.post(
+                NESTJS_CALLBACK_URL,
+                json=data,
+                headers=headers,
+                timeout=20,
+            )
+            if response.ok:
+                return
+            print(
+                f"[AI CALLBACK] HTTP {response.status_code} for {analysis_id} "
+                f"({status}) attempt {attempt + 1}"
+            )
+        except Exception as e:
+            print(f"[AI CALLBACK ERR] {analysis_id} attempt {attempt + 1}: {e}")
 
 
 def _upload_overlay(analysis_id: str, user_id: str, overlay_path: str) -> bool:
@@ -279,6 +295,12 @@ def _start_analysis_background(
 
     def _run():
         try:
+            _send_update(
+                analysis_id,
+                "PROCESSING_POSE",
+                12,
+                {"statusMessage": "Analysis engine received your running video."},
+            )
             run_analysis_pipeline(
                 analysis_id,
                 video_url,

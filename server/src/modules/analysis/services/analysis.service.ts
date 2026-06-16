@@ -16,6 +16,7 @@ import * as crypto from 'crypto';
 import { QueueService } from './queue.service';
 import {
   getFastApiIntelUrl,
+  getFastApiPublicUrl,
   getFastApiUrl,
 } from '../../../core/config/service-urls.config';
 
@@ -113,6 +114,37 @@ export class AnalysisService {
     return active[0] ?? null;
   }
 
+  private async failStaleActiveAnalysis(userId: string): Promise<void> {
+    const snapshot = await this.firebaseService.firestore
+      .collection(this.collectionName)
+      .where('userId', '==', userId)
+      .get();
+
+    const staleStatuses = new Set(['WAKING_AI_ENGINE', 'QUEUED', 'UPLOADING']);
+    const staleMs = 3 * 60 * 1000;
+    const now = Date.now();
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const status = data.status as string | undefined;
+      if (!status || !staleStatuses.has(status)) continue;
+
+      const updatedAt = new Date(
+        (data.updatedAt as string) || (data.createdAt as string),
+      ).getTime();
+      if (Number.isNaN(updatedAt) || now - updatedAt < staleMs) continue;
+
+      const analysisId = (data.analysisId as string) || doc.id;
+      this.logger.warn(
+        `Marking stale analysis ${analysisId} as FAILED (status=${status})`,
+      );
+      await this.updateStatus(analysisId, 'FAILED', 0, {
+        errorMessage:
+          'Analysis timed out while connecting to the AI engine. Please upload again.',
+      });
+    }
+  }
+
   /**
    * Production flow: validate → store Firebase → create record → trigger AI.
    * Frontend never touches Firebase; playback uses GET /analysis/:id/video/:type.
@@ -127,6 +159,8 @@ export class AnalysisService {
     },
   ) {
     this.logger.log(`Upload request for user ${userId}`);
+
+    await this.failStaleActiveAnalysis(userId);
 
     const activeAnalysis = await this.getActiveAnalysisForUser(userId);
     if (activeAnalysis) {
@@ -1008,6 +1042,10 @@ export class AnalysisService {
     );
   }
 
+  private getFastApiHealthUrl(): string {
+    return `${getFastApiPublicUrl()}/health`;
+  }
+
   private isAiEngineWakeUpError(err: unknown, status?: number): boolean {
     if (status === 502 || status === 503 || status === 504 || status === 408) {
       return true;
@@ -1027,6 +1065,60 @@ export class AnalysisService {
     );
   }
 
+  private async wakeAiEngine(analysisId: string): Promise<boolean> {
+    const healthUrl = this.getFastApiHealthUrl();
+    const maxAttempts = 10;
+    const retryDelaysMs = [
+      1500, 2000, 3000, 4000, 5000, 6000, 8000, 10000, 12000, 15000,
+    ];
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        await this.updateStatus(
+          analysisId,
+          'WAKING_AI_ENGINE',
+          Math.min(8 + attempt * 2, 22),
+          {
+            statusMessage:
+              'Connecting to analysis engine… Your running video is queued — please wait.',
+          },
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelaysMs[attempt - 1]),
+        );
+      }
+
+      try {
+        const response = await fetch(healthUrl, {
+          method: 'GET',
+          signal: AbortSignal.timeout(12000),
+        });
+        if (response.ok) {
+          this.logger.log(
+            `AI engine health check passed on attempt ${attempt + 1} for ${analysisId}`,
+          );
+          return true;
+        }
+        if (
+          !this.isAiEngineWakeUpError(null, response.status) &&
+          attempt >= maxAttempts - 1
+        ) {
+          return false;
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `AI engine health attempt ${attempt + 1}/${maxAttempts} for ${analysisId}: ${message}`,
+        );
+        if (!this.isAiEngineWakeUpError(err) && attempt >= maxAttempts - 1) {
+          return false;
+        }
+      }
+    }
+
+    return false;
+  }
+
   private async triggerPythonEngine(
     analysisId: string,
     videoUrl: string,
@@ -1034,20 +1126,22 @@ export class AnalysisService {
   ) {
     this.logger.log(`Triggering analysis directly via HTTP for ${analysisId}`);
 
+    const awake = await this.wakeAiEngine(analysisId);
+    if (!awake) {
+      await this.updateStatus(analysisId, 'FAILED', 0, {
+        errorMessage:
+          'Could not connect to the analysis engine. Please try again in a moment.',
+      });
+      return;
+    }
+
     const athleteContext = await this.getAthleteContext(userId);
     const previousMetrics = await this.getPreviousMetrics(userId, analysisId);
-    const maxAttempts = 8;
-    const retryDelaysMs = [2000, 4000, 6000, 8000, 10000, 12000, 15000, 15000];
+    const maxTriggerAttempts = 3;
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    for (let attempt = 0; attempt < maxTriggerAttempts; attempt++) {
       if (attempt > 0) {
-        await this.updateStatus(analysisId, 'WAKING_AI_ENGINE', Math.min(12 + attempt * 2, 22), {
-          statusMessage:
-            'Connecting to analysis engine… Your running video is queued — please wait.',
-        });
-        await new Promise((resolve) =>
-          setTimeout(resolve, retryDelaysMs[attempt - 1]),
-        );
+        await new Promise((resolve) => setTimeout(resolve, 3000 * attempt));
       }
 
       try {
@@ -1064,15 +1158,15 @@ export class AnalysisService {
             athleteContext,
             previousMetrics,
           }),
-          signal: AbortSignal.timeout(30000),
+          signal: AbortSignal.timeout(45000),
         });
 
         if (!response.ok) {
           const errText = await response.text();
           const wakeUp = this.isAiEngineWakeUpError(null, response.status);
-          if (wakeUp && attempt < maxAttempts - 1) {
+          if (wakeUp && attempt < maxTriggerAttempts - 1) {
             this.logger.warn(
-              `AI engine wake-up retry ${attempt + 1}/${maxAttempts} for ${analysisId}: HTTP ${response.status}`,
+              `AI analyze retry ${attempt + 1}/${maxTriggerAttempts} for ${analysisId}: HTTP ${response.status}`,
             );
             continue;
           }
@@ -1081,15 +1175,13 @@ export class AnalysisService {
           );
         }
 
+        const body = await response.json().catch(() => null);
         const accepted =
-          response.status === 202 ||
-          (await response.json().catch(() => null))?.status === 'ACCEPTED';
+          response.status === 202 || body?.status === 'ACCEPTED';
 
-        if (attempt > 0) {
-          await this.updateStatus(analysisId, 'QUEUED', 12, {
-            statusMessage: null,
-          });
-        }
+        await this.updateStatus(analysisId, 'PROCESSING_POSE', 18, {
+          statusMessage: 'Analysis started. Processing your running video…',
+        });
 
         this.logger.log(
           accepted
@@ -1101,9 +1193,9 @@ export class AnalysisService {
         const message =
           httpErr instanceof Error ? httpErr.message : String(httpErr);
         const wakeUp = this.isAiEngineWakeUpError(httpErr);
-        if (wakeUp && attempt < maxAttempts - 1) {
+        if (wakeUp && attempt < maxTriggerAttempts - 1) {
           this.logger.warn(
-            `AI engine wake-up retry ${attempt + 1}/${maxAttempts} for ${analysisId}: ${message}`,
+            `AI analyze retry ${attempt + 1}/${maxTriggerAttempts} for ${analysisId}: ${message}`,
           );
           continue;
         }

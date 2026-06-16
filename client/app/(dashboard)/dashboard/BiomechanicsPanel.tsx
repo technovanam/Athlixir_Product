@@ -294,10 +294,14 @@ export default function BiomechanicsPanel({
     loadVideoBlob,
   ]);
 
+  const isWakingOrQueued =
+    effectiveStatus === 'WAKING_AI_ENGINE' || effectiveStatus === 'QUEUED';
+
   // Robust polling fallback for state recovery if websocket fails or disconnects
   useEffect(() => {
     if (!analysisId || !isProcessing) return;
 
+    const pollMs = isWakingOrQueued ? 2000 : 4000;
     const timer = setInterval(async () => {
       try {
         const response = await api.get(`/analysis/${analysisId}`);
@@ -337,12 +341,13 @@ export default function BiomechanicsPanel({
       } catch (err) {
         console.error('Polling status fallback error:', err);
       }
-    }, 4000);
+    }, pollMs);
 
     return () => clearInterval(timer);
   }, [
     analysisId,
     isProcessing,
+    isWakingOrQueued,
     effectiveStatus,
     currentAnalysis?.progress,
     fetchAnalyses,
@@ -737,8 +742,10 @@ export default function BiomechanicsPanel({
                 </div>
                 <p className="text-[10px] text-zinc-600">
                   {effectiveStatus === 'WAKING_AI_ENGINE'
-                    ? 'Please wait while we connect to the analysis engine'
-                    : 'Metrics in ~5s · skeleton overlay follows'}
+                    ? 'Connecting to the analysis engine — this usually takes under a minute'
+                    : effectiveStatus === 'QUEUED'
+                      ? 'Waiting for the analysis engine to start processing'
+                      : 'Metrics in ~5s · skeleton overlay follows'}
                 </p>
               </div>
               {originalBlobUrl && (
