@@ -18,7 +18,28 @@ from app.pose.skeleton_overlay import render_skeleton_overlay_video
 router = APIRouter()
 
 _active_analyses: set[str] = set()
+_cancelled_analyses: set[str] = set()
 _active_lock = threading.Lock()
+
+
+class AnalysisCancelledError(Exception):
+    """Raised when a user cancels an in-flight analysis."""
+
+
+def _mark_cancelled(analysis_id: str) -> None:
+    with _active_lock:
+        _cancelled_analyses.add(analysis_id)
+        _active_analyses.discard(analysis_id)
+
+
+def _is_cancelled(analysis_id: str) -> bool:
+    with _active_lock:
+        return analysis_id in _cancelled_analyses
+
+
+def _ensure_not_cancelled(analysis_id: str) -> None:
+    if _is_cancelled(analysis_id):
+        raise AnalysisCancelledError(f"Analysis {analysis_id} was cancelled")
 
 class AthleteContext(BaseModel):
     ageGroup: Optional[str] = None
@@ -32,6 +53,10 @@ class AnalysisRequest(BaseModel):
     userId: str
     athleteContext: Optional[AthleteContext] = None
     previousMetrics: Optional[dict[str, Any]] = None
+
+
+class CancelAnalysisRequest(BaseModel):
+    analysisId: str
 
 _IS_RENDER = os.environ.get('RENDER') == 'true'
 _DEFAULT_BACKEND_URL = (
@@ -48,6 +73,8 @@ AI_ENGINE_URL = os.environ.get('AI_ENGINE_URL', _DEFAULT_AI_ENGINE_URL)
 
 
 def _send_update(analysis_id: str, status: str, progress: int, payload: dict = None):
+    if _is_cancelled(analysis_id):
+        return
     data = {"analysisId": analysis_id, "status": status, "progress": progress}
     if payload:
         data.update(payload)
@@ -173,11 +200,15 @@ def run_analysis_from_path(
     print(f"[AI PIPELINE] Processing file for {analysis_id}")
 
     try:
+        _ensure_not_cancelled(analysis_id)
         _send_update(analysis_id, "QUEUED", 5)
+        _ensure_not_cancelled(analysis_id)
         _send_update(analysis_id, "PROCESSING_POSE", 20)
+        _ensure_not_cancelled(analysis_id)
         _send_update(analysis_id, "TRACKING_LANDMARKS", 40)
 
         result = run_biomechanics_extraction_pipeline(video_path)
+        _ensure_not_cancelled(analysis_id)
         foot_strikes = result.get("footStrikes")
         result.pop("landmarkHistory", None)
         result.pop("footStrikes", None)
@@ -241,6 +272,8 @@ def run_analysis_from_path(
         # ONLY emit completion AFTER overlay is saved and URL is built
         _send_update(analysis_id, "COMPLETED", 100, payload)
 
+    except AnalysisCancelledError:
+        print(f"[AI PIPELINE] Cancelled by user: {analysis_id}")
     except Exception as err:
         print(f"[AI PIPELINE ERR] {err}")
         _send_update(analysis_id, "FAILED", 0, {"errorMessage": str(err)})
@@ -255,11 +288,13 @@ def run_analysis_pipeline(
 ):
     temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     try:
+        _ensure_not_cancelled(analysis_id)
         _send_update(analysis_id, "QUEUED", 5)
         response = requests.get(video_url, stream=True, timeout=60)
         response.raise_for_status()
         for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
             if chunk:
+                _ensure_not_cancelled(analysis_id)
                 temp_video.write(chunk)
         temp_video.close()
         run_analysis_from_path(
@@ -269,9 +304,14 @@ def run_analysis_pipeline(
             athlete_context,
             previous_metrics,
         )
+    except AnalysisCancelledError:
+        print(f"[AI PIPELINE] Cancelled by user: {analysis_id}")
     except Exception as err:
         _send_update(analysis_id, "FAILED", 0, {"errorMessage": str(err)})
     finally:
+        with _active_lock:
+            _cancelled_analyses.discard(analysis_id)
+
         def _cleanup():
             time.sleep(120)
             if os.path.exists(temp_video.name):
@@ -295,6 +335,7 @@ def _start_analysis_background(
 
     def _run():
         try:
+            _ensure_not_cancelled(analysis_id)
             _send_update(
                 analysis_id,
                 "PROCESSING_POSE",
@@ -308,9 +349,12 @@ def _start_analysis_background(
                 athlete_context,
                 previous_metrics,
             )
+        except AnalysisCancelledError:
+            print(f"[AI PIPELINE] Cancelled by user: {analysis_id}")
         finally:
             with _active_lock:
                 _active_analyses.discard(analysis_id)
+                _cancelled_analyses.discard(analysis_id)
 
     threading.Thread(target=_run, daemon=True, name=f"analysis-{analysis_id}").start()
     return True
@@ -366,6 +410,17 @@ async def analyze_upload(
         "success": True,
         "status": "ACCEPTED" if started else "ALREADY_RUNNING",
         "analysisId": analysisId,
+    }
+
+
+@router.post("/analyze/cancel", dependencies=[Depends(check_internal_secret)])
+def cancel_analysis(payload: CancelAnalysisRequest):
+    _mark_cancelled(payload.analysisId)
+    print(f"[AI PIPELINE] Cancel requested for {payload.analysisId}")
+    return {
+        "success": True,
+        "status": "CANCELLED",
+        "analysisId": payload.analysisId,
     }
 
 

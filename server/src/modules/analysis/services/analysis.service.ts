@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FirebaseService } from '../../../firebase/firebase.service';
 import { AnalysisGateway } from '../gateways/analysis.gateway';
@@ -22,12 +23,13 @@ import {
 
 type PendingVideo = { buffer: Buffer; mimetype: string; expiresAt: number };
 
-const TERMINAL_ANALYSIS_STATUSES = new Set(['COMPLETED', 'FAILED']);
+const TERMINAL_ANALYSIS_STATUSES = new Set(['COMPLETED', 'FAILED', 'CANCELLED']);
 
 @Injectable()
 export class AnalysisService {
   private readonly logger = new Logger(AnalysisService.name);
   private readonly collectionName = 'analyses';
+  private readonly cancelledAnalyses = new Set<string>();
   private readonly athleteProfilesCollection = 'athlete_profiles';
   private readonly fastapiUrl = getFastApiUrl();
   private readonly internalApiSecret = process.env.INTERNAL_API_SECRET;
@@ -618,6 +620,80 @@ export class AnalysisService {
     });
   }
 
+  private async isAnalysisCancelled(analysisId: string): Promise<boolean> {
+    if (this.cancelledAnalyses.has(analysisId)) {
+      return true;
+    }
+    const doc = await this.firebaseService.firestore
+      .collection(this.collectionName)
+      .doc(analysisId)
+      .get();
+    return doc.data()?.status === 'CANCELLED';
+  }
+
+  private async requestAiEngineCancel(analysisId: string): Promise<void> {
+    const cancelUrl = `${getFastApiPublicUrl()}/api/analyze/cancel`;
+    try {
+      const response = await fetch(cancelUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.internalApiSecret}`,
+        },
+        body: JSON.stringify({ analysisId }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        this.logger.warn(
+          `AI engine cancel for ${analysisId} returned ${response.status}: ${errText}`,
+        );
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`AI engine cancel request failed for ${analysisId}: ${message}`);
+    }
+  }
+
+  async cancelAnalysis(analysisId: string, userId: string) {
+    const docRef = this.firebaseService.firestore
+      .collection(this.collectionName)
+      .doc(analysisId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      throw new NotFoundException('Analysis record not found.');
+    }
+
+    const data = doc.data() as { userId?: string; status?: string };
+    if (data.userId !== userId) {
+      throw new ForbiddenException('You can only cancel your own analyses.');
+    }
+
+    if (data.status && TERMINAL_ANALYSIS_STATUSES.has(data.status)) {
+      throw new BadRequestException(
+        `This analysis is already ${data.status.toLowerCase()}.`,
+      );
+    }
+
+    this.cancelledAnalyses.add(analysisId);
+    this.requestAiEngineCancel(analysisId).catch((err) => {
+      this.logger.warn(`Background AI cancel failed for ${analysisId}`, err);
+    });
+
+    await this.updateStatus(analysisId, 'CANCELLED', 0, {
+      errorMessage: 'Analysis cancelled.',
+      statusMessage: null,
+    });
+
+    this.logger.log(`Analysis ${analysisId} cancelled by user ${userId}`);
+    return {
+      success: true,
+      analysisId,
+      status: 'CANCELLED',
+    };
+  }
+
   async updateStatus(
     analysisId: string,
     status: string,
@@ -629,6 +705,13 @@ export class AnalysisService {
       .doc(analysisId);
     const existingDoc = await docRef.get();
     const existingStatus = existingDoc.data()?.status as string | undefined;
+
+    if (existingStatus === 'CANCELLED' && status !== 'CANCELLED') {
+      this.logger.warn(
+        `Ignoring update for cancelled analysis ${analysisId}: ${status}`,
+      );
+      return;
+    }
 
     const isRegression =
       existingStatus === 'COMPLETED' &&
@@ -1073,6 +1156,11 @@ export class AnalysisService {
     ];
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (await this.isAnalysisCancelled(analysisId)) {
+        this.logger.log(`Wake aborted — analysis ${analysisId} was cancelled`);
+        return false;
+      }
+
       if (attempt > 0) {
         await this.updateStatus(
           analysisId,
@@ -1128,6 +1216,9 @@ export class AnalysisService {
 
     const awake = await this.wakeAiEngine(analysisId);
     if (!awake) {
+      if (await this.isAnalysisCancelled(analysisId)) {
+        return;
+      }
       await this.updateStatus(analysisId, 'FAILED', 0, {
         errorMessage:
           'Could not connect to the analysis engine. Please try again in a moment.',
@@ -1140,6 +1231,11 @@ export class AnalysisService {
     const maxTriggerAttempts = 3;
 
     for (let attempt = 0; attempt < maxTriggerAttempts; attempt++) {
+      if (await this.isAnalysisCancelled(analysisId)) {
+        this.logger.log(`Trigger aborted — analysis ${analysisId} was cancelled`);
+        return;
+      }
+
       if (attempt > 0) {
         await new Promise((resolve) => setTimeout(resolve, 3000 * attempt));
       }

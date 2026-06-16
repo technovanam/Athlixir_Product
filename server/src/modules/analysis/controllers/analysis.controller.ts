@@ -172,6 +172,13 @@ export class AnalysisController {
     );
   }
 
+  @Post(':id/cancel')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiOperation({ summary: 'Cancel an in-progress running video analysis' })
+  async cancelAnalysis(@Param('id') analysisId: string, @CurrentUser() user: any) {
+    return this.analysisService.cancelAnalysis(analysisId, user.uid);
+  }
+
   @Get(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiOperation({

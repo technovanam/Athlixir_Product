@@ -20,6 +20,7 @@ import {
   ExternalLink,
   BookOpen,
   ChevronRight,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -83,7 +84,7 @@ type AnalysisRecord = {
   statusMessage?: string;
 };
 
-const TERMINAL_STATUSES = new Set(['COMPLETED', 'FAILED']);
+const TERMINAL_STATUSES = new Set(['COMPLETED', 'FAILED', 'CANCELLED']);
 
 function isActiveStatus(status?: string): boolean {
   return Boolean(status && !TERMINAL_STATUSES.has(status));
@@ -136,6 +137,7 @@ export default function BiomechanicsPanel({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadStatusMessage, setUploadStatusMessage] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [socketStatus, setSocketStatus] = useState<string | null>(null);
@@ -333,7 +335,11 @@ export default function BiomechanicsPanel({
               return updatedList;
             });
 
-            if (data.status === 'COMPLETED' || data.status === 'FAILED') {
+            if (
+              data.status === 'COMPLETED' ||
+              data.status === 'FAILED' ||
+              data.status === 'CANCELLED'
+            ) {
               fetchAnalyses();
             }
           }
@@ -450,7 +456,62 @@ export default function BiomechanicsPanel({
             'Analysis failed. Use stable side-view sprint footage at 60+ FPS.',
         );
       }
+
+      if (payload.status === 'CANCELLED') {
+        setErrorMsg(null);
+        socketRef.current?.disconnect();
+      }
     });
+  };
+
+  const handleCancelAnalysis = async () => {
+    if (!analysisId || cancelling) return;
+
+    setCancelling(true);
+    setErrorMsg(null);
+
+    try {
+      await api.post(`/analysis/${analysisId}/cancel`);
+      socketRef.current?.disconnect();
+      setSocketStatus(null);
+      setSocketProgress(0);
+      setCurrentAnalysis((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: 'CANCELLED',
+              progress: 0,
+              errorMessage: 'Analysis cancelled.',
+              statusMessage: null,
+            }
+          : prev,
+      );
+      setAnalysesList((prevList) =>
+        prevList.map((item) => {
+          const id = item.analysisId || item.id || '';
+          if (id !== analysisId) return item;
+          return {
+            ...item,
+            status: 'CANCELLED',
+            progress: 0,
+            errorMessage: 'Analysis cancelled.',
+          };
+        }),
+      );
+      await fetchAnalyses();
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string | string[] } } })
+              .response?.data?.message
+          : null;
+      setErrorMsg(
+        (Array.isArray(message) ? message[0] : message) ||
+          'Could not cancel analysis. Please try again.',
+      );
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -614,6 +675,15 @@ export default function BiomechanicsPanel({
                   {activeAnalysisId ? ` (${activeAnalysisId.slice(0, 8)}…)` : ''}.
                   Wait until it completes before uploading another clip.
                 </p>
+                <button
+                  type="button"
+                  onClick={handleCancelAnalysis}
+                  disabled={cancelling}
+                  className="mt-3 w-full rounded-lg border border-zinc-600 bg-zinc-900/80 py-2 text-[10px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 disabled:opacity-50 transition flex items-center justify-center gap-1.5"
+                >
+                  <X className="h-3 w-3" />
+                  {cancelling ? 'Cancelling…' : 'Cancel analysis'}
+                </button>
               </div>
             ) : null}
             {selectedFile ? (
@@ -671,7 +741,7 @@ export default function BiomechanicsPanel({
                         localPreviewForId.current = null;
                         setCurrentAnalysis(item);
                         fetchSingleAnalysis(id);
-                        if (item.status && !['COMPLETED', 'FAILED'].includes(item.status)) {
+                        if (item.status && isActiveStatus(item.status)) {
                            startSocketConnection(id);
                         }
                       }}
@@ -689,6 +759,8 @@ export default function BiomechanicsPanel({
                               ? 'bg-emerald-500/10 text-emerald-400'
                               : item.status === 'FAILED'
                                 ? 'bg-red-500/10 text-red-400'
+                                : item.status === 'CANCELLED'
+                                  ? 'bg-zinc-500/10 text-zinc-400'
                                 : 'bg-yellow-500/10 text-yellow-400'
                           }`}
                         >
@@ -747,6 +819,15 @@ export default function BiomechanicsPanel({
                       ? 'Waiting for the analysis engine to start processing'
                       : 'Metrics in ~5s · skeleton overlay follows'}
                 </p>
+                <button
+                  type="button"
+                  onClick={handleCancelAnalysis}
+                  disabled={cancelling}
+                  className="mx-auto mt-2 rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-2 text-[10px] font-bold text-zinc-300 hover:text-white hover:border-zinc-500 disabled:opacity-50 transition inline-flex items-center gap-1.5"
+                >
+                  <X className="h-3 w-3" />
+                  {cancelling ? 'Cancelling…' : 'Cancel analysis'}
+                </button>
               </div>
               {originalBlobUrl && (
                 <div className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-4">
@@ -758,6 +839,14 @@ export default function BiomechanicsPanel({
                   />
                 </div>
               )}
+            </div>
+          ) : currentAnalysis.status === 'CANCELLED' ? (
+            <div className="rounded-2xl border border-zinc-700 bg-zinc-950/30 p-8 text-center space-y-4">
+              <X className="h-8 w-8 text-zinc-400 mx-auto" />
+              <p className="text-sm text-zinc-300">Analysis cancelled</p>
+              <p className="text-xs text-zinc-500">
+                You can upload a new running video when ready.
+              </p>
             </div>
           ) : currentAnalysis.status === 'FAILED' ? (
             <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-8 text-center">
