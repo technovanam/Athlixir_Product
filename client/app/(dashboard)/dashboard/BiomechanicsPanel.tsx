@@ -482,7 +482,7 @@ export default function BiomechanicsPanel({
               status: 'CANCELLED',
               progress: 0,
               errorMessage: 'Analysis cancelled.',
-              statusMessage: null,
+              statusMessage: undefined,
             }
           : prev,
       );
