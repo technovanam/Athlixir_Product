@@ -30,10 +30,18 @@ class AnalysisRequest(BaseModel):
     athleteContext: Optional[AthleteContext] = None
     previousMetrics: Optional[dict[str, Any]] = None
 
-NESTJS_CALLBACK_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/callback"
-NESTJS_OVERLAY_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/overlay"
-NESTJS_REPORT_URL = f"{os.environ.get('BACKEND_URL', 'http://127.0.0.1:3001')}/api/analysis/report"
-AI_ENGINE_URL = os.environ.get('AI_ENGINE_URL', 'http://127.0.0.1:8000')
+_IS_RENDER = os.environ.get('RENDER') == 'true'
+_DEFAULT_BACKEND_URL = (
+    'https://backend-n0z5.onrender.com' if _IS_RENDER else 'http://127.0.0.1:3001'
+)
+_DEFAULT_AI_ENGINE_URL = (
+    'https://ai-engine-4dn5.onrender.com' if _IS_RENDER else 'http://127.0.0.1:8000'
+)
+
+NESTJS_CALLBACK_URL = f"{os.environ.get('BACKEND_URL', _DEFAULT_BACKEND_URL)}/api/analysis/callback"
+NESTJS_OVERLAY_URL = f"{os.environ.get('BACKEND_URL', _DEFAULT_BACKEND_URL)}/api/analysis/overlay"
+NESTJS_REPORT_URL = f"{os.environ.get('BACKEND_URL', _DEFAULT_BACKEND_URL)}/api/analysis/report"
+AI_ENGINE_URL = os.environ.get('AI_ENGINE_URL', _DEFAULT_AI_ENGINE_URL)
 
 
 def _send_update(analysis_id: str, status: str, progress: int, payload: dict = None):

@@ -16,3 +16,9 @@ services:
         value: redis-server-host
       - key: REDIS_PORT
         value: 6379
+      - key: AI_ENGINE_URL
+        value: https://ai-engine-4dn5.onrender.com
+      - key: BACKEND_URL
+        value: https://backend-n0z5.onrender.com
+      - key: CORS_ORIGINS
+        value: https://athlixir-product.vercel.app,https://athlixir.vercel.app,https://www.athlixirsports.com,https://athlixirsports.com,https://www.athlixirsports.in,https://athlixirsports.in

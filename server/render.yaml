@@ -10,11 +10,11 @@ services:
       - key: PORT
         value: 3001
       - key: FASTAPI_URL
-        value: https://athlixir-ai-engine.onrender.com/api/analyze
+        value: https://ai-engine-4dn5.onrender.com/api/analyze
       - key: FASTAPI_INTEL_URL
-        value: https://athlixir-ai-engine.onrender.com/api/analyze/intelligence
+        value: https://ai-engine-4dn5.onrender.com/api/analyze/intelligence
       - key: FASTAPI_PUBLIC_URL
-        value: https://athlixir-ai-engine.onrender.com
+        value: https://ai-engine-4dn5.onrender.com
       - key: REDIS_HOST
         value: redis-server-host
       - key: REDIS_PORT
@@ -35,3 +35,5 @@ services:
         sync: false
       - key: INTERNAL_API_SECRET
         sync: false
+      - key: FRONTEND_URL
+        value: https://athlixir-product.vercel.app,https://athlixir.vercel.app,https://www.athlixirsports.com,https://athlixirsports.com,https://www.athlixirsports.in,https://athlixirsports.in

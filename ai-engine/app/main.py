@@ -4,19 +4,47 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.api.analyze import router as analyze_router
 
+PRODUCTION_BACKEND_URL = "https://backend-n0z5.onrender.com"
+PRODUCTION_AI_ENGINE_URL = "https://ai-engine-4dn5.onrender.com"
+VERCEL_ORIGIN_PATTERN = r"^https://[\w-]+\.vercel\.app$"
+
+PRODUCTION_FRONTEND_ORIGINS = {
+    "https://athlixir-product.vercel.app",
+    "https://athlixir.vercel.app",
+    "https://www.athlixirsports.com",
+    "https://athlixirsports.com",
+    "https://www.athlixirsports.in",
+    "https://athlixirsports.in",
+}
+
+def _allowed_origins() -> list[str]:
+    origins = {
+        "http://localhost:3000",
+        "http://localhost:3001",
+        PRODUCTION_BACKEND_URL,
+        PRODUCTION_AI_ENGINE_URL,
+        *PRODUCTION_FRONTEND_ORIGINS,
+    }
+
+    extra = os.environ.get("CORS_ORIGINS", "")
+    for origin in extra.split(","):
+        origin = origin.strip()
+        if origin:
+            origins.add(origin)
+
+    return sorted(origins)
+
 app = FastAPI(
     title="ATHLIXIR Biomechanics AI Engine",
     description="Proprietary athlete biomechanics intelligence platform",
     version="1.0.0"
 )
 
-# Configure CORS for communication with local server and client
+# Configure CORS for communication with server, client, and Vercel deployments
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001"
-    ],
+    allow_origin_regex=VERCEL_ORIGIN_PATTERN,
+    allow_origins=_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../context/AuthContext';
+import { getApiBaseUrl } from '../../config/service-urls';
 import { io, Socket } from 'socket.io-client';
 import {
   UploadCloud,
@@ -317,7 +318,7 @@ export default function BiomechanicsPanel({
     setSocketStatus('PROCESSING_POSE');
     setSocketProgress(10);
 
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001');
+    const socket = io(getApiBaseUrl());
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -858,7 +859,7 @@ export default function BiomechanicsPanel({
               <div className="flex flex-wrap gap-3">
                 {currentAnalysis.reportReady && analysisId && (
                   <a
-                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/analysis/${analysisId}/report`}
+                    href={`${getApiBaseUrl()}/api/analysis/${analysisId}/report`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-xl bg-[#FF4F21] px-4 py-2.5 text-xs font-bold text-white hover:brightness-110 transition shadow-lg shadow-[#FF4F21]/20"

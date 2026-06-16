@@ -13,6 +13,10 @@ import { tmpdir } from 'os';
 import { Readable } from 'stream';
 import * as crypto from 'crypto';
 import { QueueService } from './queue.service';
+import {
+  getFastApiIntelUrl,
+  getFastApiUrl,
+} from '../../../core/config/service-urls.config';
 
 type PendingVideo = { buffer: Buffer; mimetype: string; expiresAt: number };
 
@@ -21,8 +25,7 @@ export class AnalysisService {
   private readonly logger = new Logger(AnalysisService.name);
   private readonly collectionName = 'analyses';
   private readonly athleteProfilesCollection = 'athlete_profiles';
-  private readonly fastapiUrl =
-    process.env.FASTAPI_URL || 'http://127.0.0.1:8000/api/analyze';
+  private readonly fastapiUrl = getFastApiUrl();
   private readonly internalApiSecret = process.env.INTERNAL_API_SECRET;
   private readonly localVideoDir = join(tmpdir(), 'athlixir-videos');
   private readonly pendingVideos = new Map<string, PendingVideo>();
@@ -441,9 +444,7 @@ export class AnalysisService {
     }
     const latestAnalysisId = completed[completed.length - 1].id;
     try {
-      const fastapiIntelUrl =
-        process.env.FASTAPI_INTEL_URL ||
-        'http://127.0.0.1:8000/api/analyze/intelligence';
+      const fastapiIntelUrl = getFastApiIntelUrl();
       const response = await fetch(fastapiIntelUrl, {
         method: 'POST',
         headers: {

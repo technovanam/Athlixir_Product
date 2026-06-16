@@ -7,11 +7,10 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { corsOptions } from '../../../core/config/cors.config';
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
+  cors: corsOptions,
 })
 export class AnalysisGateway {
   @WebSocketServer()

@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ResponseInterceptor } from './core/interceptors/response.interceptor';
 import { AllExceptionsFilter } from './core/filters/all-exceptions.filter';
+import { corsOptions } from './core/config/cors.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -60,16 +61,8 @@ async function bootstrap() {
     }),
   );
 
-  // Parse multiple origins from FRONTEND_URL if provided
-  const allowedOrigins = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
-    : ['http://localhost:3000'];
-
-  // CORS
-  app.enableCors({
-    origin: allowedOrigins,
-    credentials: true,
-  });
+  // CORS — FRONTEND_URL plus all Vercel *.vercel.app deployment URLs
+  app.enableCors(corsOptions);
 
   // Global Prefix
   app.setGlobalPrefix('api');
