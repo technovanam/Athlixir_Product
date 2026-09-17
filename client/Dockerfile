@@ -2,36 +2,34 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install build dependencies
 RUN apk add --no-cache libc6-compat
 
 # Copy dependency configuration files
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
-# Copy source files and build
+# Copy source files
 COPY . .
+
+# Build-time argument for API URL (required by Next.js static optimizations)
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 RUN pnpm build
 
-# Stage 2: Production runner
+# Stage 2: Minimal Standalone Production Runner (~150MB)
 FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-RUN npm install -g pnpm
-
-# Copy package and lockfiles for installation
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile
-
-# Copy static assets and built application files from builder
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/next.config.ts ./next.config.ts
-
-EXPOSE 3000
-
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["pnpm", "start"]
+# Copy standalone server and static assets only (zero unneeded node_modules or build tools)
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

@@ -1,0 +1,118 @@
+name: Athlixir CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # ----------------------------------------------------
+  # 1. CI Validation (Test & Build Check)
+  # ----------------------------------------------------
+  ci-test:
+    name: Automated Tests & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install & Validate Backend
+        working-directory: ./server
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Install & Validate Frontend
+        working-directory: ./client
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+  # ----------------------------------------------------
+  # 2. Build and Push Multi-Container Images to Docker Hub
+  # ----------------------------------------------------
+  build-and-push:
+    name: Build & Push to Docker Hub
+    needs: ci-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build & Push Backend NestJS Image
+      - name: Build & Push athlixir-server
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/athlixir-server:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build & Push Frontend Next.js Image
+      - name: Build & Push athlixir-client
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/athlixir-client:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build & Push AI Engine FastAPI Image
+      - name: Build & Push athlixir-ai-engine
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai-engine
+          file: ./ai-engine/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/athlixir-ai-engine:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ----------------------------------------------------
+  # 3. SSH Deployment to AWS EC2 Instance
+  # ----------------------------------------------------
+  deploy:
+    name: Automated Deploy to EC2
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Run Deployment Script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            if [ -f /home/ubuntu/deploy.sh ]; then
+              bash /home/ubuntu/deploy.sh
+            else
+              cd /home/ubuntu
+              docker compose -f docker-compose.prod.yml pull
+              docker compose -f docker-compose.prod.yml up -d --remove-orphans
+              docker compose -f docker-compose.prod.yml restart nginx
+              docker image prune -f
+            fi

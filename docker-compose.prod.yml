@@ -26,9 +26,6 @@ services:
 
   ai-engine:
     image: ${DOCKER_USERNAME:-bavithran777}/athlixir-ai-engine:${IMAGE_TAG:-latest}
-    build:
-      context: ./ai-engine
-      dockerfile: Dockerfile
     container_name: athlixir-ai-engine
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
@@ -49,9 +46,6 @@ services:
 
   server:
     image: ${DOCKER_USERNAME:-bavithran777}/athlixir-server:${IMAGE_TAG:-latest}
-    build:
-      context: ./server
-      dockerfile: Dockerfile
     container_name: athlixir-server
     ports:
       - '3001:3001'
@@ -80,11 +74,6 @@ services:
 
   client:
     image: ${DOCKER_USERNAME:-bavithran777}/athlixir-client:${IMAGE_TAG:-latest}
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
     container_name: athlixir-client
     ports:
       - "3000:3000"

@@ -10,20 +10,20 @@ RUN npm install -g pnpm && pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm build
 
-# Stage 2: Production runner
+# Prune devDependencies in place (takes 1 second, zero duplicate download)
+RUN pnpm prune --prod
+
+# Stage 2: Clean, minimal production runner
 FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-RUN npm install -g pnpm
 
-# Copy package and lockfiles for installation
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile
-
-# Copy built application from builder
+# Copy only production node_modules and built dist
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3001
 
-CMD ["pnpm", "start:prod"]
+CMD ["node", "dist/main"]
