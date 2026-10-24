@@ -29,17 +29,35 @@ export class OnboardingService {
       .collection(this.athleteProfilesCollection)
       .doc(uid);
     const doc = await profileRef.get();
+    let data = doc.exists ? (doc.data() || {}) : {};
+    
+    if (!data.full_name || !data.email) {
+      try {
+        const userDoc = await this.firebaseService.firestore
+          .collection(this.usersCollection)
+          .doc(uid)
+          .get();
+        if (userDoc.exists) {
+          const uData = userDoc.data() || {};
+          data = {
+            full_name: uData.name || uData.username || '',
+            email: uData.email || '',
+            ...data,
+          };
+        }
+      } catch (err) {
+        // Fallback gracefully
+      }
+    }
 
     if (!doc.exists) {
       return {
         currentStep: 'basic-info',
         percentComplete: 0,
-        data: {},
+        data,
         onboardingCompleted: false,
       };
     }
-
-    const data = doc.data() || {};
     let currentStep = 'basic-info';
     let percentComplete = 0;
 

@@ -281,7 +281,9 @@ export class AiInsightsService {
         .collection(this.collectionName)
         .doc(analysisId)
         .get();
-      if (!analysisDoc.exists) {
+      if (!analysisDoc.exists || (analysisDoc.data() as any)?.userId !== userId) {
+        // Same message for "not found" and "not yours" — avoids confirming
+        // that a foreign analysis ID exists.
         return "I couldn't locate that specific sprint analysis record. Let's start with a new video scan!";
       }
       const latestAnalysis = analysisDoc.data() as any;

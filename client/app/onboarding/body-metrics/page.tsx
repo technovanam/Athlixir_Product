@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
 import { getOnboardingProfile } from '../../utils/api';
-import { Ruler, Loader2, ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export default function BodyMetricsStep() {
   const router = useRouter();
@@ -15,7 +15,6 @@ export default function BodyMetricsStep() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load existing body metrics if any
   useEffect(() => {
     async function loadSavedData() {
       try {
@@ -49,107 +48,188 @@ export default function BodyMetricsStep() {
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-8 animate-fadeIn relative">
-      <div>
-        <h2 className="text-xl md:text-2xl font-black tracking-wider text-white flex items-center gap-2 uppercase crt-glow-white">
-          <Ruler className="h-6 w-6 text-[#FF4F21]" />
-          <span>Step 3: Body Metrics</span>
-        </h2>
-        <p className="text-zinc-500 text-xs mt-1 font-medium">
-          Used to calculate stride analysis, power output scaling, and biomechanical normalization profiles.
+    <div className="w-full flex flex-col justify-center">
+      {/* Title & Subtitle */}
+      <div className="text-center select-none mb-6">
+        <h1
+          style={{
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 600,
+            fontSize: '24px',
+            lineHeight: '28px',
+            letterSpacing: '0.01em',
+            color: '#FF4F21',
+          }}
+        >
+          Body Metrics
+        </h1>
+        <p
+          style={{
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '20px',
+            color: '#6E6D6D',
+            marginTop: '4px',
+          }}
+        >
+          Used for stride normalization and joint kinematic angles.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 animate-fadeIn">
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-          <div>
-            <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0 mr-2">FAIL</span>
-            {error}
-          </div>
+        <div className="mb-4 rounded-2xl border border-red-100 bg-red-50/90 p-3 text-xs text-red-600 font-medium flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+          <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* Height slider */}
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-5">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Height Metric</span>
-              <span className="text-xl font-black text-white tracking-wide">
-                {heightCm} <span className="text-xs text-zinc-500 uppercase tracking-widest font-black">cm</span>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        
+        {/* Height Card */}
+        <div
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #EBEBEB',
+            boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.12)',
+            borderRadius: '26px',
+            padding: '20px 24px',
+          }}
+          className="space-y-4"
+        >
+          <div className="flex justify-between items-center">
+            <span
+              style={{
+                fontFamily: "'Mazzard', sans-serif",
+                fontWeight: 600,
+                fontSize: '14px',
+                color: '#6E6D6D',
+              }}
+            >
+              Height
+            </span>
+            <span
+              style={{
+                fontFamily: "'Mazzard', sans-serif",
+                fontWeight: 700,
+                fontSize: '22px',
+                color: '#FF4F21',
+              }}
+            >
+              {heightCm}{' '}
+              <span style={{ fontSize: '13px', fontWeight: 500, color: '#8C8C8C' }}>
+                cm
               </span>
-            </div>
-            <input
-              type="range"
-              min="100"
-              max="250"
-              value={heightCm}
-              onChange={(e) => setHeightCm(Number(e.target.value))}
-              className="w-full h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
-            />
-            <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
-              <span>100 cm</span>
-              <span className="text-[#FF4F21]/70">175 cm</span>
-              <span>250 cm</span>
-            </div>
+            </span>
           </div>
-
-          {/* Weight slider */}
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-5">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Weight Mass</span>
-              <span className="text-xl font-black text-white tracking-wide">
-                {weightKg} <span className="text-xs text-zinc-500 uppercase tracking-widest font-black">kg</span>
-              </span>
-            </div>
-            <input
-              type="range"
-              min="30"
-              max="200"
-              value={weightKg}
-              onChange={(e) => setWeightKg(Number(e.target.value))}
-              className="w-full h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
-            />
-            <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
-              <span>30 kg</span>
-              <span className="text-[#FF4F21]/70">115 kg</span>
-              <span>200 kg</span>
-            </div>
+          <input
+            type="range"
+            min="100"
+            max="250"
+            value={heightCm}
+            onChange={(e) => setHeightCm(Number(e.target.value))}
+            className="w-full h-2 bg-[#EBEBEB] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
+          />
+          <div
+            className="flex justify-between"
+            style={{
+              fontFamily: "'Mazzard', sans-serif",
+              fontSize: '11px',
+              fontWeight: 500,
+              color: '#8C8C8C',
+            }}
+          >
+            <span>100 cm</span>
+            <span>250 cm</span>
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex justify-between items-center pt-6 border-t border-white/[0.05]">
-          <button
-            type="button"
-            onClick={() => router.replace('/onboarding/classification')}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white transition duration-200 cursor-pointer"
+        {/* Weight Card */}
+        <div
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #EBEBEB',
+            boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.12)',
+            borderRadius: '26px',
+            padding: '20px 24px',
+          }}
+          className="space-y-4"
+        >
+          <div className="flex justify-between items-center">
+            <span
+              style={{
+                fontFamily: "'Mazzard', sans-serif",
+                fontWeight: 600,
+                fontSize: '14px',
+                color: '#6E6D6D',
+              }}
+            >
+              Weight
+            </span>
+            <span
+              style={{
+                fontFamily: "'Mazzard', sans-serif",
+                fontWeight: 700,
+                fontSize: '22px',
+                color: '#FF4F21',
+              }}
+            >
+              {weightKg}{' '}
+              <span style={{ fontSize: '13px', fontWeight: 500, color: '#8C8C8C' }}>
+                kg
+              </span>
+            </span>
+          </div>
+          <input
+            type="range"
+            min="30"
+            max="200"
+            value={weightKg}
+            onChange={(e) => setWeightKg(Number(e.target.value))}
+            className="w-full h-2 bg-[#EBEBEB] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
+          />
+          <div
+            className="flex justify-between"
+            style={{
+              fontFamily: "'Mazzard', sans-serif",
+              fontSize: '11px',
+              fontWeight: 500,
+              color: '#8C8C8C',
+            }}
           >
-            <ArrowLeft className="h-4 w-4 text-[#FF4F21]" />
-            <span>Back</span>
-          </button>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] hover:brightness-110 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#FF4F21]/20 active:scale-98 transition duration-200 cursor-pointer disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <span>Save & Continue</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
+            <span>30 kg</span>
+            <span>200 kg</span>
+          </div>
         </div>
+
+        {/* Submit Action */}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            height: '56px',
+            backgroundColor: '#FF4F21',
+            border: '1px solid #DDDDDD',
+            boxShadow: 'inset 0px 1px 4px rgba(255, 255, 255, 0.05)',
+            borderRadius: '26px',
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 600,
+            fontSize: '16px',
+            lineHeight: '24px',
+            color: '#FCFCFC',
+            marginTop: '20px',
+          }}
+          className="flex items-center justify-center active:scale-[0.98] transition-transform cursor-pointer disabled:opacity-50"
+        >
+          {loading ? 'Saving...' : 'Continue'}
+        </button>
       </form>
     </div>
   );
 }
-

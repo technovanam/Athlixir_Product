@@ -14,33 +14,45 @@ def generate_biomechanics_recommendations(
     recommendations: list[str] = []
     insights = insights or {}
 
-    asymmetry = float(metrics.get("asymmetryIndex") or 0)
-    gct = int(metrics.get("gct") or 0)
-    oscillation = float(metrics.get("oscillation") or 0)
-    overstride = float(metrics.get("overstrideAngle") or 0)
-    cadence = float(metrics.get("cadence") or 0)
+    def _num(key: str) -> float | None:
+        value = metrics.get(key)
+        try:
+            return None if value is None else float(value)
+        except (TypeError, ValueError):
+            return None
 
-    if asymmetry > 4.0:
+    # Unmeasured metrics (None) never trigger a drill.
+    asymmetry = _num("asymmetryIndex")
+    gct = _num("gct")
+    oscillation = _num("oscillation")
+    overstride = _num("overstrideAngle")
+    cadence = _num("cadence")
+
+    if asymmetry is not None and asymmetry > 4.0:
         recommendations.append(
             "Single-leg bounds, clamshells, and lateral band walks to reduce asymmetry."
         )
-    if gct > 220:
+    if gct is not None and gct > 220:
         recommendations.append(
             "Ankle hops, jump rope, and wicket runs to shorten ground contact time."
         )
-    if overstride > 6.0:
+    if overstride is not None and overstride > 6.0:
         recommendations.append(
             "Wall drills, A-skips, and hamstring mobility to correct overstriding."
         )
-    if oscillation > 9.0:
+    if oscillation is not None and oscillation > 9.0:
         recommendations.append(
             "Cadence drills and forward-lean posture work to reduce vertical bounce."
         )
-    if cadence < 170:
+    if cadence is not None and cadence < 170:
         recommendations.append(
             "Metronome cadence runs at 175–180 SPM to improve turnover rate."
         )
-    if cadence >= 170 and gct <= 220 and asymmetry <= 4:
+    if (
+        cadence is not None and cadence >= 170
+        and gct is not None and gct <= 220
+        and asymmetry is not None and asymmetry <= 4
+    ):
         recommendations.append(
             "Maintain current mechanics with periodic sprint-stride video checks."
         )

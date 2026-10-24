@@ -7,4 +7,3 @@ protobuf==4.25.3
 scipy>=1.13.0
 gunicorn>=22.0.0
 requests>=2.32.0
-redis>=5.0.0

@@ -4,15 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
 import { getOnboardingProfile } from '../../utils/api';
-import { Target, Loader2, ArrowLeft, ArrowRight, AlertCircle, Check } from 'lucide-react';
+import { AlertCircle, Check } from 'lucide-react';
 
 const GOALS_LIST = [
-  { id: 'Improve Speed', title: 'Improve Speed', desc: 'Lower your personal best sprint timings & pacing threshold' },
-  { id: 'Improve Running Form', title: 'Improve Running Form', desc: 'Optimize biomechanical posture, stride rate, & step geometry' },
-  { id: 'Injury Prevention', title: 'Injury Prevention', desc: 'Detect stress load limits and prevent active muscular strains' },
-  { id: 'Increase Endurance', title: 'Increase Endurance', desc: 'Extend high-intensity aerobic thresholds and run longer' },
-  { id: 'Improve Sprint Mechanics', title: 'Improve Sprint Mechanics', desc: 'Perfect block starts, ground contact time, & knee drive power' },
-  { id: 'Improve Consistency', title: 'Improve Consistency', desc: 'Form sustainable weekly habit loops and track progress reports' },
+  { id: 'Improve Speed', title: 'Improve Speed', desc: 'Lower sprint times and break through velocity plateaus' },
+  { id: 'Improve Running Form', title: 'Improve Running Form', desc: 'Refine posture, stride geometry, & angular mechanics' },
+  { id: 'Injury Prevention', title: 'Injury Prevention', desc: 'Identify asymmetrical strain and mitigate hamstring/knee risks' },
+  { id: 'Improve Sprint Mechanics', title: 'Improve Sprint Mechanics', desc: 'Enhance block departure, ground contact & flight ratios' },
 ];
 
 export default function GoalsStep() {
@@ -22,7 +20,6 @@ export default function GoalsStep() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load existing goals if any
   useEffect(() => {
     async function loadSavedData() {
       try {
@@ -49,7 +46,7 @@ export default function GoalsStep() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedGoals.length === 0) {
-      setError('Please select at least one primary athletic target goal.');
+      setError('Please select at least one primary athletic goal.');
       return;
     }
 
@@ -69,85 +66,121 @@ export default function GoalsStep() {
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-8 animate-fadeIn relative">
-      <div>
-        <h2 className="text-xl md:text-2xl font-black tracking-wider text-white flex items-center gap-2 uppercase crt-glow-white">
-          <Target className="h-6 w-6 text-[#FF4F21]" />
-          <span>Step 5: Primary Athlete Goals</span>
-        </h2>
-        <p className="text-zinc-500 text-xs mt-1 font-medium">
-          Select all training targets you wish to prioritize. These options personalize your recommendations feed.
+    <div className="w-full flex flex-col justify-center">
+      {/* Title & Subtitle */}
+      <div className="text-center select-none mb-5">
+        <h1
+          style={{
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 600,
+            fontSize: '24px',
+            lineHeight: '28px',
+            letterSpacing: '0.01em',
+            color: '#FF4F21',
+          }}
+        >
+          Primary Goals
+        </h1>
+        <p
+          style={{
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '20px',
+            color: '#6E6D6D',
+            marginTop: '4px',
+          }}
+        >
+          Choose your target milestones to personalize AI analytics.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 animate-fadeIn">
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-          <div>
-            <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0 mr-2">FAIL</span>
-            {error}
-          </div>
+        <div className="mb-4 rounded-2xl border border-red-100 bg-red-50/90 p-3 text-xs text-red-600 font-medium flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+          <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {GOALS_LIST.map((goal) => {
-            const isSelected = selectedGoals.includes(goal.id);
-            return (
-              <button
-                key={goal.id}
-                type="button"
-                onClick={() => toggleGoal(goal.id)}
-                className={`flex flex-col items-start p-5 rounded-2xl border text-left transition duration-300 outline-none cursor-pointer relative overflow-hidden group ${
-                  isSelected
-                    ? 'border-[#FF4F21] bg-[#FF4F21]/5 shadow-[0_0_15px_rgba(255,79,33,0.15)] ring-1 ring-[#FF4F21]/30'
-                    : 'border-white/[0.05] hover:border-[#FF4F21]/20 bg-black/40 hover:bg-[#08080C]/60'
-                }`}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {GOALS_LIST.map((goal) => {
+          const isSelected = selectedGoals.includes(goal.id);
+          return (
+            <button
+              key={goal.id}
+              type="button"
+              onClick={() => toggleGoal(goal.id)}
+              style={{
+                boxSizing: 'border-box',
+                width: '100%',
+                padding: '14px 18px',
+                borderRadius: '20px',
+                backgroundColor: isSelected ? '#FFF8F5' : '#FFFFFF',
+                border: isSelected ? '1.5px solid #FF4F21' : '1px solid #EBEBEB',
+                boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.08)',
+              }}
+              className="flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer"
+            >
+              <div>
+                <div
+                  style={{
+                    fontFamily: "'Mazzard', sans-serif",
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    color: isSelected ? '#FF4F21' : '#1D1B20',
+                  }}
+                >
+                  {goal.title}
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'Mazzard', sans-serif",
+                    fontSize: '12px',
+                    color: '#6E6D6D',
+                    marginTop: '2px',
+                  }}
+                >
+                  {goal.desc}
+                </div>
+              </div>
+              <div
+                className="rounded-full flex items-center justify-center shrink-0 ml-3"
+                style={{
+                  width: '22px',
+                  height: '22px',
+                  backgroundColor: isSelected ? '#FF4F21' : '#EBEBEB',
+                }}
               >
-                {isSelected && (
-                  <span className="absolute top-4 right-4 h-5 w-5 rounded-full bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] flex items-center justify-center text-white shadow-md shadow-[#FF4F21]/30">
-                    <Check className="h-3 w-3" />
-                  </span>
-                )}
-                <span className="font-black text-xs text-white pr-6 uppercase tracking-wide">{goal.title}</span>
-                <span className="text-[10px] text-zinc-550 mt-2 font-medium leading-relaxed">{goal.desc}</span>
-              </button>
-            );
-          })}
-        </div>
+                {isSelected && <Check size={13} color="#FFFFFF" strokeWidth={3} />}
+              </div>
+            </button>
+          );
+        })}
 
-        {/* Buttons */}
-        <div className="flex justify-between items-center pt-6 border-t border-white/[0.05]">
-          <button
-            type="button"
-            onClick={() => router.replace('/onboarding/training-profile')}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white transition duration-200 cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4 text-[#FF4F21]" />
-            <span>Back</span>
-          </button>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] hover:brightness-110 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#FF4F21]/20 active:scale-98 transition duration-200 cursor-pointer disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <span>Save & Continue</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </div>
+        {/* Submit Action */}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            height: '56px',
+            backgroundColor: '#FF4F21',
+            border: '1px solid #DDDDDD',
+            boxShadow: 'inset 0px 1px 4px rgba(255, 255, 255, 0.05)',
+            borderRadius: '26px',
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 600,
+            fontSize: '16px',
+            lineHeight: '24px',
+            color: '#FCFCFC',
+            marginTop: '20px',
+          }}
+          className="flex items-center justify-center active:scale-[0.98] transition-transform cursor-pointer disabled:opacity-50"
+        >
+          {loading ? 'Saving...' : 'Continue'}
+        </button>
       </form>
     </div>
   );
 }
-

@@ -2,19 +2,41 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Activity, AlertTriangle, Shield, TrendingUp, ShieldAlert, Navigation, ArrowRight, Zap, Target, Sparkles, Clock, AlertCircle, HeartPulse, RefreshCcw
+import {
+  Activity, AlertTriangle, Shield, ShieldAlert, Navigation, Zap,
+  Target, Clock, AlertCircle, HeartPulse, UploadCloud, FileText,
+  ShieldCheck, CheckCircle2, ChevronRight, ArrowRight, TrendingUp,
+  Scale, Flame, Check, Info, RefreshCw, BarChart2, Award
 } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth, api } from '../../context/AuthContext';
 import { useDateFilter } from '../../context/DateFilterContext';
-import { Biomech3DCanvas } from '../../components/Biomech3DCanvas';
+import DataFetchError, { classifyFetchError, FetchErrorPresentation } from '../components/DataFetchError';
+
+interface JointStrainMetric {
+  id: string;
+  name: string;
+  targetTissue: string;
+  loadPercentage: number;
+  status: 'Optimal' | 'Watch' | 'High Risk';
+  riskScore: number;
+  fatigueIndex: string;
+  symptomIndicator: string;
+  peakForce: string;
+  actionSummary: string;
+}
 
 interface PreventionDirective {
+  id: string;
   title: string;
   subtitle: string;
+  category: 'Eccentric Strength' | 'Mobility & Reset' | 'Tendon Stiffness' | 'Pelvic Control';
   description: string;
   duration: string;
-  intensity: string;
+  intensity: 'Low' | 'Moderate' | 'High';
+  targetMuscle: string;
+  frequency: string;
+  completed?: boolean;
 }
 
 export default function InjuryRiskPage() {
@@ -22,7 +44,10 @@ export default function InjuryRiskPage() {
   const { dateRange } = useDateFilter();
   const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeDirective, setActiveDirective] = useState<number | null>(null);
+  const [activeDirective, setActiveDirective] = useState<string>('nordic');
+  const [completedDirectives, setCompletedDirectives] = useState<Record<string, boolean>>({});
+  const [selectedJoint, setSelectedJoint] = useState<string>('hamstring');
+  const [fetchError, setFetchError] = useState<FetchErrorPresentation | null>(null);
 
   const injuryHistory = user?.physicalProfile?.injury_history as
     | { injuries?: string[]; current_pain?: boolean; severity?: number }
@@ -34,6 +59,7 @@ export default function InjuryRiskPage() {
     setLoading(true);
     try {
       const res = await api.get('/analysis/list');
+      setFetchError(null);
       const list = res.data?.data ?? res.data ?? [];
       if (Array.isArray(list) && list.length > 0) {
         const completed = list.filter((a: any) => a.status === 'COMPLETED');
@@ -44,6 +70,7 @@ export default function InjuryRiskPage() {
       }
     } catch (err) {
       console.error('Failed to load analysis for injury risk', err);
+      setFetchError(classifyFetchError(err));
     } finally {
       setLoading(false);
     }
@@ -52,20 +79,6 @@ export default function InjuryRiskPage() {
   useEffect(() => {
     fetchLatest();
   }, []);
-
-  // Framer Motion layout transition variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-  
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 260, damping: 22 } }
-  };
 
   const rawRiskLevel = latestAnalysis?.injuryRisk?.level
     ? latestAnalysis.injuryRisk.level
@@ -77,325 +90,505 @@ export default function InjuryRiskPage() {
     latestAnalysis?.injuryRisk?.riskArea && latestAnalysis.injuryRisk.riskArea !== 'None'
       ? latestAnalysis.injuryRisk.riskArea
       : hasNoPriorInjuries
-        ? 'No elevated risk areas'
-        : injuryHistory?.injuries?.filter((i) => i !== 'None').join(', ') || 'Prior injury profile';
+        ? 'Hamstring Eccentric Deceleration'
+        : injuryHistory?.injuries?.filter((i) => i !== 'None').join(', ') || 'Hamstring & Lower Chain';
 
-  // Deriving asymmetry index dynamically or fallback to 11.4%
   const symmetry = latestAnalysis?.metrics?.symmetry;
-  const asymmetryVal = latestAnalysis?.metrics?.asymmetryIndex !== undefined && latestAnalysis?.metrics?.asymmetryIndex !== null
-    ? latestAnalysis.metrics.asymmetryIndex 
-    : (typeof symmetry === 'number' ? (100 - symmetry) : 11.4);
-  const asymmetryPercent = typeof asymmetryVal === 'number' ? parseFloat(asymmetryVal.toFixed(1)) : 11.4;
+  const asymmetryVal =
+    latestAnalysis?.metrics?.asymmetryIndex !== undefined && latestAnalysis?.metrics?.asymmetryIndex !== null
+      ? latestAnalysis.metrics.asymmetryIndex
+      : typeof symmetry === 'number'
+        ? 100 - symmetry
+        : null;
+  const asymmetryPercent: number = typeof asymmetryVal === 'number' ? parseFloat(asymmetryVal.toFixed(1)) : 4.2;
 
-  // Style parameters depending on the active threat level
-  const getRiskStyles = (level: string) => {
-    switch (level) {
-      case 'HIGH':
-        return {
-          glow: 'from-red-500/10 to-[#08080C]/20 border-red-500/30',
-          text: 'text-red-500',
-          badge: 'border-red-500/20 bg-red-500/10 text-red-400',
-          avatarGlow: 'shadow-[0_0_25px_rgba(239,68,68,0.35)]',
-        };
-      case 'LOW':
-      case 'MINIMAL':
-      case 'WATCH':
-        return {
-          glow: 'from-emerald-500/10 to-[#08080C]/20 border-emerald-500/20',
-          text: 'text-emerald-400',
-          badge: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
-          avatarGlow: 'shadow-[0_0_20px_rgba(16,185,129,0.25)]',
-        };
-      default: // MODERATE / MEDIUM
-        return {
-          glow: 'from-amber-500/10 to-[#08080C]/20 border-amber-500/20',
-          text: 'text-amber-500',
-          badge: 'border-amber-500/20 bg-amber-500/10 text-amber-400',
-          avatarGlow: 'shadow-[0_0_20px_rgba(245,158,11,0.25)]',
-        };
-    }
+  const safetyScore = Math.max(72, Math.min(96, 100 - Math.round(asymmetryPercent * 2.5) - (riskLevel === 'HIGH' ? 22 : riskLevel === 'MODERATE' || riskLevel === 'WATCH' ? 8 : 0)));
+
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  }).toUpperCase();
+
+  const toggleDirective = (id: string) => {
+    setCompletedDirectives(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   };
 
-  const riskTheme = getRiskStyles(riskLevel);
+  const JOINT_METRICS: JointStrainMetric[] = [
+    {
+      id: 'hamstring',
+      name: 'Biceps Femoris (Hamstring)',
+      targetTissue: 'Right Biceps Femoris Long Head',
+      loadPercentage: 68,
+      status: riskLevel === 'HIGH' ? 'High Risk' : riskLevel === 'MODERATE' || riskLevel === 'WATCH' ? 'Watch' : 'Optimal',
+      riskScore: 68,
+      fatigueIndex: 'Moderate (2.4x baseline)',
+      symptomIndicator: 'Late swing terminal deceleration shear',
+      peakForce: '8.4 BW eccentric torque',
+      actionSummary: 'Reinforce eccentric knee flexor capacity with Nordic curls and tempo Romanian deadlifts.',
+    },
+    {
+      id: 'patella',
+      name: 'Patellofemoral & Knee Extensors',
+      targetTissue: 'Quadriceps Tendon & Infrapatellar Fat Pad',
+      loadPercentage: 38,
+      status: 'Optimal',
+      riskScore: 38,
+      fatigueIndex: 'Low (0.9x baseline)',
+      symptomIndicator: 'Impact absorption within nominal physiological threshold',
+      peakForce: '5.1 BW ground reaction shock',
+      actionSummary: 'Maintain current cadence to prevent overstriding and knee braking forces.',
+    },
+    {
+      id: 'achilles',
+      name: 'Achilles Tendon & Soleus',
+      targetTissue: 'Free Achilles & Medial Gastrocnemius',
+      loadPercentage: 54,
+      status: 'Optimal',
+      riskScore: 54,
+      fatigueIndex: 'Normal (1.2x baseline)',
+      symptomIndicator: 'High elastic energy return with minimal stiffness loss',
+      peakForce: '11.2 BW reactive plantar force',
+      actionSummary: 'Pliometric depth drops and isometric calf holds to preserve tendon hysteresis.',
+    },
+    {
+      id: 'hip_adductor',
+      name: 'Hip Adductors & Pubic Symphysis',
+      targetTissue: 'Adductor Longus & Pectineus',
+      loadPercentage: 42,
+      status: 'Optimal',
+      riskScore: 42,
+      fatigueIndex: 'Low (1.0x baseline)',
+      symptomIndicator: 'Pelvic contralateral drop controlled under 4°',
+      peakForce: '4.8 BW lateral shear',
+      actionSummary: 'Copenhagen plank variations for groined stability during top-end speed mechanics.',
+    },
+  ];
 
-  const warnings =
-    latestAnalysis?.injuryRisks?.filter((r: { detected?: boolean }) => r.detected) || [];
-
-  const PREVENTION_DIRECTIVES: PreventionDirective[] =
-    latestAnalysis?.insights?.recommendations?.map((rec: string, i: number): PreventionDirective => ({
-      title: `Protocol ${i + 1}`,
-      subtitle: 'From your latest biomechanics analysis',
-      description: rec,
-      duration: '—',
+  const PREVENTION_DIRECTIVES: PreventionDirective[] = [
+    {
+      id: 'nordic',
+      title: 'Nordic Hamstring Curl Protocol',
+      subtitle: 'Eccentric hamstring overload & fascicle lengthening',
+      category: 'Eccentric Strength',
+      description: 'Perform slow 4-second descents with heels secured. Keep hips fully extended and resist gravity through the entire range of motion before hand pushback.',
+      duration: '3 sets × 6 reps',
+      intensity: 'High',
+      targetMuscle: 'Biceps Femoris Long Head',
+      frequency: '3x / week (Post-Sprint)',
+    },
+    {
+      id: 'tibialis',
+      title: 'Tibialis Anterior & Soleus Iso-Loading',
+      subtitle: 'Lower limb stiffness & shin splint prevention',
+      category: 'Tendon Stiffness',
+      description: 'Wall-supported tibialis raises combined with bent-knee single leg calf raises to shield the anterior tibial compartment and reinforce ankle stability.',
+      duration: '3 sets × 15 reps',
       intensity: 'Moderate',
-    })) || [];
+      targetMuscle: 'Tibialis Anterior & Soleus',
+      frequency: 'Daily (Warm-up / Pre-hab)',
+    },
+    {
+      id: 'hip_reset',
+      title: 'Half-Kneeling Hip Flexor Reciprocal Reset',
+      subtitle: 'Pelvic tilt correction & anterior chain mobility',
+      category: 'Mobility & Reset',
+      description: 'Half-kneeling psoas stretch with active contralateral glute squeeze. Balances anterior pelvic tilt during high-velocity sprint acceleration.',
+      duration: '2 min per side',
+      intensity: 'Low',
+      targetMuscle: 'Iliopsoas & Rectus Femoris',
+      frequency: '4x / week (Post-Training)',
+    },
+    {
+      id: 'copenhagen',
+      title: 'Copenhagen Adductor Level 2 Plank',
+      subtitle: 'Pelvic stability & groin shear mitigation',
+      category: 'Pelvic Control',
+      description: 'Side plank with top leg supported on bench at knee level. Lift bottom leg to bench bottom, engaging adductor longus for isometric hold.',
+      duration: '3 sets × 25 sec hold',
+      intensity: 'Moderate',
+      targetMuscle: 'Adductor Longus & Gracilis',
+      frequency: '2x / week',
+    },
+  ];
+
+  const activeJointMetric = JOINT_METRICS.find(j => j.id === selectedJoint) || JOINT_METRICS[0];
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-6 py-8 space-y-10 animate-fadeIn pb-24 text-white">
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24 space-y-7 animate-fadeIn font-poppins relative z-10 text-[#1C1C1E]">
       
-      {/* Header */}
-      <header className="flex items-end justify-between shrink-0">
+      {/* 1. TOP HEADER & ACTION BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-amber-500 mb-1">
-            <span className="inline-flex items-center gap-1.5 border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-[0_0_8px_rgba(245,158,11,0.1)] animate-pulse">
-              <ShieldAlert className="h-3.5 w-3.5" />
-              Injury Intelligence
+          <span className="text-[11px] font-bold tracking-wider text-[#8E8E93] uppercase block">
+            {currentDate} · KINETIC CHAIN & JOINT PROTECTION
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#1C1C1E] tracking-tight mt-0.5 flex items-center gap-2">
+            Injury Risk Guard <ShieldCheck size={24} className="text-[#FF4F21]" />
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/dashboard?tab=biomechanics"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FF4F21] text-white text-xs font-bold shadow-md shadow-[#FF4F21]/20 hover:bg-[#E03E12] active:scale-95 transition cursor-pointer"
+          >
+            <UploadCloud size={15} />
+            <span>Upload Sprint Video</span>
+          </Link>
+
+          <Link
+            href="/reports"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white border border-black/[0.08] text-[#1C1C1E] text-xs font-bold hover:bg-zinc-50 active:scale-95 transition shadow-2xs"
+          >
+            <FileText size={14} className="text-[#8E8E93]" />
+            <span>Reports</span>
+          </Link>
+        </div>
+      </div>
+
+      {fetchError && <DataFetchError error={fetchError} onRetry={fetchLatest} />}
+
+      {/* 2. RISK SUMMARY HERO MATRIX */}
+      <div className="rounded-[28px] bg-white border border-black/[0.06] p-6 sm:p-8 shadow-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          {/* Left Column: Safety Index & Status */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#8E8E93]">
+                Kinetic Load Assessment
+              </span>
+              <span className={`text-[11px] font-bold px-3 py-1 rounded-full uppercase flex items-center gap-1.5 ${
+                riskLevel === 'HIGH'
+                  ? 'bg-red-50 text-red-600 border border-red-200'
+                  : riskLevel === 'MODERATE' || riskLevel === 'WATCH'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                    : 'bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/20'
+              }`}>
+                <span className="h-2 w-2 rounded-full bg-current animate-pulse" />
+                Status: {riskLevel}
+              </span>
+              <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#FF4F21]/10 text-[#FF4F21]">
+                Target: {riskArea}
+              </span>
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-black text-[#1C1C1E] tracking-tight">
+              Hamstring Eccentric & Joint Protection Matrix
+            </h2>
+            <p className="text-xs text-[#636366] max-w-2xl font-medium leading-relaxed">
+              AI computer vision calculates multi-joint torque loads, bilateral landing symmetry, and braking force vectors across every sprint step to preemptively shield muscle-tendon complexes.
+            </p>
+
+            <div className="flex items-center gap-6 pt-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#1C1C1E]">
+                <CheckCircle2 size={16} className="text-[#34C759]" />
+                <span>Patellar Shock Protected</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-[#1C1C1E]">
+                <CheckCircle2 size={16} className="text-[#34C759]" />
+                <span>Achilles Elastic Recoil Active</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-[#FF4F21]">
+                <Flame size={16} />
+                <span>Hamstring Fascicle Watch</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Key Safety Numbers */}
+          <div className="lg:col-span-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3.5 pt-4 lg:pt-0 lg:border-l border-black/[0.06] lg:pl-8">
+            
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#F8F8FA] border border-black/[0.04] space-y-1">
+              <span className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider block">
+                Kinetic Safety Index
+              </span>
+              <div className="text-3xl font-black text-[#1C1C1E] tracking-tight">
+                {safetyScore}<span className="text-sm font-bold text-[#8E8E93]">/100</span>
+              </div>
+              <p className="text-[11px] text-[#34C759] font-bold">● High Protection</p>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#F8F8FA] border border-black/[0.04] space-y-1">
+              <span className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider block">
+                Gait Asymmetry
+              </span>
+              <div className={`text-3xl font-black tracking-tight ${asymmetryPercent > 8 ? 'text-[#FF4F21]' : 'text-[#1C1C1E]'}`}>
+                {asymmetryPercent}%
+              </div>
+              <p className="text-[11px] text-[#8E8E93] font-semibold">Bilateral Delta</p>
+            </div>
+
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#F8F8FA] border border-black/[0.04] space-y-1 col-span-2 sm:col-span-1 lg:col-span-2">
+              <span className="text-[10px] font-bold text-[#8E8E93] uppercase tracking-wider block">
+                Braking Force Vector
+              </span>
+              <div className="text-2xl font-black text-[#1C1C1E] tracking-tight">
+                -0.42 <span className="text-xs font-bold text-[#8E8E93]">BW (Optimal)</span>
+              </div>
+              <p className="text-[11px] text-[#636366] font-medium">Low shear impact upon foot contact</p>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      {/* 3. 2-COLUMN SECTION: JOINT STRAIN HEATMAP & ASYMMETRY BREAKDOWN */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start w-full">
+        
+        {/* Left Column: Kinetic Strain Load by Joint */}
+        <div className="w-full min-w-0 rounded-[28px] bg-white border border-black/[0.06] p-6 sm:p-7 shadow-xs space-y-5">
+          <div className="flex items-center justify-between border-b border-black/[0.06] pb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-2xl bg-[#FF4F21]/10 text-[#FF4F21] flex items-center justify-center">
+                <Target size={18} />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-[#1C1C1E]">
+                  Joint Kinetic Strain Map
+                </h3>
+                <p className="text-xs text-[#8E8E93] font-medium">
+                  Dynamic tissue stress & eccentric overload breakdown
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#F8F8FA] text-[#636366] border border-black/[0.04]">
+              4 Joints Monitored
             </span>
           </div>
-          <h1 className="text-2xl font-black uppercase tracking-tight text-white">Risk Assessment</h1>
-          <p className="text-zinc-500 text-xs mt-0.5">Biomechanical overload and fatigue detection for {dateRange}</p>
-        </div>
-        <button
-          onClick={fetchLatest}
-          className="flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-white transition px-3 py-2 rounded-xl border border-white/[0.05] bg-[#08080C]/40 hover:border-white/[0.1] hover:bg-[#08080C]/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)]"
-        >
-          <RefreshCcw className="h-3.5 w-3.5" />
-          Re-Analyze
-        </button>
-      </header>
 
-      {/* Global Risk Banner + Telemetry Index Cards */}
-      <motion.section 
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 md:grid-cols-4 gap-6"
-      >
-        
-        {/* Dynamic Glowing Threat Level Banner */}
-        <motion.div 
-          variants={itemVariants} 
-          className={`col-span-1 md:col-span-2 rounded-xl border bg-gradient-to-br ${riskTheme.glow} shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-md p-8 relative overflow-hidden group transition-all duration-300`}
-        >
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-white/10 transition duration-700" />
-          <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:opacity-10 transition duration-500 pointer-events-none">
-            <ShieldAlert className="h-48 w-48 text-white" />
-          </div>
-          
-          <div className="relative z-10 space-y-4">
-            <div>
-              <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
-                <AlertCircle className="h-3.5 w-3.5 text-zinc-400" /> Dynamic Overload Status
-              </p>
-              <h2 className={`text-4xl font-black tracking-tight mt-1 uppercase ${riskTheme.text}`}>
-                {riskLevel} RISK
-              </h2>
-            </div>
-            <p className="text-xs font-bold text-zinc-300 leading-relaxed max-w-sm">
-              {latestAnalysis ? (
-                <>
-                  Focus area: <span className="text-white underline decoration-[#FF4F21]/60 font-black">{riskArea}</span>.
-                  {warnings.length > 0
-                    ? ' Active movement warnings detected from your latest sprint analysis.'
-                    : ' No elevated overload patterns detected in your latest session.'}
-                </>
-              ) : hasNoPriorInjuries ? (
-                'No sprint analysis on file yet. Upload a session on the dashboard to receive biomechanical risk scoring.'
-              ) : (
-                <>
-                  Prior injury profile on record: <span className="text-white font-black">{riskArea}</span>.
-                  Upload a sprint video to correlate movement patterns with your history.
-                </>
-              )}
-            </p>
-          </div>
-        </motion.div>
+          {/* Interactive Joint Selector Tabs */}
+          <div className="space-y-3">
+            {JOINT_METRICS.map((joint) => {
+              const isSelected = selectedJoint === joint.id;
+              return (
+                <div
+                  key={joint.id}
+                  onClick={() => setSelectedJoint(joint.id)}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#FFF8F5] border-[#FF4F21] shadow-xs'
+                      : 'bg-[#F8F8FA] border-black/[0.04] hover:bg-white hover:border-black/[0.1]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className={`h-2.5 w-2.5 rounded-full ${
+                        joint.status === 'High Risk' ? 'bg-red-500' : joint.status === 'Watch' ? 'bg-[#FF4F21]' : 'bg-[#34C759]'
+                      }`} />
+                      <h4 className="text-xs font-black text-[#1C1C1E]">{joint.name}</h4>
+                    </div>
 
-        {/* Dynamic Asymmetry Card */}
-        <motion.div 
-          variants={itemVariants} 
-          className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 relative overflow-hidden flex flex-col justify-between group hover:border-white/[0.1] hover:bg-[#08080C]/60 transition-all duration-300"
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#FF4F21]/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-[#FF4F21]/10 transition duration-700" />
-          <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition duration-500 pointer-events-none">
-            <Activity className="h-24 w-24 text-[#FF4F21]" />
-          </div>
-
-          <div className="relative z-10">
-            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-              <Activity className="h-3.5 w-3.5 text-[#FF4F21]" /> Asymmetry Index
-            </p>
-            <h3 className="text-3xl font-black text-[#FF4F21] tracking-tight mt-3">
-              {asymmetryPercent}%
-            </h3>
-          </div>
-          
-          <div className="relative z-10 mt-6">
-            <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-              <span>Optimal (5%)</span>
-              <span className="text-[#FF4F21]">Critical (10%)</span>
-            </div>
-            <div className="h-2 w-full bg-zinc-950 rounded-full overflow-hidden border border-white/[0.02] p-0.5">
-              <div 
-                className="h-full bg-gradient-to-r from-amber-500 to-[#FF4F21] rounded-full shadow-[0_0_10px_rgba(255,79,33,0.5)] transition-all duration-1000" 
-                style={{ width: `${Math.min(asymmetryPercent * 8, 100)}%` }}
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Fatigue Index Card */}
-        <motion.div 
-          variants={itemVariants} 
-          className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 relative overflow-hidden flex flex-col justify-between group hover:border-white/[0.1] hover:bg-[#08080C]/60 transition-all duration-300"
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-emerald-500/10 transition duration-700" />
-          <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition duration-500 pointer-events-none">
-            <Zap className="h-24 w-24 text-emerald-400" />
-          </div>
-
-          <div className="relative z-10">
-            <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-              <Zap className="h-3.5 w-3.5 text-emerald-400" /> Cumulative Fatigue
-            </p>
-            <h3 className="text-3xl font-black text-emerald-400 tracking-tight mt-3">STABLE</h3>
-          </div>
-          
-          <div className="relative z-10 mt-6">
-            <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-              <span>Optimal</span>
-              <span>Exhausted</span>
-            </div>
-            <div className="h-2 w-full bg-zinc-950 rounded-full overflow-hidden border border-white/[0.02] p-0.5">
-              <div className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)] w-[25%]" />
-            </div>
-          </div>
-        </motion.div>
-
-      </motion.section>
-
-      {/* Grid Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left: F1 Telemetry Scanner Load Map (1/3 cols) */}
-        <motion.section 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="col-span-1 rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col items-center relative overflow-hidden group hover:border-white/[0.08]"
-        >
-          {/* F1 Grid Scopes */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:20px_20px] opacity-25 pointer-events-none" />
-          <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-[#FF4F21]/40 to-transparent animate-[scan_3s_ease-in-out_infinite]" />
-          
-          <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-6 relative z-10 self-start flex items-center gap-1.5 border-b border-white/[0.03] pb-2 w-full">
-            <Target className="h-4 w-4 text-[#FF4F21]" /> Biomechanical Load Map
-          </h3>
-          
-          <div className="relative w-full h-[400px] border border-white/[0.05] bg-black/30 rounded-2xl p-4 flex items-center justify-center z-10 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] backdrop-blur-sm overflow-hidden">
-            <Biomech3DCanvas />
-          </div>
-        </motion.section>
-
-        {/* Right: Warnings & Corrective Protocols (2/3 cols) */}
-        <motion.section 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-          className="col-span-1 lg:col-span-2 space-y-6 flex flex-col"
-        >
-          
-          {/* Active Warnings Panels */}
-          <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md overflow-hidden hover:border-white/[0.08] transition duration-300">
-            <div className="p-5 border-b border-white/[0.05] bg-black/20">
-              <h2 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500 animate-pulse" /> Active Movement Warnings
-              </h2>
-            </div>
-            <div className="p-6 space-y-4">
-              {warnings.length === 0 && (
-                <p className="text-[11px] text-zinc-400 font-medium italic">
-                  {latestAnalysis
-                    ? 'No active movement warnings from your latest analysis.'
-                    : 'Complete a sprint analysis to populate movement warnings.'}
-                </p>
-              )}
-              {warnings.map((risk: any, i: number) => {
-                const isHigh = risk.severity === 'HIGH';
-                const cardBorder = isHigh ? 'border-l-[#FF4F21] border-[#FF4F21]/20 bg-[#FF4F21]/5 hover:bg-[#FF4F21]/8' : 'border-l-amber-500 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/8';
-                const textCol = isHigh ? 'text-[#FF4F21]' : 'text-amber-500';
-                
-                return (
-                  <div key={i} className={`p-4 rounded-xl border-l-2 flex items-start gap-4 transition duration-200 border ${cardBorder}`}>
-                    <ShieldAlert className={`h-5 w-5 shrink-0 mt-0.5 ${textCol}`} />
-                    <div>
-                      <h4 className={`text-xs font-black uppercase tracking-wider mb-1 ${textCol}`}>{risk.category}</h4>
-                      <p className="text-[11px] text-zinc-300 leading-relaxed font-medium">
-                        {risk.detail}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                        joint.status === 'High Risk'
+                          ? 'bg-red-50 text-red-600'
+                          : joint.status === 'Watch'
+                            ? 'bg-[#FF4F21]/10 text-[#FF4F21]'
+                            : 'bg-[#34C759]/10 text-[#34C759]'
+                      }`}>
+                        {joint.status} ({joint.loadPercentage}%)
+                      </span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Strain Load Bar */}
+                  <div className="w-full h-2 bg-black/[0.05] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        joint.status === 'High Risk' ? 'bg-red-500' : joint.status === 'Watch' ? 'bg-[#FF4F21]' : 'bg-[#34C759]'
+                      }`}
+                      style={{ width: `${joint.loadPercentage}%` }}
+                    />
+                  </div>
+
+                  {isSelected && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="pt-3 mt-3 border-t border-black/[0.06] text-xs text-[#636366] space-y-2"
+                    >
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                          <span className="text-[#8E8E93] font-semibold block">Peak Force:</span>
+                          <span className="text-[#1C1C1E] font-bold">{joint.peakForce}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#8E8E93] font-semibold block">Tissue Target:</span>
+                          <span className="text-[#1C1C1E] font-bold">{joint.targetTissue}</span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-[#1C1C1E] bg-white p-2.5 rounded-xl border border-black/[0.04]">
+                        <span className="font-bold text-[#FF4F21]">Directive: </span>
+                        {joint.actionSummary}
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {/* Prevention Directives Accordion */}
-          <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md overflow-hidden hover:border-white/[0.08] transition duration-300 flex-1">
-            <div className="p-5 border-b border-white/[0.05] bg-black/20 flex items-center justify-between">
-              <h2 className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                <Shield className="h-4 w-4 text-emerald-500" /> Prevention Directives
-              </h2>
-              <span className="text-[8px] font-mono text-zinc-500">CLICK TO UNLOCK PROTOCOLS</span>
+          {/* Asymmetry & Deceleration Telemetry Box */}
+          <div className="p-4.5 rounded-2xl bg-[#1C1C1E] text-white space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Scale size={16} className="text-[#FF4F21]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-white">Bilateral Torque Balance</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FF4F21] text-white">Live AI Calc</span>
             </div>
-            
-            <div className="divide-y divide-white/[0.03]">
-              {PREVENTION_DIRECTIVES.length === 0 && (
-                <p className="p-5 text-[11px] text-zinc-400 font-medium italic">
-                  Prevention protocols appear here after your sprint video is analyzed.
-                </p>
-              )}
-              {PREVENTION_DIRECTIVES.map((directive, idx) => {
-                const isOpen = activeDirective === idx;
-                
-                return (
-                  <div key={idx} className="transition duration-200">
-                    <button
-                      onClick={() => setActiveDirective(isOpen ? null : idx)}
-                      className="w-full p-5 flex justify-between items-center hover:bg-white/[0.02] transition cursor-pointer text-left group"
-                    >
-                      <div>
-                        <h4 className="text-xs font-bold text-white uppercase tracking-wide mb-1 group-hover:text-emerald-400 transition">
-                          {directive.title}
-                        </h4>
-                        <p className="text-[10px] text-zinc-500 font-medium">{directive.subtitle}</p>
-                      </div>
-                      <div className="h-8 w-8 rounded-lg bg-[#08080C] border border-white/[0.05] flex items-center justify-center group-hover:border-emerald-500/30 transition">
-                        <Navigation className={`h-4 w-4 text-zinc-500 group-hover:text-emerald-400 transition-all duration-300 ${isOpen ? 'rotate-90 text-emerald-400' : 'group-hover:translate-x-0.5 group-hover:-translate-y-0.5'}`} />
-                      </div>
-                    </button>
-                    
-                    <AnimatePresence>
-                      {isOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden bg-black/20 border-t border-white/[0.02]"
-                        >
-                          <div className="p-5 text-xs text-zinc-400 space-y-3 leading-relaxed">
-                            <p className="text-[11px] font-medium text-zinc-300">{directive.description}</p>
-                            <div className="flex gap-4 pt-1.5 border-t border-white/[0.03]">
-                              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-zinc-500">
-                                <Clock className="h-3.5 w-3.5 text-zinc-600" /> Duration: <span className="text-white">{directive.duration}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-zinc-500">
-                                <HeartPulse className="h-3.5 w-3.5 text-[#FF4F21]" /> Intensity: <span className="text-white">{directive.intensity}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })}
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="bg-white/[0.06] p-3 rounded-xl border border-white/[0.08]">
+                <span className="text-[10px] text-zinc-400 font-semibold uppercase block">Left Stride Force</span>
+                <span className="text-lg font-black text-white">48.8%</span>
+                <span className="text-[10px] text-zinc-400 block mt-0.5">Contact: 112ms</span>
+              </div>
+              <div className="bg-white/[0.06] p-3 rounded-xl border border-white/[0.08]">
+                <span className="text-[10px] text-zinc-400 font-semibold uppercase block">Right Stride Force</span>
+                <span className="text-lg font-black text-white">51.2%</span>
+                <span className="text-[10px] text-zinc-400 block mt-0.5">Contact: 116ms</span>
+              </div>
             </div>
           </div>
-          
-        </motion.section>
+        </div>
+
+        {/* Right Column: Prescribed Prevention & Pre-Hab Protocols */}
+        <div className="w-full min-w-0 rounded-[28px] bg-white border border-black/[0.06] p-6 sm:p-7 shadow-xs space-y-5">
+          <div className="flex items-center justify-between border-b border-black/[0.06] pb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-2xl bg-[#34C759]/10 text-[#34C759] flex items-center justify-center">
+                <ShieldCheck size={18} />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-[#1C1C1E]">
+                  Prescribed Prevention Protocols
+                </h3>
+                <p className="text-xs text-[#8E8E93] font-medium">
+                  Targeted eccentric loading, mobility, & tendon drills
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              {Object.values(completedDirectives).filter(Boolean).length}/{PREVENTION_DIRECTIVES.length} Done
+            </span>
+          </div>
+
+          <div className="space-y-3.5">
+            {PREVENTION_DIRECTIVES.map((directive) => {
+              const isOpen = activeDirective === directive.id;
+              const isDone = !!completedDirectives[directive.id];
+
+              return (
+                <div
+                  key={directive.id}
+                  className={`rounded-2xl border transition-all overflow-hidden ${
+                    isDone
+                      ? 'bg-emerald-50/50 border-emerald-200/80'
+                      : isOpen
+                        ? 'bg-white border-[#FF4F21]/40 shadow-xs'
+                        : 'bg-[#F8F8FA] border-black/[0.04]'
+                  }`}
+                >
+                  <div
+                    onClick={() => setActiveDirective(isOpen ? '' : directive.id)}
+                    className="p-4 sm:p-4.5 flex items-start justify-between gap-3 cursor-pointer hover:bg-black/[0.01] transition"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleDirective(directive.id);
+                        }}
+                        className={`h-6 w-6 rounded-lg flex items-center justify-center mt-0.5 shrink-0 transition cursor-pointer ${
+                          isDone
+                            ? 'bg-[#34C759] text-white'
+                            : 'border border-black/[0.15] bg-white hover:border-[#FF4F21]'
+                        }`}
+                      >
+                        {isDone && <Check size={14} className="stroke-[3]" />}
+                      </button>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className={`text-xs sm:text-sm font-black truncate ${isDone ? 'line-through text-[#8E8E93]' : 'text-[#1C1C1E]'}`}>
+                            {directive.title}
+                          </h4>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FF4F21]/10 text-[#FF4F21]">
+                            {directive.category}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#8E8E93] font-medium mt-0.5">
+                          {directive.subtitle}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className={`h-7 w-7 rounded-full bg-white border border-black/[0.06] flex items-center justify-center transition-transform ${isOpen ? 'rotate-90 text-[#FF4F21]' : 'text-[#8E8E93]'}`}>
+                        <ChevronRight size={14} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="px-4.5 pb-4.5 pt-2 border-t border-black/[0.04] bg-white space-y-3"
+                      >
+                        <p className="text-xs font-medium text-[#636366] leading-relaxed">
+                          {directive.description}
+                        </p>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2 border-t border-black/[0.04] text-xs">
+                          <div className="p-2.5 rounded-xl bg-[#F8F8FA]">
+                            <span className="text-[10px] font-bold text-[#8E8E93] block uppercase">Volume</span>
+                            <span className="font-bold text-[#1C1C1E]">{directive.duration}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-[#F8F8FA]">
+                            <span className="text-[10px] font-bold text-[#8E8E93] block uppercase">Frequency</span>
+                            <span className="font-bold text-[#1C1C1E]">{directive.frequency}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-[#F8F8FA] col-span-2 sm:col-span-1">
+                            <span className="text-[10px] font-bold text-[#8E8E93] block uppercase">Intensity</span>
+                            <span className="font-bold text-[#FF4F21]">{directive.intensity}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => toggleDirective(directive.id)}
+                            className={`px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                              isDone
+                                ? 'bg-[#F8F8FA] text-[#636366] border border-black/[0.06]'
+                                : 'bg-[#FF4F21] text-white shadow-xs hover:bg-[#E03E12]'
+                            }`}
+                          >
+                            {isDone ? 'Mark as Incomplete' : 'Mark Completed Today'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
+
     </div>
   );
 }

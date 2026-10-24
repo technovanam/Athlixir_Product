@@ -3,7 +3,14 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
+import { timingSafeEqual } from 'crypto';
+
+/** Shared server<->AI-engine secret. Empty string means not configured. */
+export function getInternalApiSecret(): string {
+  return (process.env.INTERNAL_API_SECRET || '').trim();
+}
 
 @Injectable()
 export class InternalAuthGuard implements CanActivate {
@@ -20,12 +27,18 @@ export class InternalAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid Authorization format');
     }
 
-    const secret = process.env.INTERNAL_API_SECRET;
+    // Fail closed: never fall back to a default secret, which would be public
+    // in source control.
+    const secret = getInternalApiSecret();
     if (!secret) {
-      throw new UnauthorizedException('Internal API secret is not configured');
+      throw new InternalServerErrorException(
+        'Internal API secret is not configured',
+      );
     }
 
-    if (token !== secret) {
+    const given = Buffer.from(token);
+    const expected = Buffer.from(secret);
+    if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
       throw new UnauthorizedException('Invalid internal API secret');
     }
 

@@ -17,6 +17,13 @@ def _li(items: list[str]) -> str:
     return "".join(f"<li>{escape(str(x))}</li>" for x in items)
 
 
+def _fmt(value: Any) -> str:
+    """Display value for a metric; unmeasured (None) metrics render as an em dash."""
+    if value is None or value == "":
+        return "—"
+    return escape(str(value))
+
+
 def _level_color(level: str) -> str:
     colors = {
         "Elite": "#a78bfa",
@@ -24,6 +31,7 @@ def _level_color(level: str) -> str:
         "State": "#34d399",
         "District": "#fbbf24",
         "Below District": "#f87171",
+        "Beginner": "#f87171",
     }
     return colors.get(level, "#71717a")
 
@@ -37,11 +45,13 @@ def _risk_color(level: str) -> str:
     }.get(level, "#71717a")
 
 
-def _score_ring(score: int | str, label: str, color: str = "#FF4F21") -> str:
+def _score_ring(score: int | str | None, label: str, color: str = "#FF4F21") -> str:
     try:
         val = int(score)
+        display = str(val)
     except (TypeError, ValueError):
         val = 0
+        display = "—"
     pct = min(max(val, 0), 100)
     r = 36
     circ = 2 * 3.14159 * r
@@ -55,7 +65,7 @@ def _score_ring(score: int | str, label: str, color: str = "#FF4F21") -> str:
           stroke-dasharray="{circ:.2f}" stroke-dashoffset="{offset:.2f}"
           transform="rotate(-90 44 44)"/>
         <text x="44" y="48" text-anchor="middle" fill="white"
-          font-size="18" font-weight="800" font-family="system-ui">{val}</text>
+          font-size="18" font-weight="800" font-family="system-ui">{display}</text>
       </svg>
       <div class="ring-label">{escape(label)}</div>
     </div>"""
@@ -75,17 +85,17 @@ def generate_html_report(
     classification = intelligence.get("classification") or {}
 
     athlete_level = classification.get("athleteLevel") or scores.get("athleteLevel") or "—"
-    perf = scores.get("performanceScore", "—")
-    eff = scores.get("efficiencyScore", "—")
-    bio = scores.get("biomechanicsScore", "—")
+    perf = scores.get("performanceScore")
+    eff = scores.get("efficiencyScore")
+    bio = scores.get("biomechanicsScore")
     inj_level = injury.get("level", "—")
     inj_area = injury.get("riskArea", "None")
     profile_label = benchmarks.get("profileLabel", "")
     now = datetime.now(timezone.utc).strftime("%d %B %Y · %H:%M UTC")
 
-    cad_lvl = benchmarks.get("cadenceLevel", "—")
-    gct_lvl = benchmarks.get("gctLevel", "—")
-    str_lvl = benchmarks.get("strideLevel", "—")
+    cad_lvl = benchmarks.get("cadenceLevel") or "—"
+    gct_lvl = benchmarks.get("gctLevel") or "—"
+    str_lvl = benchmarks.get("strideLevel") or "—"
 
     progress_html = ""
     if progress.get("hasPrevious"):
@@ -379,27 +389,27 @@ def generate_html_report(
     <div class="metrics-grid">
       <div class="metric-card">
         <div class="metric-label">Cadence</div>
-        <div class="metric-value">{metrics.get('cadence', '—')}<span class="metric-unit">SPM</span></div>
+        <div class="metric-value">{_fmt(metrics.get('cadence'))}<span class="metric-unit">SPM</span></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Ground Contact</div>
-        <div class="metric-value">{metrics.get('gct', '—')}<span class="metric-unit">ms</span></div>
+        <div class="metric-value">{_fmt(metrics.get('gct'))}<span class="metric-unit">ms</span></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Stride Length</div>
-        <div class="metric-value">{metrics.get('strideLength', '—')}<span class="metric-unit">m</span></div>
+        <div class="metric-value">{_fmt(metrics.get('strideLength'))}<span class="metric-unit">m</span></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Symmetry</div>
-        <div class="metric-value">{metrics.get('symmetry', '—')}<span class="metric-unit">index</span></div>
+        <div class="metric-value">{_fmt(metrics.get('symmetry'))}<span class="metric-unit">index</span></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Oscillation</div>
-        <div class="metric-value">{metrics.get('oscillation', '—')}<span class="metric-unit">cm</span></div>
+        <div class="metric-value">{_fmt(metrics.get('oscillation'))}<span class="metric-unit">cm</span></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Posture Lean</div>
-        <div class="metric-value">{metrics.get('postureAngle', '—')}<span class="metric-unit">°</span></div>
+        <div class="metric-value">{_fmt(metrics.get('postureAngle'))}<span class="metric-unit">°</span></div>
       </div>
     </div>
   </section>
@@ -418,17 +428,17 @@ def generate_html_report(
       <tbody>
         <tr>
           <td>Cadence</td>
-          <td>{metrics.get('cadence', '—')} SPM</td>
+          <td>{_fmt(metrics.get('cadence'))} SPM</td>
           <td class="level" style="color:{_level_color(cad_lvl)}">{cad_lvl}</td>
         </tr>
         <tr>
           <td>Ground Contact Time</td>
-          <td>{metrics.get('gct', '—')} ms</td>
+          <td>{_fmt(metrics.get('gct'))} ms</td>
           <td class="level" style="color:{_level_color(gct_lvl)}">{gct_lvl}</td>
         </tr>
         <tr>
           <td>Stride Length</td>
-          <td>{metrics.get('strideLength', '—')} m</td>
+          <td>{_fmt(metrics.get('strideLength'))} m</td>
           <td class="level" style="color:{_level_color(str_lvl)}">{str_lvl}</td>
         </tr>
       </tbody>

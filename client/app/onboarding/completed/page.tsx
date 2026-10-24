@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, api } from '../../context/AuthContext';
 import { getOnboardingProfile } from '../../utils/api';
-import { Award, ChevronRight, Sparkles, Activity, ShieldCheck, Ruler, Calendar } from 'lucide-react';
+import { Award, ChevronRight, Activity, ShieldCheck, Ruler, Calendar } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function CompletedStep() {
   const router = useRouter();
@@ -28,82 +29,139 @@ export default function CompletedStep() {
     router.replace('/dashboard');
   };
 
+  // Previously fell back to hardcoded 175cm/70kg/4-days-a-week when the
+  // fetched profile was missing a field, presenting those as the athlete's
+  // real just-confirmed measurements. Now shows the real saved value only.
+  const stats = [
+    { icon: Activity, label: 'Event Class', value: profileData?.primary_event ? `${profileData.primary_event} Athlete` : 'Not set' },
+    {
+      icon: Ruler,
+      label: 'Biometrics',
+      value: profileData?.height_cm && profileData?.weight_kg
+        ? `${profileData.height_cm}cm / ${profileData.weight_kg}kg`
+        : 'Not set',
+    },
+    { icon: Calendar, label: 'Train Capacity', value: profileData?.training_days ? `${profileData.training_days} Days / Wk` : 'Not set' },
+    { icon: ShieldCheck, label: 'Safety Status', value: 'Shield Active', accent: 'text-[#FF4F21]' },
+  ];
+
   return (
-    <div className="p-8 md:p-12 text-center space-y-8 animate-fadeIn relative overflow-hidden">
-      {/* Decorative stars */}
-      <div className="absolute top-10 left-10 text-[#FF4F21]/30 animate-pulse">
-        <Sparkles className="h-6 w-6" />
-      </div>
-      <div className="absolute bottom-10 right-10 text-[#FF8433]/30 animate-pulse delay-1000">
-        <Sparkles className="h-6 w-6" />
-      </div>
+    <div className="w-full flex flex-col items-center justify-center text-center">
+      {/* Brand Badge */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className="rounded-3xl bg-gradient-to-tr from-[#FF5E2B] to-[#FF3B00] flex items-center justify-center shadow-[0_10px_25px_rgba(255,79,33,0.35)] mb-5"
+        style={{ width: '72px', height: '72px' }}
+      >
+        <Award className="h-8 w-8 text-white" />
+      </motion.div>
 
-      <div className="flex flex-col items-center justify-center space-y-5">
-        <div className="relative group">
-          <div className="absolute inset-0 bg-[#FF4F21]/20 blur-[15px] rounded-full scale-75 group-hover:scale-110 transition duration-300 pointer-events-none" />
-          <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] flex items-center justify-center shadow-lg shadow-[#FF4F21]/30 ring-4 ring-[#FF4F21]/10 relative z-10">
-            <Award className="h-8 w-8 text-white" />
-          </div>
-        </div>
+      {/* Title */}
+      <h1
+        style={{
+          fontFamily: "'Mazzard', sans-serif",
+          fontWeight: 600,
+          fontSize: '26px',
+          lineHeight: '30px',
+          letterSpacing: '0.01em',
+          color: '#FF4F21',
+        }}
+      >
+        You&apos;re All Set!
+      </h1>
 
-        <div>
-          <h2 className="text-2xl md:text-3xl font-black text-white tracking-wider uppercase crt-glow-white">
-            Athlete Card Initialized!
-          </h2>
-          <p className="text-zinc-500 text-xs mt-2 max-w-md mx-auto font-medium leading-relaxed">
-            Congratulations! Your physical profile datasets, dynamic running parameters, and safety thresholds are successfully locked in.
-          </p>
-        </div>
-      </div>
+      {/* Subtitle */}
+      <p
+        style={{
+          fontFamily: "'Mazzard', sans-serif",
+          fontWeight: 400,
+          fontSize: '14px',
+          lineHeight: '20px',
+          color: '#6E6D6D',
+          marginTop: '6px',
+          maxWidth: '320px',
+        }}
+      >
+        Your athlete profile is calibrated. You are ready to analyze sprint biomechanics.
+      </p>
 
-      {/* Structured metrics summary */}
+      {/* Summary Badges */}
       {profileData && (
-        <div className="max-w-md mx-auto grid grid-cols-2 gap-4 text-left border-t border-b border-white/[0.05] py-6 my-6">
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
-            <Activity className="h-5 w-5 text-[#FF4F21] shrink-0" />
-            <div>
-              <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500">Event Class</span>
-              <span className="block text-xs font-bold text-white mt-0.5">{profileData.primary_event || 'Sprint'} Athlete</span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
-            <Ruler className="h-5 w-5 text-[#FF4F21] shrink-0" />
-            <div>
-              <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500">Biometrics</span>
-              <span className="block text-xs font-bold text-white mt-0.5">{profileData.height_cm || 175}cm / {profileData.weight_kg || 70}kg</span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
-            <Calendar className="h-5 w-5 text-[#FF4F21] shrink-0" />
-            <div>
-              <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500">Train Capacity</span>
-              <span className="block text-xs font-bold text-white mt-0.5">{profileData.training_days || 4} Days / Wk</span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-3.5 flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-[#FF4F21] shrink-0 animate-pulse" />
-            <div>
-              <span className="block text-[9px] font-black uppercase tracking-widest text-zinc-500">Safety Status</span>
-              <span className="block text-xs font-black uppercase text-emerald-400 mt-0.5 tracking-wider">Shield Active</span>
-            </div>
-          </div>
+        <div className="w-full grid grid-cols-2 gap-2.5 mt-6 mb-2">
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={stat.label}
+                style={{
+                  boxSizing: 'border-box',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #EBEBEB',
+                  boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.08)',
+                  borderRadius: '20px',
+                  padding: '14px 16px',
+                }}
+                className="flex items-center gap-2.5 text-left"
+              >
+                <Icon className={`h-5 w-5 shrink-0 ${stat.accent || 'text-[#FF4F21]'}`} />
+                <div className="min-w-0">
+                  <span
+                    style={{
+                      fontFamily: "'Mazzard', sans-serif",
+                      fontWeight: 600,
+                      fontSize: '10px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: '#8C8C8C',
+                      display: 'block',
+                    }}
+                  >
+                    {stat.label}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Mazzard', sans-serif",
+                      fontWeight: 600,
+                      fontSize: '12px',
+                      color: '#1D1B20',
+                      display: 'block',
+                    }}
+                    className="truncate mt-0.5"
+                  >
+                    {stat.value}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* CTA Button */}
-      <div className="flex justify-center pt-4">
-        <button
-          onClick={handleEnterWorkspace}
-          className="flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] hover:brightness-110 text-xs font-black uppercase tracking-widest text-white shadow-[0_0_20px_rgba(255,79,33,0.25)] hover:shadow-[0_0_30px_rgba(255,79,33,0.4)] active:scale-98 transition duration-200 cursor-pointer"
-        >
-          <span>Enter Athlixir Workspace</span>
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
+      {/* Enter Workspace Button */}
+      <button
+        onClick={handleEnterWorkspace}
+        style={{
+          boxSizing: 'border-box',
+          width: '100%',
+          height: '56px',
+          backgroundColor: '#FF4F21',
+          border: '1px solid #DDDDDD',
+          boxShadow: 'inset 0px 1px 4px rgba(255, 255, 255, 0.05)',
+          borderRadius: '26px',
+          fontFamily: "'Mazzard', sans-serif",
+          fontWeight: 600,
+          fontSize: '16px',
+          lineHeight: '24px',
+          color: '#FCFCFC',
+          marginTop: '20px',
+        }}
+        className="flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer"
+      >
+        <span>Enter Dashboard</span>
+        <ChevronRight className="h-4.5 w-4.5" />
+      </button>
     </div>
   );
 }
-

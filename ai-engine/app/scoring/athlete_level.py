@@ -23,9 +23,16 @@ def classify_athlete(
     scores: dict[str, Any],
     benchmarks: dict[str, Any],
 ) -> dict[str, str]:
-    performance = int(scores.get("performanceScore") or 0)
+    performance = scores.get("performanceScore")
 
-    if performance >= 88:
+    # Classifying needs at least two of the three core sprint metrics; a label
+    # derived from one metric plus posture/oscillation would overstate what
+    # was actually measured.
+    core_scored = {"cadence", "gct", "stride"} & set(scores.get("scoredMetrics") or [])
+
+    if performance is None or len(core_scored) < 2:
+        label = "Insufficient Data"
+    elif performance >= 88:
         label = "Elite Prospect"
     elif performance >= 65:
         label = "State Potential"

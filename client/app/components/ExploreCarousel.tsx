@@ -72,8 +72,7 @@ const ExploreCarousel: React.FC = () => {
     };
 
     const updateScroll = () => {
-      // Smoothly interpolate current scroll position towards the target (lerp)
-      const lerpFactor = 0.08; // Smoothness factor (lower = smoother)
+      const lerpFactor = 0.08;
       const diff = targetScrollLeft - currentScrollLeft;
       
       if (Math.abs(diff) > 0.5) {
@@ -100,58 +99,54 @@ const ExploreCarousel: React.FC = () => {
     <section 
       id="explore"
       ref={sectionRef} 
-      className="relative h-[300vh] bg-background select-none"
+      className="relative h-[300vh] bg-[#F2F2F7] select-none font-poppins"
     >
       {/* Sticky viewport lock wrapper */}
       <div className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden">
         
-        {/* Background aesthetic highlights */}
-        <div className="absolute top-1/3 left-0 w-96 h-96 bg-primary/5 blur-[150px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-10 right-0 w-96 h-96 bg-[#FF4F21]/5 blur-[150px] rounded-full pointer-events-none" />
-
         {/* Section title */}
-        <div className="container mx-auto px-6 lg:px-12 mb-12 z-10">
-          <span className="text-[#FF4F21] text-[10px] font-mono uppercase tracking-[0.3em] block mb-2 animate-pulse">
+        <div className="container mx-auto px-6 lg:px-12 mb-10 z-10">
+          <span className="text-[#FF4F21] text-xs font-bold uppercase tracking-[0.25em] block mb-2">
             Inside the Athlixir Engine
           </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#1C1C1E] leading-tight tracking-tight">
             Experience the <br />
-            <span className="text-zinc-500">Advantage.</span>
+            <span className="text-[#FF4F21]">Athlixir Advantage.</span>
           </h2>
         </div>
 
         {/* Horizontal Scroll Showcase */}
-        <div className="horizontal-scroll flex space-x-8 px-6 lg:px-12 overflow-hidden scrollbar-none z-10 select-none pb-4">
+        <div className="horizontal-scroll flex space-x-6 px-6 lg:px-12 overflow-hidden scrollbar-none z-10 select-none pb-4">
           {cards.map((card, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.1, duration: 0.6, ease: "easeOut" }}
-              className="min-w-[270px] sm:min-w-[300px] md:min-w-[370px] h-[400px] md:h-[460px] relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 group bg-white/[0.02] flex-shrink-0 cursor-grab active:cursor-grabbing hover:border-primary/40 transition-all duration-500"
+              transition={{ delay: index * 0.1, duration: 0.5, ease: "easeOut" }}
+              className="min-w-[270px] sm:min-w-[300px] md:min-w-[360px] h-[380px] md:h-[430px] relative rounded-[28px] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)] border border-black/[0.06] group bg-white flex-shrink-0 cursor-grab active:cursor-grabbing hover:shadow-lg transition-all duration-300"
             >
-              {/* Premium Card Image - high brightness */}
+              {/* Premium Card Image */}
               <Image
                 src={card.img}
                 alt={card.title}
                 fill
                 unoptimized
-                className="absolute inset-0 w-full h-full object-cover opacity-80 md:opacity-85 transform transition-transform duration-1000 group-hover:scale-105"
+                className="absolute inset-0 w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
               />
 
-              {/* Rich Visual Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90 transition-opacity duration-500 group-hover:opacity-95" />
+              {/* Gradient Overlay for Text Readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
               {/* Card Contents */}
               <div className="absolute bottom-0 left-0 w-full p-6 md:p-8 z-10 flex flex-col justify-end">
-                <span className="text-[10px] uppercase font-black tracking-[0.3em] text-[#FF4F21] mb-3 block">
+                <span className="text-[10px] uppercase font-extrabold tracking-[0.25em] text-[#FF4F21] mb-2 block">
                   0{index + 1}
                 </span>
 
-                <div className="flex justify-between items-end gap-4">
+                <div className="flex justify-between items-end gap-3">
                   <div className="flex-1">
-                    <span className="text-[9px] font-mono tracking-wider text-zinc-400 uppercase mb-1 block">
+                    <span className="text-[9px] uppercase font-bold tracking-wider text-zinc-300 mb-1 block">
                       {card.label}
                     </span>
                     <h3 className="text-xl md:text-2xl font-bold text-white leading-tight tracking-tight">
@@ -160,8 +155,8 @@ const ExploreCarousel: React.FC = () => {
                   </div>
 
                   {/* Interactive Button */}
-                  <div className="bg-white/5 backdrop-blur-xl p-2.5 md:p-3.5 rounded-xl text-white border border-white/10 shadow-xl transition-all duration-300 group-hover:bg-[#FF4F21] group-hover:text-white group-hover:border-[#FF4F21]/30 group-hover:scale-110 flex-shrink-0">
-                    <ArrowRight size={20} className="transform transition-transform duration-300 group-hover:translate-x-0.5" />
+                  <div className="h-10 w-10 rounded-2xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center transition-all duration-300 group-hover:bg-[#FF4F21] group-hover:scale-110 shrink-0">
+                    <ArrowRight size={18} />
                   </div>
                 </div>
               </div>

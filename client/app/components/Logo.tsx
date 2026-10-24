@@ -1,12 +1,24 @@
 import React from 'react';
 
-const Logo: React.FC = () => {
+interface LogoProps {
+  light?: boolean;
+  className?: string;
+}
+
+const Logo: React.FC<LogoProps> = ({ light = false, className = '' }) => {
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] flex items-center justify-center font-bold text-sm text-white shadow-lg shadow-[#FF4F21]/20">
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-[#FF4F21] to-[#FFA233] flex items-center justify-center font-black text-sm text-white shadow-sm shadow-[#FF4F21]/25">
         A
       </div>
-      <span className="font-extrabold tracking-widest text-lg text-white">ATHLIXIR</span>
+      <span
+        style={{ fontFamily: "'Agale DEMO', 'Mazzard', sans-serif" }}
+        className={`font-agale font-extrabold tracking-widest text-xl transition-colors ${
+          light ? 'text-white' : 'text-[#FF4F21]'
+        }`}
+      >
+        ATHLIXIR
+      </span>
     </div>
   );
 };

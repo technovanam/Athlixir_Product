@@ -14,8 +14,9 @@ def calculate_cadence(foot_strikes: list[dict], duration_sec: float) -> int:
         return 0
 
     steps = len(foot_strikes)
-    raw_cadence = int((steps / duration_sec) * 60)
-    cadence = min(max(raw_cadence, 140), 210)
+    # Not clamped: out-of-range values are flagged by the validation layer
+    # instead of being silently rewritten to a plausible-looking number.
+    cadence = int((steps / duration_sec) * 60)
 
-    print(f"[Cadence] {steps} strikes / {duration_sec:.2f}s = {cadence} spm (raw: {raw_cadence})")
+    print(f"[Cadence] {steps} strikes / {duration_sec:.2f}s = {cadence} spm")
     return cadence

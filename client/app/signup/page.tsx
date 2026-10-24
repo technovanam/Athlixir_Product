@@ -3,15 +3,19 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
-import { User, Mail, Lock, ShieldCheck, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Sparkles, AlertCircle, Loader2, Check, Activity, ShieldCheck } from 'lucide-react';
 
 export default function SignupPage() {
-  const { signup, error, setError } = useAuth();
+  const { signup, loginAsDemo, error, setError } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,8 +23,13 @@ export default function SignupPage() {
     setError(null);
     setValidationError(null);
 
-    if (!username || !email || !password || !confirmPassword) {
-      setValidationError('Please fill in all fields.');
+    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
+      setValidationError('Please fill in all required fields.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setValidationError('Password must be at least 8 characters long.');
       return;
     }
 
@@ -29,75 +38,135 @@ export default function SignupPage() {
       return;
     }
 
+    if (!agreeTerms) {
+      setValidationError('Please accept the Terms of Service to proceed.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await signup(username, email, password);
-    } catch (err) {
-      // Handled by AuthContext error state
+      await signup(username.trim(), email.trim(), password);
+    } catch {
+      // handled by AuthContext
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDemoLogin = async () => {
+    setError(null);
+    setValidationError(null);
+    setDemoLoading(true);
+    try {
+      await loginAsDemo();
+    } catch {
+      // handled by AuthContext
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[#08080C] px-6 py-12 font-sans overflow-hidden">
-      {/* Carbon fiber subtle pattern texture */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] mix-blend-overlay pointer-events-none" />
+    <div className="h-screen w-full bg-white flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden font-poppins selection:bg-[#FF4F21]/20 selection:text-[#FF4F21] relative text-[#1C1C1E]">
+      
+      {/* Background Soft Glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#FF4F21]/[0.05] blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#FF4F21]/[0.03] blur-[140px] pointer-events-none" />
 
-      {/* Massive gradient background blooms */}
-      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-[#FF4F21]/10 rounded-full blur-[120px] pointer-events-none animate-pulse duration-4000" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-[#FF8433]/5 rounded-full blur-[100px] pointer-events-none animate-pulse duration-6000 delay-1000" />
+      {/* Main Container - Desktop Split / Mobile Centered */}
+      <div className="w-full max-w-6xl h-full max-h-[880px] flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-16 relative z-10">
+        
+        {/* Left Side: Brand & Welcoming Hero (Desktop / Tablet) */}
+        <div className="hidden lg:flex flex-col justify-between flex-1 h-full py-6 pr-4">
+          
+          {/* Brand Logo Header */}
+          <Link href="/" className="inline-flex items-center gap-2 group">
+            <span
+              style={{ fontFamily: "'Agale DEMO', 'Mazzard', sans-serif" }}
+              className="text-3xl font-black tracking-wider text-[#FF4F21] group-hover:opacity-90 transition"
+            >
+              ATHLIXIR
+            </span>
+          </Link>
 
-      {/* Back to Home Button */}
-      <div className="absolute top-8 left-8 z-20">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase hover:text-white transition duration-200 cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4 text-[#FF4F21] transition-transform duration-200 hover:-translate-x-0.5" />
-          <span>BACK TO HOME</span>
-        </Link>
-      </div>
+          {/* Core Welcoming Copy */}
+          <div className="space-y-6 max-w-lg my-auto">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FFF5F2] border border-[#FF4F21]/20 text-xs font-bold text-[#FF4F21] uppercase tracking-wider shadow-2xs">
+              <Sparkles size={14} className="text-[#FF4F21]" />
+              <span>Next-Gen Athlete Intelligence</span>
+            </div>
 
-      <div className="relative z-10 w-full max-w-[450px] flex flex-col items-center">
-        {/* Header Section */}
-        <div className="flex flex-col items-center mb-6 text-center animate-fadeIn">
-          {/* Logo SVG */}
-          <div className="mb-4 relative group">
-            <div className="absolute inset-0 bg-[#FF4F21]/20 blur-[10px] rounded-full scale-75 group-hover:scale-110 transition duration-300 pointer-events-none" />
-            <svg width="48" height="36" viewBox="0 0 24 24" fill="none" stroke="#FF4F21" strokeWidth="4" strokeLinecap="square" strokeLinejoin="miter" className="relative z-10">
-              <path d="M4 22L12 4L20 22" />
-            </svg>
+            <h1 className="text-4xl xl:text-5xl font-black text-[#1C1C1E] leading-[1.1] tracking-tight">
+              Hey, Start Your Evolution!
+            </h1>
+
+            <p className="text-[#636366] text-sm xl:text-base leading-relaxed font-normal">
+              Join thousands of sprinters, coaches, and sports science teams extracting markerless 3D joint kinetics from everyday mobile video.
+            </p>
+
+            {/* Feature Badges Strip */}
+            <div className="grid grid-cols-2 gap-3.5 pt-2">
+              <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-[#F9F9FB] border border-black/[0.06] text-xs font-semibold text-[#1C1C1E] shadow-2xs">
+                <div className="p-1.5 rounded-lg bg-[#FF4F21]/10 text-[#FF4F21]">
+                  <ShieldCheck size={16} />
+                </div>
+                <span>Hamstring Injury Guard</span>
+              </div>
+              <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-[#F9F9FB] border border-black/[0.06] text-xs font-semibold text-[#1C1C1E] shadow-2xs">
+                <div className="p-1.5 rounded-lg bg-[#FF4F21]/10 text-[#FF4F21]">
+                  <Activity size={16} />
+                </div>
+                <span>Collegiate Benchmarks</span>
+              </div>
+            </div>
           </div>
-          <h1 className="text-[28px] font-black tracking-wider text-white mb-2 uppercase crt-glow-white">
-            ATHLETE SIGN UP
-          </h1>
-          <p className="text-[10px] font-bold tracking-[0.2em] text-zinc-500 uppercase mt-1">
-            Create your verified <span className="text-[#FF4F21]">Athlete Profile</span>
-          </p>
+
+          {/* Left Footer Note */}
+          <div className="text-xs text-[#8E8E93] font-medium">
+            &copy; {new Date().getFullYear()} ATHLIXIR. A product of Techno Vanam Innovation Pvt. Ltd.
+          </div>
         </div>
 
-        {/* Main Panel */}
-        <div className="w-full rounded-3xl border border-white/[0.05] bg-[#08080C]/40 p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03),0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-md hover:border-white/[0.08] transition-all duration-300">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Right Side: Clean White Floating Form Card */}
+        <div className="w-full lg:w-[470px] shrink-0">
+          
+          <div className="w-full bg-white rounded-[32px] p-6 sm:p-7 lg:p-8 border border-black/[0.08] shadow-2xl shadow-black/[0.04]">
             
-            {/* Error Notifications */}
+            {/* Mobile Brand Logo */}
+            <div className="lg:hidden text-center mb-3">
+              <Link href="/" className="inline-block">
+                <span
+                  style={{ fontFamily: "'Agale DEMO', 'Mazzard', sans-serif" }}
+                  className="text-2xl font-black tracking-wider text-[#FF4F21]"
+                >
+                  ATHLIXIR
+                </span>
+              </Link>
+            </div>
+
+            {/* Card Header */}
+            <div className="text-center mb-5">
+              <h2 className="text-2xl sm:text-3xl font-black text-[#1C1C1E] tracking-tight">
+                Create Account
+              </h2>
+              <p className="text-xs sm:text-sm text-[#636366] mt-1">
+                Start your markerless kinematics sprint analysis.
+              </p>
+            </div>
+
+            {/* Error Notification */}
             {(error || validationError) && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 flex items-start gap-2.5 animate-fadeIn">
-                <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0">FAIL</span>
+              <div className="mb-3 p-2.5 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-2 text-xs text-red-700 font-medium">
+                <AlertCircle size={15} className="shrink-0 mt-0.5 text-red-600" />
                 <span>{validationError || error}</span>
               </div>
             )}
 
-            {/* Username / Full Name */}
-            <div className="group">
-              <label htmlFor="username" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                Full Identity Name
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                  <User className="h-4 w-4" />
-                </div>
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-3">
+              
+              {/* Full Name Input */}
+              <div>
                 <input
                   type="text"
                   id="username"
@@ -108,21 +177,13 @@ export default function SignupPage() {
                     setError(null);
                     setValidationError(null);
                   }}
-                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-700 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
-                  placeholder="John Doe"
+                  placeholder="Athlete or Coach Name"
+                  className="w-full h-11 sm:h-12 px-5 rounded-2xl sm:rounded-full bg-[#F7F7FA] border border-black/[0.08] text-xs sm:text-sm font-medium text-[#1C1C1E] placeholder:text-zinc-400 focus:bg-white focus:border-[#FF4F21] focus:ring-4 focus:ring-[#FF4F21]/10 outline-none transition"
                 />
               </div>
-            </div>
 
-            {/* Email Address */}
-            <div className="group">
-              <label htmlFor="email" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                Secure Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                  <Mail className="h-4 w-4" />
-                </div>
+              {/* Email Input */}
+              <div>
                 <input
                   type="email"
                   id="email"
@@ -133,91 +194,140 @@ export default function SignupPage() {
                     setError(null);
                     setValidationError(null);
                   }}
-                  className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-700 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04]"
-                  placeholder="athlete@athlixir.com"
+                  placeholder="Email Address"
+                  className="w-full h-11 sm:h-12 px-5 rounded-2xl sm:rounded-full bg-[#F7F7FA] border border-black/[0.08] text-xs sm:text-sm font-medium text-[#1C1C1E] placeholder:text-zinc-400 focus:bg-white focus:border-[#FF4F21] focus:ring-4 focus:ring-[#FF4F21]/10 outline-none transition"
                 />
               </div>
-            </div>
 
-            {/* Passwords Stack */}
-            <div className="space-y-4">
-              <div className="group">
-                <label htmlFor="password" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                  Access Key
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                    <Lock className="h-4 w-4" />
-                  </div>
-                  <input
-                    type="password"
-                    id="password"
-                    required
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setError(null);
-                      setValidationError(null);
-                    }}
-                    className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-700 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] tracking-[0.25em]"
-                    placeholder="••••••••"
-                  />
-                </div>
+              {/* Password Input */}
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  required
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError(null);
+                    setValidationError(null);
+                  }}
+                  placeholder="Password (min. 8 characters)"
+                  className="w-full h-11 sm:h-12 pl-5 pr-11 rounded-2xl sm:rounded-full bg-[#F7F7FA] border border-black/[0.08] text-xs sm:text-sm font-medium text-[#1C1C1E] placeholder:text-zinc-400 focus:bg-white focus:border-[#FF4F21] focus:ring-4 focus:ring-[#FF4F21]/10 outline-none transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 p-1 transition"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
 
-              <div className="group">
-                <label htmlFor="confirmPassword" className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                  Confirm Key
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-zinc-600 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                    <ShieldCheck className="h-4 w-4" />
-                  </div>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      setError(null);
-                      setValidationError(null);
-                    }}
-                    className="block w-full rounded-xl border border-white/[0.05] bg-white/[0.02] pl-11 pr-4 py-3.5 text-xs text-white placeholder-zinc-700 outline-none transition duration-300 focus:border-[#FF4F21] focus:ring-1 focus:ring-[#FF4F21]/30 focus:bg-white/[0.04] tracking-[0.25em]"
-                    placeholder="••••••••"
-                  />
-                </div>
+              {/* Confirm Password Input */}
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setError(null);
+                    setValidationError(null);
+                  }}
+                  placeholder="Confirm Password"
+                  className="w-full h-11 sm:h-12 pl-5 pr-11 rounded-2xl sm:rounded-full bg-[#F7F7FA] border border-black/[0.08] text-xs sm:text-sm font-medium text-[#1C1C1E] placeholder:text-zinc-400 focus:bg-white focus:border-[#FF4F21] focus:ring-4 focus:ring-[#FF4F21]/10 outline-none transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 p-1 transition"
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
+
+              {/* Terms Checkbox */}
+              <div className="flex items-center gap-2.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setAgreeTerms(!agreeTerms)}
+                  className={`h-4.5 w-4.5 shrink-0 rounded-md flex items-center justify-center border transition ${
+                    agreeTerms
+                      ? 'bg-[#FF4F21] border-[#FF4F21] text-white'
+                      : 'bg-[#F7F7FA] border-black/[0.15] text-transparent'
+                  }`}
+                >
+                  <Check size={11} strokeWidth={3} />
+                </button>
+                <span className="text-[11px] text-zinc-500 leading-tight">
+                  I agree to the{' '}
+                  <Link href="/terms" className="text-[#FF4F21] font-semibold hover:underline">
+                    Terms & Privacy Policy
+                  </Link>
+                </span>
+              </div>
+
+              {/* Primary Signup Button */}
+              <button
+                type="submit"
+                disabled={loading || demoLoading}
+                className="w-full h-11 sm:h-12 rounded-2xl sm:rounded-full bg-[#FF4F21] hover:bg-[#E03E12] text-white text-xs sm:text-sm font-bold shadow-lg shadow-[#FF4F21]/25 hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 mt-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Creating Account...</span>
+                  </>
+                ) : (
+                  <span>Sign Up</span>
+                )}
+              </button>
+
+            </form>
+
+            {/* OR Divider */}
+            <div className="relative my-4 text-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-black/[0.08]" />
+              </div>
+              <span className="relative bg-white px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                OR
+              </span>
             </div>
 
-            {/* Submit Button */}
+            {/* Instant Demo Access Button */}
             <button
-              type="submit"
-              disabled={loading}
-              className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] py-4 text-xs font-black uppercase tracking-widest text-white shadow-[0_0_20px_rgba(255,79,33,0.25)] hover:shadow-[0_0_30px_rgba(255,79,33,0.4)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 outline-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={demoLoading || loading}
+              className="w-full h-10 sm:h-11 rounded-2xl sm:rounded-full border border-[#FF4F21]/25 bg-[#FFF5F2] hover:bg-[#FFEBE5] text-[#FF4F21] text-xs font-bold transition active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-2xs"
             >
-              {loading ? (
+              {demoLoading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  <span>Creating Athlete Profile...</span>
+                  <Loader2 size={14} className="animate-spin text-[#FF4F21]" />
+                  <span>Loading Demo Profile...</span>
                 </>
               ) : (
                 <>
-                  <span>Create Profile</span>
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <Sparkles size={13} className="text-[#FF4F21]" />
+                  <span>⚡ Instant Demo Access</span>
                 </>
               )}
             </button>
 
-          </form>
-        </div>
-        
-        {/* Footer Info */}
-        <div className="mt-6 text-center text-[10px] font-bold text-zinc-500 tracking-wider uppercase animate-fadeIn">
-          Already an Athlete?{' '}
-          <Link href="/login" className="ml-1 text-[#FF4F21] hover:brightness-110 transition uppercase font-black">
-            Access Portal
-          </Link>
+            {/* Bottom Switch Link */}
+            <div className="text-center mt-4 text-xs text-zinc-500 font-medium">
+              Already have an account?{' '}
+              <Link href="/login" className="text-[#FF4F21] font-bold hover:underline">
+                Login
+              </Link>
+            </div>
+
+          </div>
+
         </div>
 
       </div>

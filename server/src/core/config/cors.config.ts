@@ -12,6 +12,10 @@ export const PRODUCTION_FRONTEND_ORIGINS = [
 /** Vercel production + preview deployments (e.g. *.vercel.app). */
 const VERCEL_ORIGIN_PATTERN = /^https:\/\/[\w-]+\.vercel\.app$/;
 
+/** Pattern matching local network origins (e.g., 172.x.x.x, 192.168.x.x, 10.x.x.x, localhost). */
+const LOCAL_NETWORK_ORIGIN_PATTERN =
+  /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|172\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|[\w-]+\.local)(:\d+)?$/;
+
 export function getConfiguredOrigins(): string[] {
   const fromEnv = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',')
@@ -33,6 +37,10 @@ export function isOriginAllowed(origin: string | undefined): boolean {
   }
 
   if (getConfiguredOrigins().includes(origin)) {
+    return true;
+  }
+
+  if (LOCAL_NETWORK_ORIGIN_PATTERN.test(origin)) {
     return true;
   }
 

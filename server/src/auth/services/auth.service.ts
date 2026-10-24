@@ -34,6 +34,7 @@ export class AuthService {
       const userProfile = {
         uid: userRecord.uid,
         username,
+        name: username,
         email,
         role: 'user',
         onboardingCompleted: false,
@@ -224,5 +225,41 @@ export class AuthService {
     }
 
     return userData;
+  }
+
+  async sendPasswordResetEmail(email: string): Promise<{ message: string; link?: string }> {
+    const apiKey = this.configService.get<string>('FIREBASE_WEB_API_KEY');
+
+    if (apiKey) {
+      try {
+        const url = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requestType: 'PASSWORD_RESET',
+            email,
+          }),
+        });
+
+        if (response.ok) {
+          return { message: 'Password reset link sent to your email successfully.' };
+        }
+      } catch (err) {
+        // Fallback to Admin SDK
+      }
+    }
+
+    try {
+      const link = await this.firebaseService.auth.generatePasswordResetLink(email);
+      return { message: 'Password reset link generated successfully.', link };
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        return { message: 'If an account exists with this email, a reset email has been sent.' };
+      }
+      throw new InternalServerErrorException(
+        error.message || 'Failed to send password reset email',
+      );
+    }
   }
 }

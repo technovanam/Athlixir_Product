@@ -12,18 +12,6 @@ services:
       - ai-engine
     restart: always
 
-  redis:
-    image: 'redis:alpine'
-    container_name: athlixir-redis
-    ports:
-      - '6379:6379'
-    restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   ai-engine:
     image: ${DOCKER_USERNAME:-bavithran777}/athlixir-ai-engine:${IMAGE_TAG:-latest}
     build:
@@ -37,15 +25,12 @@ services:
       - PORT=8000
       - HOST=0.0.0.0
       - PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-athlixir-internal-secret-dev-key}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:?Set INTERNAL_API_SECRET in the root .env}
+      # Container-to-container addresses; localhost would point at itself.
       - BACKEND_URL=http://server:3001
+      - AI_ENGINE_URL=http://ai-engine:8000
       - CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://${PUBLIC_HOST:-localhost}:3000,http://${PUBLIC_HOST:-localhost}
     restart: always
-    depends_on:
-      redis:
-        condition: service_healthy
 
   server:
     image: ${DOCKER_USERNAME:-bavithran777}/athlixir-server:${IMAGE_TAG:-latest}
@@ -62,9 +47,7 @@ services:
       - FASTAPI_INTEL_URL=http://ai-engine:8000/api/analyze/intelligence
       - FASTAPI_PUBLIC_URL=http://${PUBLIC_HOST:-localhost}:8000
       - FRONTEND_URL=http://localhost:3000,http://${PUBLIC_HOST:-localhost}:3000,http://${PUBLIC_HOST:-localhost},https://${PUBLIC_HOST:-localhost}
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-athlixir-internal-secret-dev-key}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:?Set INTERNAL_API_SECRET in the root .env}
       - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
       - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
       - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
@@ -75,7 +58,6 @@ services:
       - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-haiku-4-5}
     depends_on:
       - ai-engine
-      - redis
     restart: always
 
   client:

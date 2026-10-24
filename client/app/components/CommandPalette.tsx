@@ -34,67 +34,67 @@ export default function CommandPalette() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-start justify-center pt-[15vh] p-4"
+          className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-start justify-center pt-[15vh] p-4"
           onClick={() => setOpen(false)}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden"
+            className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <Command className="w-full flex flex-col" label="Global Command Menu">
-              <div className="flex items-center border-b border-zinc-800/80 px-4 py-3">
-                <Search className="h-5 w-5 text-zinc-500 mr-3 shrink-0" />
+              <div className="flex items-center border-b border-slate-100 px-5 py-4">
+                <Search className="h-5 w-5 text-slate-400 mr-3 shrink-0" />
                 <Command.Input 
-                  className="flex-1 bg-transparent border-none outline-none text-white placeholder-zinc-500 font-sans text-lg" 
-                  placeholder="Search athletes, analyses, reports..." 
+                  className="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 font-sans text-base font-medium" 
+                  placeholder="Type a command or search pages..." 
                   autoFocus
                 />
                 <div className="flex items-center gap-1">
-                  <kbd className="bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded text-[10px] font-mono font-bold">ESC</kbd>
+                  <kbd className="bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold">ESC</kbd>
                 </div>
               </div>
 
-              <Command.List className="max-h-[60vh] overflow-y-auto p-2 scrollbar-hide">
-                <Command.Empty className="py-6 text-center text-sm text-zinc-500">No results found.</Command.Empty>
+              <Command.List className="max-h-[60vh] overflow-y-auto p-3 scrollbar-hide">
+                <Command.Empty className="py-8 text-center text-sm text-slate-500">No results found.</Command.Empty>
 
-                <Command.Group heading="Quick Links" className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-2 py-2">
-                  <Command.Item onSelect={() => handleSelect('/dashboard')} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-zinc-900 aria-selected:bg-zinc-900 cursor-pointer transition">
+                <Command.Group heading="Navigation" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-2">
+                  <Command.Item onSelect={() => handleSelect('/dashboard')} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 aria-selected:bg-slate-100 cursor-pointer transition">
                     <Activity className="h-4 w-4 text-[#FF4F21]" />
                     Dashboard
                   </Command.Item>
-                  <Command.Item onSelect={() => handleSelect('/evolution')} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-zinc-900 aria-selected:bg-zinc-900 cursor-pointer transition">
-                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                  <Command.Item onSelect={() => handleSelect('/evolution')} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 aria-selected:bg-slate-100 cursor-pointer transition">
+                    <TrendingUp className="h-4 w-4 text-emerald-600" />
                     Athlete Evolution
                   </Command.Item>
-                  <Command.Item onSelect={() => handleSelect('/identity')} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-zinc-900 aria-selected:bg-zinc-900 cursor-pointer transition">
-                    <Shield className="h-4 w-4 text-blue-500" />
+                  <Command.Item onSelect={() => handleSelect('/identity')} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 aria-selected:bg-slate-100 cursor-pointer transition">
+                    <Shield className="h-4 w-4 text-blue-600" />
                     Identity Profile
                   </Command.Item>
-                  <Command.Item onSelect={() => handleSelect('/recommendations')} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-zinc-900 aria-selected:bg-zinc-900 cursor-pointer transition">
+                  <Command.Item onSelect={() => handleSelect('/recommendations')} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 aria-selected:bg-slate-100 cursor-pointer transition">
                     <Zap className="h-4 w-4 text-amber-500" />
                     AI Coach & Recommendations
                   </Command.Item>
-                  <Command.Item onSelect={() => handleSelect('/injury-risk')} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-zinc-900 aria-selected:bg-zinc-900 cursor-pointer transition">
+                  <Command.Item onSelect={() => handleSelect('/injury-risk')} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 aria-selected:bg-slate-100 cursor-pointer transition">
                     <ShieldAlert className="h-4 w-4 text-amber-500" />
                     Injury Intelligence
                   </Command.Item>
-                  <Command.Item onSelect={() => handleSelect('/copilot')} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-zinc-900 aria-selected:bg-zinc-900 cursor-pointer transition">
-                    <MessageSquare className="h-4 w-4 text-purple-500" />
+                  <Command.Item onSelect={() => handleSelect('/copilot')} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 aria-selected:bg-slate-100 cursor-pointer transition">
+                    <MessageSquare className="h-4 w-4 text-purple-600" />
                     AI Copilot
                   </Command.Item>
                 </Command.Group>
 
-                <Command.Group heading="Recent Analyses" className="text-xs font-bold text-zinc-500 uppercase tracking-widest px-2 pt-4 pb-2">
-                  <Command.Item onSelect={() => handleSelect('/history')} className="flex items-center justify-between px-3 py-3 rounded-lg text-sm text-zinc-200 hover:bg-zinc-900 aria-selected:bg-zinc-900 cursor-pointer transition">
+                <Command.Group heading="Recent Analyses" className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 pt-3 pb-1">
+                  <Command.Item onSelect={() => handleSelect('/history')} className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 aria-selected:bg-slate-100 cursor-pointer transition">
                     <div className="flex items-center gap-3">
-                      <Target className="h-4 w-4 text-zinc-400" />
+                      <Target className="h-4 w-4 text-slate-400" />
                       <div>
-                        <p>View Analysis History</p>
-                        <p className="text-[10px] text-zinc-500">Access all past scans</p>
+                        <p className="text-sm font-semibold text-slate-800">Session History</p>
+                        <p className="text-[11px] text-slate-400">Access all historical biomechanics runs</p>
                       </div>
                     </div>
                   </Command.Item>
@@ -107,3 +107,4 @@ export default function CommandPalette() {
     </AnimatePresence>
   );
 }
+

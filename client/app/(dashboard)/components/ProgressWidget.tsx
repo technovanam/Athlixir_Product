@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '../../context/AuthContext';
-import { LineChart, Line, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
+import { LineChart, Line, ResponsiveContainer, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 
 export default function ProgressWidget() {
   const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -16,60 +17,77 @@ export default function ProgressWidget() {
         if (Array.isArray(list)) {
           const completed = list.filter((a: any) => a.status === 'COMPLETED');
           completed.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-          
-          const chartData = completed.map((c: any, i: number) => ({
-            name: `S${i+1}`,
-            score: c.scores?.performanceScore || 0,
-            cadence: c.metrics?.cadence || 0,
-          }));
-          setData(chartData.slice(-10)); // Last 10 sessions
+
+          // Previously this synthesized a fake increasing trend (85 + i*2,
+          // 175 + i) for any session missing a real performanceScore, and
+          // fell back to an entirely fabricated 4-point chart ([82,84,87,89])
+          // when fewer than 2 real sessions existed. Now: only sessions with
+          // a real performanceScore are plotted; nothing is invented.
+          const chartData = completed
+            .filter((c: any) => typeof c.scores?.performanceScore === 'number')
+            .map((c: any, i: number) => ({
+              name: `Run ${i + 1}`,
+              score: c.scores.performanceScore,
+              cadence: typeof c.metrics?.cadence === 'number' ? c.metrics.cadence : undefined,
+            }));
+          setData(chartData.slice(-10));
         }
       } catch (err) {
         console.error('Failed to load progress', err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchHistory();
   }, []);
 
-  if (data.length < 2) {
-    return (
-      <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px] hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
-        <TrendingUp className="h-8 w-8 text-zinc-700 mb-3" />
-        <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Need more sessions to show trends</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col h-full hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2.5">
-          <TrendingUp className="h-4 w-4 text-emerald-400" />
-          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">Performance Trend</h3>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col h-full">
+      <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={18} className="text-[#FF4F21]" />
+          <h3 className="text-sm font-bold text-slate-900 tracking-tight">Performance Evolution</h3>
         </div>
-        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Last {data.length} Scans</span>
+        {data.length >= 2 && (
+          <span className="text-[11px] text-slate-500 font-semibold">Last {data.length} Sessions</span>
+        )}
       </div>
 
-      <div className="flex-1 h-32">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <YAxis domain={['auto', 'auto']} hide />
-            <Tooltip 
-              contentStyle={{ backgroundColor: '#000', borderColor: '#333', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold' }}
-              itemStyle={{ color: '#fff' }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="score" 
-              name="Perf Score"
-              stroke="#FF4F21" 
-              strokeWidth={3} 
-              dot={{ r: 4, fill: '#FF4F21', strokeWidth: 0 }} 
-              activeDot={{ r: 6, fill: '#fff' }} 
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {loading ? (
+        <div className="flex-1 h-36 flex items-center justify-center">
+          <span className="text-xs text-slate-400 font-medium">Loading…</span>
+        </div>
+      ) : data.length >= 2 ? (
+        <div className="flex-1 h-36">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <YAxis domain={['auto', 'auto']} hide />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderRadius: '12px', fontSize: '11px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}
+                itemStyle={{ color: '#0F172A', fontWeight: 600 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="score"
+                name="Form Score"
+                stroke="#FF4F21"
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: '#FF4F21', strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: '#FF4F21' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex-1 h-36 flex items-center justify-center text-center px-4">
+          <p className="text-xs text-slate-400 font-medium">
+            {data.length === 0
+              ? 'No progress data yet. Complete a sprint analysis to get started.'
+              : 'Complete another session to see your performance trend.'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Menu, X, ArrowRight, LayoutDashboard, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,12 +14,14 @@ interface NavLink {
 }
 
 const NAV_LINKS: NavLink[] = [
-  { name: "Home",         href: "#home" },
-  { name: "About",        href: "#about" },
-  { name: "Features",     href: "#features" },
-  { name: "Research",     href: "#research" },
-  { name: "Intelligence", href: "#athletes" },
-  { name: "Contact",      href: "#contact" },
+  { name: "Home", href: "#home" },
+  { name: "About", href: "#about" },
+  { name: "Features", href: "#features" },
+  { name: "Anatomy", href: "#anatomy" },
+  { name: "Hardware", href: "#hardware" },
+  { name: "Pricing", href: "#pricing" },
+  { name: "FAQ", href: "#faq" },
+  { name: "Contact", href: "#contact" },
 ];
 
 const Navbar: React.FC = () => {
@@ -30,7 +32,7 @@ const Navbar: React.FC = () => {
   const pathname = usePathname();
   const isHomePage = pathname === "/";
 
-  // Smooth scroll helper — works with Lenis
+  // Smooth scroll helper
   const smoothScrollTo = (sectionId: string) => {
     const el = document.getElementById(sectionId);
     if (el) {
@@ -45,7 +47,7 @@ const Navbar: React.FC = () => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
 
-      const scrollPosition = window.scrollY + 150;
+      const scrollPosition = window.scrollY + 160;
 
       NAV_LINKS.forEach((link) => {
         const section = document.getElementById(link.href.substring(1));
@@ -69,222 +71,244 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Prevent body scrolling when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
   const displayName = user
     ? user.name || user.username || user.email.split("@")[0]
     : "";
 
   return (
-    <nav
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-        isScrolled
-          ? "bg-black/40 backdrop-blur-2xl shadow-xl h-16"
-          : "bg-transparent h-20"
-      }`}
-    >
-      <div className="container mx-auto px-6 lg:px-12 flex items-center justify-between h-full">
-        {/* Logo */}
-        <Link
-          href="/"
-          onClick={() => {
-            if (isHomePage) {
-              window.scrollTo({ top: 0, behavior: "smooth" });
-              setActiveSection("home");
-            }
-          }}
-          className="flex items-center transition-transform hover:scale-105 active:scale-95 duration-200"
+    <header className="fixed top-0 inset-x-0 z-50 pointer-events-none transition-all duration-300">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-3 sm:pt-4">
+        {/* Floating Navbar Bar */}
+        <nav
+          className={`pointer-events-auto w-full rounded-full transition-all duration-300 flex items-center justify-between px-4 sm:px-6 ${
+            isScrolled
+              ? "h-14 sm:h-16 bg-white/90 backdrop-blur-xl border border-black/[0.08] shadow-[0_4px_20px_rgba(0,0,0,0.06)]"
+              : "h-14 sm:h-16 bg-white/70 backdrop-blur-lg border border-black/[0.05] shadow-[0_2px_12px_rgba(0,0,0,0.03)]"
+          }`}
         >
-          <Logo />
-        </Link>
-
-        {/* Desktop Menu */}
-        <div className="hidden lg:flex items-center h-full space-x-2">
-          {NAV_LINKS.map((link) => {
-            const sectionId = link.href.substring(1);
-            const isActive = activeSection === sectionId;
-
-            return (
-              <button
-                key={link.name}
-                onClick={() => {
-                  if (isHomePage) {
-                    smoothScrollTo(sectionId);
-                  } else {
-                    window.location.href = `/${link.href}`;
-                  }
-                }}
-                className={`relative h-full flex items-center px-4 text-sm font-medium transition-colors duration-300 ${
-                  isActive
-                    ? "text-primary"
-                    : isScrolled
-                    ? "text-gray-300"
-                    : "text-white/90"
-                } hover:text-primary`}
-              >
-                {isActive && isHomePage && (
-                  <motion.span
-                    layoutId="navActiveBar"
-                    className="absolute top-0 left-0 right-0 h-[3px] bg-primary rounded-b-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 28 }}
-                  />
-                )}
-                {link.name}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right Buttons */}
-        <div className="hidden lg:flex items-center space-x-4">
-          {!user ? (
-            <>
-              <Link
-                href="/login"
-                className={`px-5 py-2.5 text-sm font-medium border rounded-full transition-all ${
-                  isScrolled
-                    ? "border-white/20 text-white hover:bg-white/10"
-                    : "border-white/30 text-white hover:bg-white/10"
-                }`}
-              >
-                Login
-              </Link>
-
-              <Link
-                href="/signup"
-                className="px-5 py-2.5 text-sm font-medium bg-primary text-white rounded-full hover:bg-orange-600 transition-all shadow-[0_0_15px_rgba(255,87,34,0.3)] hover:shadow-[0_0_20px_rgba(255,87,34,0.5)]"
-              >
-                Get Started
-              </Link>
-            </>
-          ) : (
-            <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-gray-300">
-                {displayName}
-              </span>
-
-              <Link
-                href="/dashboard"
-                className="px-5 py-2.5 text-sm font-medium bg-primary/10 border border-primary/20 text-primary rounded-full hover:bg-primary hover:text-white transition-all"
-              >
-                Dashboard
-              </Link>
-
-              <button
-                onClick={() => logout()}
-                className={`px-4 py-2.5 text-sm font-medium border rounded-full transition-all ${
-                  isScrolled
-                    ? "border-white/10 text-gray-400 hover:text-white hover:bg-white/5"
-                    : "border-white/20 text-white hover:bg-white/10"
-                }`}
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile Button */}
-        <button
-          className="lg:hidden p-2"
-          onClick={() => setIsMobileMenuOpen(true)}
-        >
-          <Menu className="w-6 h-6 text-white" />
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-black/90 backdrop-blur-2xl z-50 flex flex-col p-6 lg:hidden"
+          {/* Brand Logo */}
+          <Link
+            href="/"
+            onClick={() => {
+              if (isHomePage) {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                setActiveSection("home");
+              }
+            }}
+            className="flex items-center transition-transform hover:opacity-90 active:scale-95 duration-200 shrink-0"
           >
-            <div className="flex justify-between items-center mb-12">
-              <Logo />
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2"
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
-            </div>
+            <Logo />
+          </Link>
 
-            <div className="flex flex-col space-y-6">
-              {NAV_LINKS.map((link) => (
+          {/* Center Navigation Links (Desktop) */}
+          <div className="hidden lg:flex items-center space-x-1 bg-black/[0.03] px-2 py-1 rounded-full border border-black/[0.03]">
+            {NAV_LINKS.map((link) => {
+              const sectionId = link.href.substring(1);
+              const isActive = activeSection === sectionId;
+
+              return (
                 <button
                   key={link.name}
-                  className={`text-xl font-bold text-left ${
-                    activeSection === link.href.substring(1)
-                      ? "text-primary"
-                      : "text-gray-200"
-                  }`}
                   onClick={() => {
                     if (isHomePage) {
-                      smoothScrollTo(link.href.substring(1));
+                      smoothScrollTo(sectionId);
                     } else {
                       window.location.href = `/${link.href}`;
                     }
-                    setIsMobileMenuOpen(false);
                   }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                    isActive
+                      ? "bg-white text-[#FF4F21] shadow-2xs font-bold"
+                      : "text-[#636366] hover:text-[#1C1C1E] hover:bg-black/[0.02]"
+                  }`}
                 >
                   {link.name}
                 </button>
-              ))}
+              );
+            })}
+          </div>
 
-              <hr className="border-white/10 my-4" />
+          {/* Right Actions (Desktop) */}
+          <div className="hidden lg:flex items-center space-x-2.5">
+            {!user ? (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-xs font-semibold text-[#1C1C1E] hover:text-[#FF4F21] rounded-full hover:bg-black/[0.03] active:scale-95 transition-all"
+                >
+                  Sign In
+                </Link>
 
-              {!user ? (
-                <>
-                  <Link
-                    href="/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="w-full py-3 border border-white/20 rounded-lg text-white uppercase text-xs flex items-center justify-center"
-                  >
-                    Login
-                  </Link>
+                <Link
+                  href="/signup"
+                  className="px-5 py-2 text-xs font-bold bg-[#FF4F21] text-white rounded-full hover:bg-[#E03E12] active:scale-95 transition-all shadow-[0_2px_10px_rgba(255,79,33,0.25)] flex items-center gap-1.5"
+                >
+                  <span>Get Started</span>
+                  <ArrowRight size={13} />
+                </Link>
+              </>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-[#1C1C1E] px-3 py-1.5 rounded-full bg-black/[0.03] max-w-[130px] truncate">
+                  {displayName}
+                </span>
 
-                  <Link
-                    href="/signup"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="w-full py-3 bg-primary text-white rounded-lg uppercase text-xs flex items-center justify-center"
-                  >
-                    Get Started
-                  </Link>
-                </>
-              ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <p className="text-sm font-medium text-white">
-                      {displayName}
-                    </p>
+                <Link
+                  href="/dashboard"
+                  className="px-4 py-2 text-xs font-bold bg-[#FF4F21] text-white rounded-full hover:bg-[#E03E12] transition-all active:scale-95 shadow-[0_2px_10px_rgba(255,79,33,0.25)] flex items-center gap-1.5"
+                >
+                  <LayoutDashboard size={13} />
+                  <span>Portal</span>
+                </Link>
+
+                <button
+                  onClick={() => logout()}
+                  title="Sign Out"
+                  className="p-2 text-[#8E8E93] hover:text-[#1C1C1E] hover:bg-black/[0.04] rounded-full transition-all active:scale-95 cursor-pointer"
+                  aria-label="Sign out"
+                >
+                  <LogOut size={15} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            className="lg:hidden p-2 rounded-full bg-black/[0.04] hover:bg-black/[0.08] text-[#1C1C1E] active:scale-95 transition cursor-pointer"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Menu"
+          >
+            {isMobileMenuOpen ? (
+              <X className="w-5 h-5 text-[#1C1C1E]" />
+            ) : (
+              <Menu className="w-5 h-5 text-[#1C1C1E]" />
+            )}
+          </button>
+        </nav>
+      </div>
+
+      {/* Mobile Dropdown Sheet & Backdrop */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <div className="pointer-events-auto">
+            {/* Dark Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 lg:hidden"
+              aria-hidden="true"
+            />
+
+            {/* Clean Mobile Dropdown Island */}
+            <motion.div
+              initial={{ y: -16, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -16, opacity: 0, scale: 0.98 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed top-20 inset-x-4 z-50 bg-white rounded-3xl border border-black/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.14)] p-5 lg:hidden max-h-[calc(100dvh-6rem)] overflow-y-auto"
+            >
+              <div className="flex flex-col space-y-1">
+                {NAV_LINKS.map((link) => {
+                  const isActive = activeSection === link.href.substring(1);
+                  return (
+                    <button
+                      key={link.name}
+                      className={`text-sm font-semibold text-left px-3.5 py-3 rounded-2xl transition-all ${
+                        isActive
+                          ? "text-[#FF4F21] bg-[#FF4F21]/8 font-bold"
+                          : "text-[#1C1C1E] hover:bg-black/[0.03] active:bg-black/[0.05]"
+                      }`}
+                      onClick={() => {
+                        if (isHomePage) {
+                          smoothScrollTo(link.href.substring(1));
+                        } else {
+                          window.location.href = `/${link.href}`;
+                        }
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      {link.name}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Mobile CTA Strip */}
+              <div className="pt-4 mt-3 border-t border-black/[0.06] space-y-2.5">
+                {!user ? (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <Link
+                      href="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="py-3 border border-black/[0.1] rounded-2xl text-[#1C1C1E] font-bold text-xs flex items-center justify-center hover:bg-black/[0.03] active:scale-95 transition"
+                    >
+                      Sign In
+                    </Link>
+
+                    <Link
+                      href="/signup"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="py-3 bg-[#FF4F21] text-white rounded-2xl font-bold text-xs flex items-center justify-center shadow-[0_2px_10px_rgba(255,79,33,0.25)] hover:bg-[#E03E12] active:scale-95 transition"
+                    >
+                      Get Started
+                    </Link>
                   </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    <div className="p-3 bg-[#F2F2F7] rounded-2xl border border-black/[0.04] flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#1C1C1E] truncate max-w-[200px]">
+                        {displayName}
+                      </span>
+                      <span className="text-[10px] uppercase font-bold text-[#8E8E93] tracking-wider">
+                        Athlete
+                      </span>
+                    </div>
 
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="w-full py-3.5 bg-primary text-white rounded-xl font-medium text-sm flex items-center justify-center shadow-lg shadow-primary/20"
-                  >
-                    Dashboard
-                  </Link>
+                    <div className="flex items-center gap-2.5">
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex-1 py-3 bg-[#FF4F21] text-white rounded-2xl font-bold text-xs flex items-center justify-center shadow-[0_2px_10px_rgba(255,79,33,0.25)] active:scale-95 transition gap-1.5"
+                      >
+                        <LayoutDashboard size={14} />
+                        <span>Portal Dashboard</span>
+                      </Link>
 
-                  <button
-                    onClick={() => {
-                      logout();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="w-full py-3.5 border border-white/10 rounded-xl text-gray-400 font-medium text-sm flex items-center justify-center hover:bg-white/5"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
-          </motion.div>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="py-3 px-4 border border-black/[0.1] rounded-2xl text-[#8E8E93] hover:text-[#1C1C1E] font-bold text-xs flex items-center justify-center active:scale-95 transition cursor-pointer"
+                        title="Sign Out"
+                      >
+                        <LogOut size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
-    </nav>
+    </header>
   );
 };
 

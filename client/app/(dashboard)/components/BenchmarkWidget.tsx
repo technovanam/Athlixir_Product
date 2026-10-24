@@ -6,9 +6,9 @@ import { Target, Trophy } from 'lucide-react';
 export default function BenchmarkWidget({ analysis }: { analysis: any }) {
   if (!analysis || !analysis.benchmarks) {
     return (
-      <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px] hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
-        <Target className="h-8 w-8 text-zinc-700 mb-3" />
-        <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Awaiting Benchmark Data</p>
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col items-center justify-center text-center h-full min-h-[180px] shadow-sm">
+        <Target className="h-7 w-7 text-slate-400 mb-2" />
+        <p className="text-xs font-semibold text-slate-500">Benchmark comparison available after sprint analysis</p>
       </div>
     );
   }
@@ -16,28 +16,28 @@ export default function BenchmarkWidget({ analysis }: { analysis: any }) {
   const b = analysis.benchmarks;
   const metrics = analysis.metrics || {};
 
-  const renderComparison = (label: string, value: number | string, level: string) => {
-    // Determine bar fill based on level
-    let pct = '50%';
-    let color = 'bg-zinc-500';
-    if (level === 'Elite') { pct = '95%'; color = 'bg-[#FF4F21] shadow-[0_0_8px_rgba(255,79,33,0.5)]'; }
-    else if (level === 'National') { pct = '80%'; color = 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'; }
-    else if (level === 'State') { pct = '65%'; color = 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'; }
-    else if (level === 'District') { pct = '40%'; color = 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'; }
-    else { pct = '20%'; color = 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'; }
+  const renderComparison = (label: string, value: string | null, level: string | null) => {
+    let pct = '0%';
+    let color = 'bg-slate-300';
+    if (level === 'Elite') { pct = '95%'; color = 'bg-[#FF4F21]'; }
+    else if (level === 'National') { pct = '80%'; color = 'bg-emerald-500'; }
+    else if (level === 'State') { pct = '65%'; color = 'bg-blue-500'; }
+    else if (level === 'District') { pct = '40%'; color = 'bg-amber-500'; }
+    else if (level === 'Beginner') { pct = '25%'; color = 'bg-slate-400'; }
 
     return (
-      <div className="mb-5">
-        <div className="flex justify-between text-[11px] font-bold mb-1.5">
-          <span className="text-zinc-400 uppercase tracking-[0.1em]">{label}</span>
-          <span className="text-white font-semibold">
-            {value} <span className="text-zinc-500 font-medium ml-1">({level})</span>
+      <div className="mb-4">
+        <div className="flex justify-between text-xs font-semibold mb-1.5">
+          <span className="text-slate-600 uppercase tracking-wider">{label}</span>
+          <span className="text-slate-900 font-bold">
+            {value ?? '—'}
+            {level && <span className="text-[#FF4F21] font-semibold ml-1">({level})</span>}
           </span>
         </div>
-        <div className="h-1.5 w-full bg-zinc-950/80 rounded-full overflow-hidden border border-white/[0.02]">
-          <div className={`h-full ${color} transition-all duration-1000`} style={{ width: pct }} />
+        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+          <div className={`h-full ${color} transition-all duration-700`} style={{ width: pct }} />
         </div>
-        <div className="flex justify-between text-[8px] font-bold text-zinc-600 uppercase mt-1 tracking-wider">
+        <div className="flex justify-between text-[9px] font-semibold text-slate-400 uppercase mt-1">
           <span>Beginner</span>
           <span>District</span>
           <span>State</span>
@@ -49,21 +49,21 @@ export default function BenchmarkWidget({ analysis }: { analysis: any }) {
   };
 
   return (
-    <div className="rounded-xl border border-white/[0.05] bg-[#08080C]/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] backdrop-blur-md p-6 flex flex-col h-full hover:border-white/[0.1] hover:bg-[#08080C]/60 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2.5">
-          <Trophy className="h-4 w-4 text-blue-400" />
-          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">Norm Comparison</h3>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm flex flex-col h-full">
+      <div className="flex items-center justify-between mb-5 border-b border-slate-100 pb-3">
+        <div className="flex items-center gap-2">
+          <Trophy size={18} className="text-amber-500" />
+          <h3 className="text-sm font-bold text-slate-900 tracking-tight">Competitive Benchmark Calibration</h3>
         </div>
-        <span className="text-[9px] bg-white/[0.04] border border-white/[0.06] text-zinc-300 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-          {b.profileLabel || 'U18 Sprinter'}
+        <span className="text-[11px] bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-semibold">
+          {b.profileLabel || 'Sprinter Benchmark'}
         </span>
       </div>
 
-      <div className="flex-1 mt-2">
-        {renderComparison('Cadence', metrics.cadence || '—', b.cadenceLevel || '—')}
-        {renderComparison('Ground Contact', metrics.gct ? `${metrics.gct}ms` : '—', b.gctLevel || '—')}
-        {renderComparison('Stride Length', metrics.strideLength ? `${metrics.strideLength}m` : '—', b.strideLevel || '—')}
+      <div className="flex-1">
+        {renderComparison('Cadence (Turnover)', metrics.cadence ? `${metrics.cadence} SPM` : null, b.cadenceLevel || null)}
+        {renderComparison('Ground Contact Time', metrics.gct ? `${metrics.gct} ms` : null, b.gctLevel || null)}
+        {renderComparison('Stride Length', metrics.strideLength ? `${metrics.strideLength} m` : null, b.strideLevel || null)}
       </div>
     </div>
   );

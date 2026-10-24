@@ -69,7 +69,7 @@ describe('AuthController (e2e)', () => {
       expect(response.body.user).toEqual(userProfile);
 
       // Check cookies
-      const cookies = response.headers['set-cookie'];
+      const cookies = response.headers['set-cookie'] as unknown as string[];
       expect(cookies).toBeDefined();
       expect(
         cookies.some((cookie: string) => cookie.includes('session=')),
@@ -162,7 +162,7 @@ describe('AuthController (e2e)', () => {
       expect(response.body.user).toEqual(userProfile);
 
       // Check cookies
-      const cookies = response.headers['set-cookie'];
+      const cookies = response.headers['set-cookie'] as unknown as string[];
       expect(cookies).toBeDefined();
       expect(
         cookies.some((cookie: string) => cookie.includes('session=')),
@@ -198,7 +198,7 @@ describe('AuthController (e2e)', () => {
 
       expect(response.body.message).toBe('Logged out successfully');
 
-      const cookies = response.headers['set-cookie'];
+      const cookies = response.headers['set-cookie'] as unknown as string[];
       expect(cookies).toBeDefined();
       expect(
         cookies.some((cookie: string) => cookie.includes('session=;')),

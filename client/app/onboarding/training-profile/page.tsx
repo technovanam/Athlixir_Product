@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../context/AuthContext';
 import { getOnboardingProfile } from '../../utils/api';
-import { BarChart2, Loader2, ArrowLeft, ArrowRight, AlertCircle, Clock } from 'lucide-react';
+import { AlertCircle, Clock } from 'lucide-react';
 
 export default function TrainingProfileStep() {
   const router = useRouter();
@@ -18,7 +18,6 @@ export default function TrainingProfileStep() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load existing training profile if any
   useEffect(() => {
     async function loadSavedData() {
       try {
@@ -58,147 +57,169 @@ export default function TrainingProfileStep() {
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-8 animate-fadeIn relative">
-      <div>
-        <h2 className="text-xl md:text-2xl font-black tracking-wider text-white flex items-center gap-2 uppercase crt-glow-white">
-          <BarChart2 className="h-6 w-6 text-[#FF4F21]" />
-          <span>Step 4: Athlete Training Profile</span>
-        </h2>
-        <p className="text-zinc-500 text-xs mt-1 font-medium">
-          Used to understand your active physical stress limits, capacity volumes, and progression analytics.
+    <div className="w-full flex flex-col justify-center">
+      {/* Title & Subtitle */}
+      <div className="text-center select-none mb-5">
+        <h1
+          style={{
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 600,
+            fontSize: '24px',
+            lineHeight: '28px',
+            letterSpacing: '0.01em',
+            color: '#FF4F21',
+          }}
+        >
+          Training Profile
+        </h1>
+        <p
+          style={{
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '20px',
+            color: '#6E6D6D',
+            marginTop: '4px',
+          }}
+        >
+          Calibrates workload progression and recovery intervals.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 animate-fadeIn">
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-          <div>
-            <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0 mr-2">FAIL</span>
-            {error}
-          </div>
+        <div className="mb-4 rounded-2xl border border-red-100 bg-red-50/90 p-3 text-xs text-red-600 font-medium flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+          <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Training Days */}
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Training Frequency</span>
-              <span className="text-sm font-black text-white tracking-wide">{trainingDays} <span className="text-xs text-zinc-500 uppercase tracking-widest font-black">days/wk</span></span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="7"
-              value={trainingDays}
-              onChange={(e) => setTrainingDays(Number(e.target.value))}
-              className="w-full h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
-            />
-            <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
-              <span>1 day</span>
-              <span className="text-[#FF4F21]/70">4 days</span>
-              <span>7 days</span>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-3.5">
+        
+        {/* Training Frequency */}
+        <div
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #EBEBEB',
+            boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.12)',
+            borderRadius: '24px',
+            padding: '16px 20px',
+          }}
+          className="space-y-3"
+        >
+          <div className="flex justify-between items-center">
+            <span style={{ fontFamily: "'Mazzard', sans-serif", fontWeight: 600, fontSize: '13px', color: '#6E6D6D' }}>
+              Training Frequency
+            </span>
+            <span style={{ fontFamily: "'Mazzard', sans-serif", fontWeight: 700, fontSize: '16px', color: '#FF4F21' }}>
+              {trainingDays} <span style={{ fontSize: '11px', color: '#8C8C8C', fontWeight: 500 }}>days/wk</span>
+            </span>
           </div>
-
-          {/* Average Duration */}
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Avg Session Duration</span>
-              <span className="text-sm font-black text-white tracking-wide">{trainingDuration} <span className="text-xs text-zinc-500 uppercase tracking-widest font-black">minutes</span></span>
-            </div>
-            <input
-              type="range"
-              min="10"
-              max="300"
-              step="5"
-              value={trainingDuration}
-              onChange={(e) => setTrainingDuration(Number(e.target.value))}
-              className="w-full h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
-            />
-            <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
-              <span>10m</span>
-              <span className="text-[#FF4F21]/70">150m</span>
-              <span>300m</span>
-            </div>
-          </div>
-
-          {/* Experience Years */}
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Running Experience</span>
-              <span className="text-sm font-black text-white tracking-wide">{experienceYears} <span className="text-xs text-zinc-500 uppercase tracking-widest font-black">{experienceYears === 1 ? 'year' : 'years'}</span></span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="20"
-              value={experienceYears}
-              onChange={(e) => setExperienceYears(Number(e.target.value))}
-              className="w-full h-1 bg-white/[0.08] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
-            />
-            <div className="flex justify-between text-[9px] text-zinc-500 font-bold uppercase tracking-wider">
-              <span>Rookie</span>
-              <span className="text-[#FF4F21]/70">10 yrs</span>
-              <span>20+ yrs</span>
-            </div>
-          </div>
-
-          {/* Personal Best timing */}
-          <div className="rounded-2xl border border-white/[0.05] bg-black/40 hover:border-white/[0.08] transition duration-300 p-6 space-y-4 flex flex-col justify-center group">
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">
-                Personal Best Timing (Optional)
-              </label>
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={personalBest}
-                  onChange={(e) => setPersonalBest(e.target.value)}
-                  placeholder="e.g. 100m -> 12.4s"
-                  className="block w-full bg-black/40 border border-white/[0.05] rounded-xl pl-4 pr-11 py-2.5 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-[#FF4F21] transition duration-200"
-                />
-                <Clock className="absolute right-4 h-4 w-4 text-zinc-700 transition-colors duration-200 group-focus-within:text-[#FF4F21]" />
-              </div>
-              <p className="text-[9px] text-zinc-550 font-medium mt-2">
-                Example: 100m {"->"} 12.4s, 400m {"->"} 52s, or 5K {"->"} 18:45
-              </p>
-            </div>
+          <input
+            type="range"
+            min="1"
+            max="7"
+            value={trainingDays}
+            onChange={(e) => setTrainingDays(Number(e.target.value))}
+            className="w-full h-1.5 bg-[#EBEBEB] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
+          />
+          <div className="flex justify-between" style={{ fontFamily: "'Mazzard', sans-serif", fontSize: '11px', color: '#8C8C8C' }}>
+            <span>1 day</span>
+            <span>7 days</span>
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex justify-between items-center pt-6 border-t border-white/[0.05]">
-          <button
-            type="button"
-            onClick={() => router.replace('/onboarding/body-metrics')}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white transition duration-200 cursor-pointer"
-          >
-            <ArrowLeft className="h-4 w-4 text-[#FF4F21]" />
-            <span>Back</span>
-          </button>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] hover:brightness-110 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#FF4F21]/20 active:scale-98 transition duration-200 cursor-pointer disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <span>Save & Continue</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
+        {/* Avg Duration */}
+        <div
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #EBEBEB',
+            boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.12)',
+            borderRadius: '24px',
+            padding: '16px 20px',
+          }}
+          className="space-y-3"
+        >
+          <div className="flex justify-between items-center">
+            <span style={{ fontFamily: "'Mazzard', sans-serif", fontWeight: 600, fontSize: '13px', color: '#6E6D6D' }}>
+              Avg Duration
+            </span>
+            <span style={{ fontFamily: "'Mazzard', sans-serif", fontWeight: 700, fontSize: '16px', color: '#FF4F21' }}>
+              {trainingDuration} <span style={{ fontSize: '11px', color: '#8C8C8C', fontWeight: 500 }}>min</span>
+            </span>
+          </div>
+          <input
+            type="range"
+            min="10"
+            max="240"
+            step="5"
+            value={trainingDuration}
+            onChange={(e) => setTrainingDuration(Number(e.target.value))}
+            className="w-full h-1.5 bg-[#EBEBEB] rounded-lg appearance-none cursor-pointer accent-[#FF4F21] focus:outline-none"
+          />
+          <div className="flex justify-between" style={{ fontFamily: "'Mazzard', sans-serif", fontSize: '11px', color: '#8C8C8C' }}>
+            <span>10 min</span>
+            <span>240 min</span>
+          </div>
         </div>
+
+        {/* Personal Best Timing Field */}
+        <div
+          className="flex items-center transition-all duration-200 focus-within:border-[#FF4F21] focus-within:ring-4 focus-within:ring-[#FF4F21]/15"
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            height: '56px',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #EBEBEB',
+            boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.12)',
+            borderRadius: '26px',
+            paddingLeft: '21px',
+            paddingRight: '21px',
+          }}
+        >
+          <Clock className="h-[20px] w-[20px] text-[#6E6D6D] shrink-0" />
+          <input
+            type="text"
+            value={personalBest}
+            onChange={(e) => setPersonalBest(e.target.value)}
+            placeholder="Personal Best (e.g. 100m - 10.4s)"
+            style={{
+              fontFamily: "'Mazzard', sans-serif",
+              fontSize: '15px',
+              color: '#1D1B20',
+            }}
+            className="w-full h-full bg-transparent pl-3 pr-1 placeholder-[#6E6D6D] outline-none"
+          />
+        </div>
+
+        {/* Submit Action */}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            height: '56px',
+            backgroundColor: '#FF4F21',
+            border: '1px solid #DDDDDD',
+            boxShadow: 'inset 0px 1px 4px rgba(255, 255, 255, 0.05)',
+            borderRadius: '26px',
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 600,
+            fontSize: '16px',
+            lineHeight: '24px',
+            color: '#FCFCFC',
+            marginTop: '20px',
+          }}
+          className="flex items-center justify-center active:scale-[0.98] transition-transform cursor-pointer disabled:opacity-50"
+        >
+          {loading ? 'Saving...' : 'Continue'}
+        </button>
       </form>
     </div>
   );
 }
-

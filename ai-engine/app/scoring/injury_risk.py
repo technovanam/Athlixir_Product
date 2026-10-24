@@ -7,17 +7,29 @@ from __future__ import annotations
 from typing import Any
 
 
+def _num(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def evaluate_injury_risk(metrics: dict[str, Any]) -> dict[str, Any]:
-    asymmetry = float(metrics.get("asymmetryIndex") or metrics.get("symmetry") or 0)
-    gct = float(metrics.get("gct") or 200)
-    overstride = float(metrics.get("overstrideAngle") or metrics.get("overstride") or 0)
-    oscillation = float(metrics.get("oscillation") or 0)
+    # Unavailable metrics (None) are skipped rather than defaulted, so a metric
+    # rejected by validation can never raise a risk flag. "symmetry" is a
+    # 0–100 higher-is-better score and must not be read as an asymmetry %.
+    asymmetry = _num(metrics.get("asymmetryIndex"))
+    gct = _num(metrics.get("gct"))
+    overstride = _num(metrics.get("overstrideAngle") if metrics.get("overstrideAngle") is not None else metrics.get("overstride"))
+    oscillation = _num(metrics.get("oscillation"))
 
     flags: list[dict[str, Any]] = []
     risk_points = 0
     primary_area = "None"
 
-    if asymmetry > 5.0:
+    if asymmetry is not None and asymmetry > 5.0:
         flags.append({
             "category": "Limb Asymmetry",
             "detected": True,
@@ -28,7 +40,7 @@ def evaluate_injury_risk(metrics: dict[str, Any]) -> dict[str, Any]:
         risk_points += 30 if asymmetry > 8 else 18
         primary_area = "Knee"
 
-    if overstride > 6.0:
+    if overstride is not None and overstride > 6.0:
         flags.append({
             "category": "Overstriding",
             "detected": True,
@@ -40,7 +52,7 @@ def evaluate_injury_risk(metrics: dict[str, Any]) -> dict[str, Any]:
         if primary_area == "None":
             primary_area = "Hamstring"
 
-    if gct > 150:  # User defined realistic GCT is 70-150ms. High GCT -> fatigue
+    if gct is not None and gct > 150:  # User defined realistic GCT is 70-150ms. High GCT -> fatigue
         flags.append({
             "category": "Prolonged Ground Contact",
             "detected": True,
@@ -52,7 +64,7 @@ def evaluate_injury_risk(metrics: dict[str, Any]) -> dict[str, Any]:
         if primary_area == "None":
             primary_area = "Fatigue"
 
-    if oscillation > 10.0:
+    if oscillation is not None and oscillation > 10.0:
         flags.append({
             "category": "Excessive Vertical Oscillation",
             "detected": True,

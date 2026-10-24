@@ -17,7 +17,16 @@ import { AnalysisService } from '../services/analysis.service';
 import { FirebaseAuthGuard } from '../../../auth/guards/firebase-auth.guard';
 import { InternalAuthGuard } from '../../../auth/guards/internal-auth.guard';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 import { AiCallbackDto } from '../dto/ai-callback.dto';
+
+/** Subset of the Multer file object that FileInterceptor attaches. */
+interface UploadedMultipartFile {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size: number;
+}
 
 @ApiTags('Analysis')
 @Controller('analysis')
@@ -42,7 +51,10 @@ export class AnalysisController {
       },
     },
   })
-  async uploadVideo(@CurrentUser() user: any, @UploadedFile() file: any) {
+  async uploadVideo(
+    @CurrentUser() user: DecodedIdToken,
+    @UploadedFile() file: UploadedMultipartFile | undefined,
+  ) {
     if (!file) {
       throw new BadRequestException('No video file selected for analysis.');
     }
@@ -52,7 +64,7 @@ export class AnalysisController {
   @Get('list')
   @UseGuards(FirebaseAuthGuard)
   @ApiOperation({ summary: 'Retrieve historical running analysis records' })
-  async listAnalyses(@CurrentUser() user: any) {
+  async listAnalyses(@CurrentUser() user: DecodedIdToken) {
     return this.analysisService.listAnalyses(user.uid);
   }
 
@@ -61,7 +73,7 @@ export class AnalysisController {
   @ApiOperation({
     summary: 'Retrieve athlete multi-session evolution and progression trends',
   })
-  async getEvolution(@CurrentUser() user: any) {
+  async getEvolution(@CurrentUser() user: DecodedIdToken) {
     return this.analysisService.getAthleteEvolution(user.uid);
   }
 
@@ -75,7 +87,7 @@ export class AnalysisController {
   })
   @ApiConsumes('multipart/form-data')
   async uploadOverlay(
-    @UploadedFile() file: any,
+    @UploadedFile() file: UploadedMultipartFile | undefined,
     @Body('analysisId') analysisId: string,
     @Body('userId') userId: string,
   ) {
@@ -96,7 +108,7 @@ export class AnalysisController {
   })
   @ApiConsumes('multipart/form-data')
   async uploadReport(
-    @UploadedFile() file: any,
+    @UploadedFile() file: UploadedMultipartFile | undefined,
     @Body('analysisId') analysisId: string,
     @Body('userId') userId: string,
   ) {
@@ -114,7 +126,7 @@ export class AnalysisController {
   @ApiOperation({ summary: 'Stream HTML biomechanics report' })
   async streamReport(
     @Param('id') analysisId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: DecodedIdToken,
     @Res() res: Response,
   ) {
     const { stream, contentType } = await this.analysisService.streamReport(
@@ -134,7 +146,7 @@ export class AnalysisController {
   async streamVideo(
     @Param('id') analysisId: string,
     @Param('type') type: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: DecodedIdToken,
     @Res() res: Response,
   ) {
     if (type !== 'original' && type !== 'overlay') {
@@ -142,12 +154,29 @@ export class AnalysisController {
     }
     const { stream, contentType } = await this.analysisService.streamVideo(
       analysisId,
-      user,
       type,
+      user,
     );
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Accept-Ranges', 'bytes');
+    // Athlete footage is per-user: never let shared caches store it.
     res.setHeader('Cache-Control', 'private, max-age=3600');
+    stream.pipe(res);
+  }
+
+  @Get(':id/source')
+  @UseGuards(InternalAuthGuard)
+  @ApiOperation({
+    summary:
+      'Internal AI endpoint to download the original video when Firebase Storage is unavailable',
+  })
+  async streamSourceVideo(
+    @Param('id') analysisId: string,
+    @Res() res: Response,
+  ) {
+    const { stream, contentType } =
+      await this.analysisService.streamSourceVideoForEngine(analysisId);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'no-store');
     stream.pipe(res);
   }
 
@@ -160,7 +189,7 @@ export class AnalysisController {
   async chatWithCopilot(
     @Param('id') analysisId: string,
     @Body('message') message: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: DecodedIdToken,
   ) {
     if (!message) {
       throw new BadRequestException('Message cannot be empty.');
@@ -175,7 +204,10 @@ export class AnalysisController {
   @Post(':id/cancel')
   @UseGuards(FirebaseAuthGuard)
   @ApiOperation({ summary: 'Cancel an in-progress running video analysis' })
-  async cancelAnalysis(@Param('id') analysisId: string, @CurrentUser() user: any) {
+  async cancelAnalysis(
+    @Param('id') analysisId: string,
+    @CurrentUser() user: DecodedIdToken,
+  ) {
     return this.analysisService.cancelAnalysis(analysisId, user.uid);
   }
 
@@ -184,8 +216,11 @@ export class AnalysisController {
   @ApiOperation({
     summary: 'Retrieve detailed running biomechanics profile by ID',
   })
-  async getAnalysis(@Param('id') analysisId: string) {
-    return this.analysisService.getAnalysis(analysisId);
+  async getAnalysis(
+    @Param('id') analysisId: string,
+    @CurrentUser() user: DecodedIdToken,
+  ) {
+    return this.analysisService.getAnalysis(analysisId, user);
   }
 
   @Post('callback')

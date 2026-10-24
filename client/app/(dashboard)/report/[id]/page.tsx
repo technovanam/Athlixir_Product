@@ -3,14 +3,66 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { api, useAuth } from '../../../context/AuthContext';
-import { 
-  Printer, Share2, Activity, Shield, Zap, Compass, 
-  Target, AlertTriangle, CheckCircle, TrendingUp, ChevronLeft, MapPin
+import {
+  Printer, Share2, Activity, Shield, Zap, Compass,
+  Target, AlertTriangle, CheckCircle, TrendingUp, ChevronLeft
 } from 'lucide-react';
 import Link from 'next/link';
 
 // Helper component to force a page break when printing
 const PageBreak = () => <div className="break-before-page print:block hidden" />;
+
+const RING_PATH = 'M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831';
+
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const show = (v: unknown) => (isNum(v) ? v : '—');
+
+function ScoreRing({ label, value, ringClass, textClass }: { label: string; value: unknown; ringClass: string; textClass: string }) {
+  const pct = isNum(value) ? Math.min(Math.max(value, 0), 100) : 0;
+  return (
+    <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-xs">
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">{label}</p>
+      <div className="relative h-28 w-28">
+        <svg className="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
+          <path className="text-slate-200" strokeWidth="3" stroke="currentColor" fill="none" d={RING_PATH} />
+          {pct > 0 && (
+            <path className={ringClass} strokeDasharray={`${pct}, 100`} strokeWidth="3" stroke="currentColor" fill="none" strokeLinecap="round" d={RING_PATH} />
+          )}
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center"><span className={`text-3xl font-black ${textClass}`}>{show(value)}</span></div>
+      </div>
+    </div>
+  );
+}
+
+function MetricRow({ label, value, unit, valueClass = 'text-slate-900', shaded = false, last = false }: { label: string; value: unknown; unit: string; valueClass?: string; shaded?: boolean; last?: boolean }) {
+  return (
+    <div className={`flex justify-between items-center p-3.5 ${last ? '' : 'border-b border-slate-100'} ${shaded ? 'bg-slate-50/50' : ''}`}>
+      <span className="text-xs font-medium text-slate-600">{label}</span>
+      <span className={`text-sm font-extrabold ${valueClass}`}>
+        {show(value)}{isNum(value) && <span className="text-[10px] text-slate-400 font-semibold uppercase"> {unit}</span>}
+      </span>
+    </div>
+  );
+}
+
+function InsightList({ title, items, icon, tone }: { title: string; items: string[]; icon: React.ReactNode; tone: string }) {
+  return (
+    <div className="rounded-2xl bg-slate-50/70 border border-slate-200/80 p-4 shadow-xs">
+      <div className={`h-8 w-8 rounded-xl flex items-center justify-center mb-3 ${tone}`}>{icon}</div>
+      <p className="text-xs font-bold text-slate-900 mb-2">{title}</p>
+      {items.length > 0 ? (
+        <ul className="space-y-1.5">
+          {items.map((item, i) => (
+            <li key={i} className="text-[11px] text-slate-600 font-medium leading-snug">{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[11px] text-slate-400 font-medium">—</p>
+      )}
+    </div>
+  );
+}
 
 export default function ProfessionalAIReportPage() {
   const { id } = useParams() as { id: string };
@@ -34,10 +86,10 @@ export default function ProfessionalAIReportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center">
-          <Activity className="h-12 w-12 text-[#FF4F21] animate-pulse mb-4" />
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest animate-pulse">Generating Report Engine...</p>
+          <Activity className="h-8 w-8 text-[#FF4F21] animate-spin mb-3" />
+          <p className="text-xs font-semibold text-slate-500">Compiling executive sports science report...</p>
         </div>
       </div>
     );
@@ -46,66 +98,83 @@ export default function ProfessionalAIReportPage() {
   if (!data) return null;
 
   const athleteName = user?.name || user?.username || 'Athlete';
-  const tier = user?.classification?.athleteLevel || 'U18 Sprinter';
-  const scores = data.scores || { performanceScore: 82, efficiencyScore: 78, biomechanicsScore: 85 };
-  const metrics = data.metrics || { cadence: 172, gct: 210, strideLength: 1.8, symmetry: 94, verticalOscillation: 8.5 };
-  const form = data.formAnalysis || { postureAngle: 12, hipDrop: 4, kneeExtension: 165 };
+  const scores = data.scores || {};
+  const metrics = data.metrics || {};
+  const tier = data.classification?.athleteLevel || scores.athleteLevel || 'Unclassified';
+  const injury = data.injuryRisk || {};
+  const injuryFlags: Array<{ detected?: boolean; detail?: string }> = Array.isArray(data.injuryRisks)
+    ? data.injuryRisks.filter((f: any) => f?.detected)
+    : [];
+  const insights = data.insights || {};
+  const recommendations: string[] = Array.isArray(data.recommendations) ? data.recommendations : [];
+  const metricFlags: string[] = Array.isArray(data.metricFlags) ? data.metricFlags : [];
+  const injuryLevel: string = injury.level || 'Not assessed';
+  const injuryElevated = injuryLevel === 'Moderate' || injuryLevel === 'High';
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white print:bg-white print:text-black font-sans pb-32">
-      
+    <div className="min-h-screen bg-[#F2F2F7] text-slate-900 pb-32 print:bg-white print:pb-0" style={{ fontFamily: "'Mazzard', sans-serif" }}>
+
       {/* EXPORT FEATURES (Hidden on print) */}
-      <div className="sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-xl border-b border-white/[0.05] px-6 py-4 flex items-center justify-between print:hidden">
-        <Link href={`/history`} className="flex items-center gap-2 text-xs font-bold text-zinc-400 hover:text-white transition">
-          <ChevronLeft className="h-4 w-4" /> Back to History
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EBEBEB] px-6 py-3.5 flex items-center justify-between print:hidden shadow-xs">
+        <Link href={`/history`} className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-[#FF4F21] transition">
+          <ChevronLeft className="h-4 w-4" /> Back to Sessions
         </Link>
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-900 border border-white/[0.05] hover:border-white/[0.1] text-xs font-bold text-white transition">
-            <Share2 className="h-3.5 w-3.5" /> Share Link
+        <div className="flex items-center gap-2.5">
+          <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 active:scale-95 transition cursor-pointer">
+            <Share2 className="h-3.5 w-3.5" /> Share
           </button>
-          <button 
+          <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#FF4F21] to-[#FF8433] text-white hover:opacity-90 text-xs font-bold shadow-[0_0_15px_rgba(255,79,33,0.3)] transition"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#FF4F21] hover:bg-[#e0451a] text-white text-xs font-semibold active:scale-95 transition shadow-sm cursor-pointer"
           >
-            <Printer className="h-3.5 w-3.5" /> Export PDF
+            <Printer className="h-3.5 w-3.5" /> Print / Export PDF
           </button>
         </div>
       </div>
 
-      <div className="max-w-[850px] mx-auto mt-12 print:mt-0 space-y-12 print:space-y-0 print:p-0 p-4">
-        
+      <div className="max-w-[850px] mx-auto mt-6 print:mt-0 space-y-6 print:space-y-0 print:p-0 p-4">
+
         {/* =========================================
             PAGE 1: COVER PAGE
         ========================================= */}
-        <div className="bg-black text-white rounded-2xl overflow-hidden border border-white/[0.05] print:rounded-none print:border-none print:min-h-screen print:flex print:flex-col print:justify-center relative p-12" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 mix-blend-overlay" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
-            <Compass className="h-[600px] w-[600px]" />
-          </div>
-          
-          <div className="relative z-10 flex flex-col h-full justify-between min-h-[600px] print:min-h-[900px]">
+        <div className="bg-white text-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm print:rounded-none print:border-none print:shadow-none print:min-h-screen print:flex print:flex-col print:justify-between relative p-12">
+          <div className="relative z-10 flex flex-col h-full justify-between min-h-[560px] print:min-h-[880px]">
             <div>
-              <div className="flex items-center gap-3 mb-12">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-tr from-[#FF4F21] to-[#FF8433] flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(255,79,33,0.3)]">
-                  <Activity className="h-6 w-6 text-white" />
+              <div className="flex items-center justify-between pb-8 mb-10 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-[#FF4F21] flex items-center justify-center font-bold text-sm shadow-sm text-white">
+                    <Activity className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <span className="font-agale font-extrabold text-lg tracking-tight uppercase text-slate-900">ATHLIXIR</span>
+                    <p className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Biomechanical Performance Lab</p>
+                  </div>
                 </div>
-                <span className="font-black text-xl tracking-tight uppercase">Athlixir <span className="text-zinc-600">OS</span></span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 border border-slate-200/60 px-3 py-1 rounded-full">
+                  Confidential Assessment
+                </span>
               </div>
-              <h2 className="text-[#FF4F21] text-xs font-bold uppercase tracking-[0.3em] mb-4">Official Biomechanics Report</h2>
-              <h1 className="text-6xl font-black uppercase tracking-tight leading-none mb-6">{athleteName}</h1>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-white/[0.05] text-sm font-bold text-zinc-300 print:border-zinc-500">
+
+              <h2 className="text-[#FF4F21] text-xs font-bold uppercase tracking-[0.25em] mb-3">Official Biomechanics Assessment</h2>
+              <h1 className="text-5xl font-black uppercase tracking-tight leading-tight mb-5 text-slate-900">{athleteName}</h1>
+
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-50/70 border border-orange-200/60 text-xs font-bold text-[#FF4F21]">
                 <Shield className="h-4 w-4 text-[#FF4F21]" /> {tier}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 border-t border-white/[0.05] pt-8 mt-12">
+            <div className="grid grid-cols-3 gap-6 border-t border-slate-100 pt-8 mt-12 bg-slate-50/50 -mx-12 -mb-12 p-12">
               <div>
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Session ID</p>
-                <p className="text-sm font-mono text-zinc-300">{id.slice(0, 12).toUpperCase()}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Session Reference</p>
+                <p className="text-xs font-mono font-bold text-slate-800">{id.slice(0, 14).toUpperCase()}</p>
               </div>
               <div>
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Analysis Date</p>
-                <p className="text-sm font-bold text-zinc-300">{new Date(data.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Assessment Date</p>
+                <p className="text-xs font-bold text-slate-800">{data.createdAt ? new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Engine Algorithm</p>
+                <p className="text-xs font-bold text-slate-800">MediaPipe Pose Kinematics</p>
               </div>
             </div>
           </div>
@@ -116,249 +185,115 @@ export default function ProfessionalAIReportPage() {
         {/* =========================================
             PAGE 2: PERFORMANCE SUMMARY
         ========================================= */}
-        <div className="bg-zinc-950 text-white rounded-2xl border border-white/[0.05] print:rounded-none print:border-none print:min-h-screen p-12" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-          <div className="flex items-center gap-3 border-b border-white/[0.05] pb-4 mb-10">
+        <div className="bg-white text-slate-900 rounded-3xl border border-slate-200/80 shadow-sm print:rounded-none print:border-none print:shadow-none print:min-h-screen p-12">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-10">
             <Target className="h-5 w-5 text-[#FF4F21]" />
-            <h2 className="text-lg font-black uppercase tracking-widest">Performance Summary</h2>
+            <h2 className="text-base font-extrabold uppercase tracking-wider text-slate-900">Performance Summary & Diagnostics</h2>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 mb-12">
-            <div className="bg-[#08080C]/40 border border-white/[0.05] rounded-xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-5"><Activity className="h-24 w-24" /></div>
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 relative z-10">Overall Performance</p>
-              <div className="relative h-32 w-32 z-10">
-                <svg className="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
-                  <path className="text-zinc-800" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path className="text-white" strokeDasharray={`${scores.performanceScore}, 100`} strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center"><span className="text-3xl font-black">{scores.performanceScore}</span></div>
-              </div>
-            </div>
-
-            <div className="bg-[#08080C]/40 border border-white/[0.05] rounded-xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 relative z-10">Sprint Efficiency</p>
-              <div className="relative h-32 w-32 z-10">
-                <svg className="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
-                  <path className="text-zinc-800" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path className="text-[#FF4F21]" strokeDasharray={`${scores.efficiencyScore}, 100`} strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center"><span className="text-3xl font-black">{scores.efficiencyScore}</span></div>
-              </div>
-            </div>
-
-            <div className="bg-[#08080C]/40 border border-white/[0.05] rounded-xl p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 relative z-10">Biomechanics</p>
-              <div className="relative h-32 w-32 z-10">
-                <svg className="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
-                  <path className="text-zinc-800" strokeWidth="2.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                  <path className="text-blue-500" strokeDasharray={`${scores.biomechanicsScore}, 100`} strokeWidth="2.5" stroke="currentColor" fill="none" strokeLinecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center"><span className="text-3xl font-black">{scores.biomechanicsScore}</span></div>
-              </div>
-            </div>
+          <div className="grid grid-cols-3 gap-6 mb-10">
+            <ScoreRing label="Overall Performance" value={scores.performanceScore} ringClass="text-slate-900" textClass="text-slate-900" />
+            <ScoreRing label="Sprint Efficiency" value={scores.efficiencyScore} ringClass="text-[#FF4F21]" textClass="text-[#FF4F21]" />
+            <ScoreRing label="Kinematics" value={scores.biomechanicsScore} ringClass="text-emerald-500" textClass="text-emerald-600" />
           </div>
 
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6 flex items-start gap-4">
-            <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0 mt-1" />
+          <div className={`${injuryElevated ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'} border rounded-2xl p-6 flex items-start gap-4 shadow-xs`}>
+            {injuryElevated
+              ? <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              : <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />}
             <div>
-              <h3 className="text-sm font-black text-amber-500 uppercase tracking-widest mb-2">Injury Risk: Moderate</h3>
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                Elevated ground contact time combined with forward posture lean indicates significant load on the left hamstring during the deceleration phase. Recommend targeted mobility work.
+              <h3 className={`text-xs font-bold uppercase tracking-wider mb-1.5 ${injuryElevated ? 'text-amber-900' : 'text-emerald-900'}`}>
+                Injury Risk Assessment: {injuryLevel}
+                {injury.riskArea && injury.riskArea !== 'None' ? ` · ${injury.riskArea}` : ''}
+              </h3>
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                {injuryFlags.length > 0
+                  ? injuryFlags.map((f) => f.detail).filter(Boolean).join('. ')
+                  : 'No significant biomechanical risk flags detected in this session.'}
               </p>
             </div>
           </div>
+
+          {metricFlags.length > 0 && (
+            <p className="mt-4 text-[11px] text-slate-500 font-medium">
+              Some metrics could not be measured reliably from this video and were excluded from scoring ({metricFlags.join(', ')}).
+            </p>
+          )}
         </div>
 
         <PageBreak />
 
         {/* =========================================
-            PAGE 3: BIOMECHANICS & VIDEO SNAPSHOTS
+            PAGE 3: BIOMECHANICS & KINEMATICS
         ========================================= */}
-        <div className="bg-zinc-950 text-white rounded-2xl border border-white/[0.05] print:rounded-none print:border-none print:min-h-screen p-12" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-          <div className="flex items-center gap-3 border-b border-white/[0.05] pb-4 mb-10">
+        <div className="bg-white text-slate-900 rounded-3xl border border-slate-200/80 shadow-sm print:rounded-none print:border-none print:shadow-none print:min-h-screen p-12">
+          <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-10">
             <Activity className="h-5 w-5 text-[#FF4F21]" />
-            <h2 className="text-lg font-black uppercase tracking-widest">Biomechanics & Kinematics</h2>
+            <h2 className="text-base font-extrabold uppercase tracking-wider text-slate-900">Telemetry & Kinematic Breakdown</h2>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 mb-12">
+          <div className="grid grid-cols-2 gap-8 mb-10">
             <div>
-              <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Core Running Metrics</h3>
-              <div className="border border-white/[0.05] rounded-xl overflow-hidden bg-[#08080C]/40 backdrop-blur-md">
-                <div className="flex justify-between items-center p-4 border-b border-white/[0.05]">
-                  <span className="text-xs font-bold text-zinc-400">Cadence</span>
-                  <span className="text-sm font-black text-white">{metrics.cadence} <span className="text-[9px] text-zinc-600 font-bold uppercase">SPM</span></span>
-                </div>
-                <div className="flex justify-between items-center p-4 border-b border-white/[0.05] bg-black/40">
-                  <span className="text-xs font-bold text-zinc-400">Ground Contact</span>
-                  <span className="text-sm font-black text-[#FF4F21]">{metrics.gct} <span className="text-[9px] text-[#FF4F21]/50 font-bold uppercase">ms</span></span>
-                </div>
-                <div className="flex justify-between items-center p-4 border-b border-white/[0.05]">
-                  <span className="text-xs font-bold text-zinc-400">Stride Length</span>
-                  <span className="text-sm font-black text-white">{metrics.strideLength} <span className="text-[9px] text-zinc-600 font-bold uppercase">m</span></span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-black/40">
-                  <span className="text-xs font-bold text-zinc-400">Symmetry Index</span>
-                  <span className="text-sm font-black text-emerald-500">{metrics.symmetry} <span className="text-[9px] text-emerald-500/50 font-bold uppercase">%</span></span>
-                </div>
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Core Running Metrics</h3>
+              <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-xs">
+                <MetricRow label="Cadence" value={metrics.cadence} unit="SPM" />
+                <MetricRow label="Ground Contact" value={metrics.gct} unit="ms" valueClass="text-[#FF4F21]" shaded />
+                <MetricRow label="Stride Length" value={metrics.strideLength} unit="m" />
+                <MetricRow label="Symmetry Index" value={metrics.symmetry} unit="%" valueClass="text-emerald-600" shaded last />
               </div>
             </div>
-            
+
             <div>
-              <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Postural Kinematics</h3>
-              <div className="border border-white/[0.05] rounded-xl overflow-hidden bg-[#08080C]/40 backdrop-blur-md">
-                <div className="flex justify-between items-center p-4 border-b border-white/[0.05]">
-                  <span className="text-xs font-bold text-zinc-400">Forward Lean</span>
-                  <span className="text-sm font-black text-white">{form.postureAngle}°</span>
-                </div>
-                <div className="flex justify-between items-center p-4 border-b border-white/[0.05] bg-black/40">
-                  <span className="text-xs font-bold text-zinc-400">Hip Drop</span>
-                  <span className="text-sm font-black text-[#FF4F21]">{form.hipDrop}° <span className="text-[9px] text-[#FF4F21]/50 font-bold uppercase">(High)</span></span>
-                </div>
-                <div className="flex justify-between items-center p-4">
-                  <span className="text-xs font-bold text-zinc-400">Knee Extension</span>
-                  <span className="text-sm font-black text-white">{form.kneeExtension}°</span>
-                </div>
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Postural Kinematics</h3>
+              <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-xs">
+                <MetricRow label="Forward Lean" value={metrics.postureAngle} unit="°" />
+                <MetricRow label="Overstride Angle" value={metrics.overstrideAngle} unit="°" valueClass="text-[#FF4F21]" shaded />
+                <MetricRow label="Vertical Oscillation" value={metrics.oscillation} unit="cm" last />
               </div>
             </div>
           </div>
 
-          <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Key Pose Snapshots</h3>
+          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Gait Phase Observations</h3>
           <div className="grid grid-cols-3 gap-4">
-            <div className="aspect-[4/5] rounded-xl bg-[#08080C]/40 border border-white/[0.05] relative overflow-hidden flex flex-col justify-end p-4">
-              <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-12 w-12 text-zinc-800/40" />
-              <div className="relative z-10">
-                <p className="text-xs font-black text-white mb-1">Max Knee Drive</p>
-                <p className="text-[9px] font-bold text-emerald-500">Optimal Angle Detected</p>
-              </div>
-            </div>
-            <div className="aspect-[4/5] rounded-xl bg-[#08080C]/40 border border-white/[0.05] relative overflow-hidden flex flex-col justify-end p-4">
-              <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-12 w-12 text-zinc-800/40" />
-              <div className="relative z-10">
-                <p className="text-xs font-black text-white mb-1">Foot Strike</p>
-                <p className="text-[9px] font-bold text-[#FF4F21]">Braking Force Alert</p>
-              </div>
-            </div>
-            <div className="aspect-[4/5] rounded-xl bg-[#08080C]/40 border border-white/[0.05] relative overflow-hidden flex flex-col justify-end p-4">
-              <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-12 w-12 text-zinc-800/40" />
-              <div className="relative z-10">
-                <p className="text-xs font-black text-white mb-1">Toe-Off</p>
-                <p className="text-[9px] font-bold text-zinc-400">165° Extension</p>
-              </div>
-            </div>
+            <InsightList title="Strengths" items={insights.strengths || []} icon={<CheckCircle className="h-4 w-4" />} tone="bg-emerald-100 text-emerald-700" />
+            <InsightList title="Focus Areas" items={insights.weaknesses || []} icon={<AlertTriangle className="h-4 w-4" />} tone="bg-orange-100 text-[#FF4F21]" />
+            <InsightList title="Observations" items={insights.observations || []} icon={<TrendingUp className="h-4 w-4" />} tone="bg-blue-100 text-blue-700" />
           </div>
         </div>
 
         <PageBreak />
 
         {/* =========================================
-            PAGE 4: AI INSIGHTS & BENCHMARKS
+            PAGE 4: INTERVENTIONS & DRILLS
         ========================================= */}
-        <div className="bg-zinc-950 text-white rounded-2xl border border-white/[0.05] print:rounded-none print:border-none print:min-h-screen p-12" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-          
-          <div className="flex items-center gap-3 border-b border-white/[0.05] pb-4 mb-10">
-            <Zap className="h-5 w-5 text-[#FF4F21]" />
-            <h2 className="text-lg font-black uppercase tracking-widest">AI Intelligence Engine</h2>
-          </div>
-
-          <div className="space-y-4 mb-16">
-            <div className="bg-[#FF4F21]/10 border border-[#FF4F21]/20 rounded-xl p-5 flex items-start gap-4">
-              <Zap className="h-5 w-5 text-[#FF4F21] shrink-0 mt-0.5" />
-              <p className="text-xs text-[#FF4F21] font-bold leading-relaxed">
-                Overstride detected during acceleration phase. Your foot is striking significantly ahead of your center of mass, leading to high braking forces and elevated GCT.
-              </p>
+        <div className="bg-white text-slate-900 rounded-3xl border border-slate-200/80 shadow-sm print:rounded-none print:border-none print:shadow-none print:min-h-screen p-12 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4 mb-10">
+              <Compass className="h-5 w-5 text-[#FF4F21]" />
+              <h2 className="text-base font-extrabold uppercase tracking-wider text-slate-900">Prescribed Training Interventions</h2>
             </div>
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5 flex items-start gap-4">
-              <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-emerald-500 font-bold leading-relaxed">
-                Ground contact asymmetry reduced by 11% compared to previous session. Left-leg mechanics are stabilizing nicely during maximal velocity.
-              </p>
-            </div>
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-5 flex items-start gap-4">
-              <TrendingUp className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-400 font-bold leading-relaxed">
-                Cadence has improved significantly (now 172 SPM), but remains slightly below the elite benchmark. Focus on stiffening the ankle complex.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-3 border-b border-white/[0.05] pb-4 mb-10">
-            <Shield className="h-5 w-5 text-[#FF4F21]" />
-            <h2 className="text-lg font-black uppercase tracking-widest">State & Elite Benchmarks</h2>
-          </div>
-
-          <div className="space-y-8">
-            <div>
-              <div className="flex justify-between text-[10px] font-bold text-zinc-500 uppercase mb-2">
-                <span>Cadence Target</span>
-                <span className="text-white">172 / 185 SPM</span>
-              </div>
-              <div className="h-3 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/[0.05]">
-                <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 w-[93%]" />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-[10px] font-bold text-zinc-500 uppercase mb-2">
-                <span>Overall Efficiency vs {tier}</span>
-                <span className="text-[#FF4F21]">Top 18%</span>
-              </div>
-              <div className="h-3 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/[0.05]">
-                <div className="h-full bg-gradient-to-r from-[#FF4F21] to-[#FF8433] w-[82%]" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <PageBreak />
-
-        {/* =========================================
-            PAGE 5: AI COACH RECOMMENDATIONS
-        ========================================= */}
-        <div className="bg-zinc-950 text-white rounded-2xl border border-white/[0.05] print:rounded-none print:border-none print:min-h-screen p-12" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-          <div className="flex items-center gap-3 border-b border-white/[0.05] pb-4 mb-10">
-            <Compass className="h-5 w-5 text-[#FF4F21]" />
-            <h2 className="text-lg font-black uppercase tracking-widest">Prescribed Interventions</h2>
-          </div>
-
-          <div className="grid grid-cols-2 gap-8 mb-16">
-            <div className="bg-[#08080C]/40 border border-white/[0.05] rounded-xl p-6">
-              <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Zap className="h-4 w-4 text-[#FF4F21]" /> Sprint Drills
+            <div className="bg-orange-50/40 border border-orange-200/60 rounded-2xl p-6 shadow-xs mb-10">
+              <h3 className="text-xs font-bold text-orange-950 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-[#FF4F21]" /> Recommended Drills
               </h3>
-              <ul className="space-y-3">
-                <li className="text-xs text-zinc-300 font-medium flex items-start gap-2">
-                  <span className="text-[#FF4F21] font-black">•</span> Wicket runs (Focus on rapid turnover)
-                </li>
-                <li className="text-xs text-zinc-300 font-medium flex items-start gap-2">
-                  <span className="text-[#FF4F21] font-black">•</span> A-Skips with emphasis on mid-foot strike
-                </li>
-                <li className="text-xs text-zinc-300 font-medium flex items-start gap-2">
-                  <span className="text-[#FF4F21] font-black">•</span> Resisted sled pushes (Acceleration phase)
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-[#08080C]/40 border border-white/[0.05] rounded-xl p-6">
-              <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Shield className="h-4 w-4 text-blue-500" /> Mobility & Recovery
-              </h3>
-              <ul className="space-y-3">
-                <li className="text-xs text-zinc-300 font-medium flex items-start gap-2">
-                  <span className="text-blue-500 font-black">•</span> Ankle dorsiflexion stretching (2x daily)
-                </li>
-                <li className="text-xs text-zinc-300 font-medium flex items-start gap-2">
-                  <span className="text-blue-500 font-black">•</span> Left hip flexor isometric holds
-                </li>
-                <li className="text-xs text-zinc-300 font-medium flex items-start gap-2">
-                  <span className="text-blue-500 font-black">•</span> Drop jumps to decrease GCT
-                </li>
-              </ul>
+              {recommendations.length > 0 ? (
+                <ul className="space-y-3">
+                  {recommendations.map((rec, i) => (
+                    <li key={i} className="text-xs text-slate-700 font-medium flex items-start gap-2">
+                      <span className="text-[#FF4F21] font-bold">•</span> {rec}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-slate-500 font-medium">No drill recommendations for this session.</p>
+              )}
             </div>
           </div>
 
-          <div className="text-center pt-16 border-t border-white/[0.05] mt-auto">
-            <Activity className="h-6 w-6 text-zinc-700 mx-auto mb-2" />
-            <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-[0.3em]">
-              Generated by ATHLIXIR AI Athlete OS
+          <div className="text-center pt-8 border-t border-slate-100 mt-12">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
+              ATHLIXIR High Performance Biomechanical Intelligence System
             </p>
           </div>
         </div>

@@ -22,7 +22,7 @@ export class AiCallbackDto {
 
   @ApiPropertyOptional({ description: 'Current progress percentage or object' })
   @IsOptional()
-  progress?: any;
+  progress?: number | Record<string, unknown>;
 
   @ApiPropertyOptional({ description: 'Calculated running metrics' })
   @IsOptional()
@@ -122,6 +122,11 @@ export class AiCallbackDto {
   @IsArray()
   @IsString({ each: true })
   metricFlags?: string[];
+
+  @ApiPropertyOptional({ description: 'Human-readable pipeline stage message' })
+  @IsOptional()
+  @IsString()
+  statusMessage?: string;
 
   @ApiPropertyOptional({ description: 'Diagnostic error message details' })
   @IsOptional()

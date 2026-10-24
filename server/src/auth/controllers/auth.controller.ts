@@ -133,4 +133,11 @@ export class AuthController {
       user: profile || user,
     };
   }
+
+  @Post('password/forgot')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiOperation({ summary: 'Send password reset link to user email' })
+  async forgotPassword(@Body() body: { email: string }) {
+    return this.authService.sendPasswordResetEmail(body.email);
+  }
 }

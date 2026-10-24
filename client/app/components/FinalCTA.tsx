@@ -2,67 +2,63 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { ArrowRight, Sparkles } from 'lucide-react';
 
-const FinalCTA = () => {
+const FinalCTA: React.FC = () => {
   return (
-    <section className="relative py-16 md:py-24 flex items-center justify-center overflow-hidden bg-black border-t border-zinc-950">
-      
-      {/* Background ambient overlays */}
-      <div className="absolute inset-0 z-0 select-none pointer-events-none">
-        <Image
-          src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1305&auto=format&fit=crop&ixlib=rb-4.1.0"
-          alt="Stadium lights backdrop"
-          fill
-          unoptimized
-          className="w-full h-full object-cover opacity-35"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FF4F21]/10 rounded-full blur-[150px]" />
-      </div>
-
-      {/* Content wrapper */}
-      <div className="relative z-20 text-center text-white px-6 md:px-12 container mx-auto flex flex-col items-center">
+    <section className="py-12 sm:py-14 bg-[#F2F2F7] relative overflow-hidden font-poppins text-[#1C1C1E]">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="inline-flex px-5 py-2 rounded-full border border-[#FF4F21]/30 bg-[#FF4F21]/10 text-[11px] font-bold uppercase tracking-[0.25em] mb-10 text-[#FF4F21] backdrop-blur-sm"
+          className="relative rounded-[32px] overflow-hidden border border-black/[0.06] shadow-xl bg-white"
         >
-          Get Early Access
+          {/* Background photo */}
+          <Image
+            src="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1600&auto=format&fit=crop"
+            alt="Sprinter at the starting line"
+            fill
+            unoptimized
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/30" />
+
+          {/* Content */}
+          <div className="relative z-10 px-8 py-16 md:px-16 md:py-20 max-w-2xl text-white">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-[11px] font-bold uppercase tracking-[0.2em] mb-6 text-white backdrop-blur-md">
+              <Sparkles className="w-3.5 h-3.5 text-[#FF4F21]" />
+              Start Your Evolution
+            </div>
+
+            <h2 className="text-3xl md:text-5xl font-extrabold text-white leading-tight tracking-tight mb-4">
+              Ready to Decode <br />
+              <span className="text-[#FF4F21]">Your Sprint?</span>
+            </h2>
+
+            <p className="text-zinc-200 text-sm md:text-base leading-relaxed font-normal mb-8 max-w-lg">
+              Upload a single sprint video and get AI-powered biomechanics analysis, injury risk detection, and performance benchmarking &mdash; built on real sports science.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/signup"
+                className="px-8 py-3.5 bg-[#FF4F21] text-white font-bold rounded-full hover:bg-[#E03E12] transition-all shadow-[0_4px_16px_rgba(255,79,33,0.3)] text-xs uppercase tracking-widest active:scale-95 flex items-center justify-center gap-2"
+              >
+                Get Started <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/login"
+                className="px-8 py-3.5 bg-white/10 backdrop-blur-md border border-white/30 text-white font-bold rounded-full hover:bg-white hover:text-black transition-all text-xs uppercase tracking-widest active:scale-95 flex items-center justify-center"
+              >
+                Analyze Your Sprint
+              </Link>
+            </div>
+          </div>
         </motion.div>
-
-        <motion.h2
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-3xl md:text-4xl lg:text-5xl font-black mb-8 leading-tight tracking-tight text-white"
-        >
-          Ready to Unlock Your <br />
-          <span className="text-[#FF4F21]">Sprint Intelligence?</span>
-        </motion.h2>
-
-        <p className="text-base md:text-lg mb-12 max-w-2xl mx-auto font-light leading-relaxed text-zinc-400">
-          Upload your sprint video. Get instant AI-powered cadence, ground contact time, and skeletal posture telemetry today. Train smarter. Run faster.
-        </p>
-
-        <div className="flex flex-col sm:flex-row justify-center items-center space-y-5 sm:space-y-0 sm:space-x-8">
-          <Link
-            href="/signup"
-            className="px-10 py-4.5 bg-[#FF4F21] text-white font-bold rounded-full hover:bg-orange-600 transition-all shadow-[0_0_30px_rgba(255,79,33,0.35)] text-xs uppercase tracking-widest hover:scale-105 min-w-[220px] flex items-center justify-center cursor-pointer"
-          >
-            Start AI Sprint Analysis
-          </Link>
-          <Link
-            href="/login"
-            className="px-10 py-4.5 bg-white/5 backdrop-blur-md border border-white/20 text-white font-bold rounded-full hover:bg-white hover:text-black transition-all text-xs uppercase tracking-widest min-w-[220px] hover:scale-105 flex items-center justify-center cursor-pointer"
-          >
-            Explore Platform
-          </Link>
-        </div>
       </div>
     </section>
   );

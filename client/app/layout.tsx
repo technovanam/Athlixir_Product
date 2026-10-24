@@ -1,5 +1,4 @@
-import type { Metadata } from "next";
-import { Teko, Inter, Roboto_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -7,34 +6,26 @@ import SmoothScrollProvider from "./components/SmoothScrollProvider";
 import CommandPalette from "./components/CommandPalette";
 import { DateFilterProvider } from "./context/DateFilterContext";
 
-const teko = Teko({
-  variable: "--font-teko",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-});
-
-const robotoMono = Roboto_Mono({
-  variable: "--font-roboto-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Athlixir | Enterprise Client Suite",
-  description: "Secure, real-time workspace gateway for modern athletes and managers.",
+  title: "Athlixir | Kinetic Biomechanics Suite",
+  description: "Computer vision sprint telemetry and athletic performance suite.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#FF4F21",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${teko.variable} ${robotoMono.variable} antialiased dark`}>
-      <body className="bg-black font-sans text-zinc-100 antialiased">
+    <html lang="en" className="antialiased">
+      <body className="bg-[#F2F2F7] font-poppins text-[#1C1C1E] antialiased">
         <SmoothScrollProvider>
           <AuthProvider>
             <DateFilterProvider>

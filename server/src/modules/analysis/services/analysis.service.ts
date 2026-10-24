@@ -9,12 +9,20 @@ import {
 import { FirebaseService } from '../../../firebase/firebase.service';
 import { AnalysisGateway } from '../gateways/analysis.gateway';
 import { AiInsightsService } from '../../ai-insights/ai-insights.service';
-import { createReadStream, existsSync, mkdirSync, writeFileSync } from 'fs';
+import {
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { Readable } from 'stream';
 import * as crypto from 'crypto';
-import { QueueService } from './queue.service';
+import { getInternalApiSecret } from '../../../auth/guards/internal-auth.guard';
 import {
   getFastApiIntelUrl,
   getFastApiPublicUrl,
@@ -25,6 +33,15 @@ type PendingVideo = { buffer: Buffer; mimetype: string; expiresAt: number };
 
 const TERMINAL_ANALYSIS_STATUSES = new Set(['COMPLETED', 'FAILED', 'CANCELLED']);
 
+/** Local copies of uploaded videos are a streaming fallback, not storage. */
+const LOCAL_VIDEO_RETENTION_MS = 24 * 60 * 60 * 1000;
+/** How long a cancelled ID is remembered in memory (Firestore is the source of truth). */
+const CANCELLED_MEMORY_MS = 60 * 60 * 1000;
+
+/** ISO-BMFF box types that may appear first in an MP4 / MOV / M4V / 3GP file. */
+const ISO_BMFF_LEADING_BOXES = new Set(['ftyp', 'moov', 'mdat', 'wide', 'free', 'skip', 'pnot']);
+const MPEG_TS_PACKET_SIZE = 188;
+
 @Injectable()
 export class AnalysisService {
   private readonly logger = new Logger(AnalysisService.name);
@@ -33,7 +50,7 @@ export class AnalysisService {
   private aiEnginePrewarmPromise: Promise<boolean> | null = null;
   private readonly athleteProfilesCollection = 'athlete_profiles';
   private readonly fastapiUrl = getFastApiUrl();
-  private readonly internalApiSecret = process.env.INTERNAL_API_SECRET;
+  private readonly internalApiSecret = getInternalApiSecret();
   private readonly localVideoDir = join(tmpdir(), 'athlixir-videos');
   private readonly pendingVideos = new Map<string, PendingVideo>();
 
@@ -41,49 +58,77 @@ export class AnalysisService {
     private readonly firebaseService: FirebaseService,
     private readonly analysisGateway: AnalysisGateway,
     private readonly aiInsightsService: AiInsightsService,
-    private readonly queueService: QueueService,
   ) {
     mkdirSync(this.localVideoDir, { recursive: true });
+    if (!this.internalApiSecret) {
+      this.logger.error(
+        'INTERNAL_API_SECRET is not configured — AI engine calls and callbacks will be rejected.',
+      );
+    }
   }
 
+  /**
+   * Checks the container signature at the fixed offsets each format defines,
+   * rather than searching for marker strings anywhere in the header (which
+   * accepted arbitrary files that happened to contain e.g. "free").
+   */
   private validateVideoCodec(buffer: Buffer): Promise<string> {
     return new Promise((resolve, reject) => {
-      const validCodecs = ['h264', 'hevc', 'mpeg4', 'h.264', 'h265'];
-      const bufferStr = buffer.toString('utf8', 0, Math.min(1000, buffer.length));
-
-      // Simple codec detection from file signature
-      if (bufferStr.includes('ftyp')) {
-        const type = bufferStr.substring(
-          bufferStr.indexOf('ftyp') + 4,
-          bufferStr.indexOf('ftyp') + 8,
-        );
-        if (
-          type.includes('isom') ||
-          type.includes('iso2') ||
-          type.includes('iso4') ||
-          type.includes('iso5') ||
-          type.includes('iso6') ||
-          type.includes('avc1') ||
-          type.includes('hev1') ||
-          type.includes('hvc1') ||
-          type.includes('mp41') ||
-          type.includes('mp42') ||
-          type.includes('mmp4') ||
-          type.includes('M4V ') ||
-          type.includes('M4A ') ||
-          type.includes('f4v ')
-        ) {
-          resolve('MP4 (H.264/HEVC)');
-        } else {
-          reject(new Error(`Unrecognized MP4 variant: ${type}`));
-        }
-      } else if (bufferStr.includes('mdat') || bufferStr.includes('moov')) {
-        resolve('MOV (QuickTime)');
-      } else if (buffer[0] === 0x00 && buffer[1] === 0x00) {
-        resolve('AVI');
-      } else {
-        reject(new Error('Video file format not recognized'));
+      if (!buffer || buffer.length < 12) {
+        return reject(new Error('Video file is empty or corrupted'));
       }
+
+      // ISO Base Media (MP4 / MOV / M4V / 3GP): [size:4][type:4] at offset 0
+      if (ISO_BMFF_LEADING_BOXES.has(buffer.toString('latin1', 4, 8))) {
+        return resolve('MP4/QuickTime (H.264/HEVC/ProRes)');
+      }
+
+      // AVI format: "RIFF" [size:4] "AVI " / "AVIX"
+      const riffType = buffer.toString('latin1', 8, 12);
+      if (
+        buffer.toString('latin1', 0, 4) === 'RIFF' &&
+        (riffType === 'AVI ' || riffType === 'AVIX')
+      ) {
+        return resolve('AVI');
+      }
+
+      // WebM / Matroska (EBML: 0x1A 0x45 0xDF 0xA3)
+      if (
+        buffer[0] === 0x1a &&
+        buffer[1] === 0x45 &&
+        buffer[2] === 0xdf &&
+        buffer[3] === 0xa3
+      ) {
+        return resolve('WebM/MKV');
+      }
+
+      // MPEG program stream: pack header (0xBA) or sequence header (0xB3)
+      if (
+        buffer[0] === 0x00 &&
+        buffer[1] === 0x00 &&
+        buffer[2] === 0x01 &&
+        (buffer[3] === 0xba || buffer[3] === 0xb3)
+      ) {
+        return resolve('MPEG');
+      }
+
+      // MPEG transport stream: sync byte 0x47 at the start of consecutive
+      // 188-byte packets (a single 0x47 byte is just the letter "G").
+      if (
+        buffer.length > MPEG_TS_PACKET_SIZE * 2 &&
+        buffer[0] === 0x47 &&
+        buffer[MPEG_TS_PACKET_SIZE] === 0x47 &&
+        buffer[MPEG_TS_PACKET_SIZE * 2] === 0x47
+      ) {
+        return resolve('MPEG-TS');
+      }
+
+      // Ogg container
+      if (buffer.toString('latin1', 0, 4) === 'OggS') {
+        return resolve('Ogg');
+      }
+
+      return reject(new Error('Video file format not recognized'));
     });
   }
 
@@ -99,7 +144,7 @@ export class AnalysisService {
       .where('userId', '==', userId)
       .get();
 
-    const active = snapshot.docs
+    const active = (snapshot?.docs ?? [])
       .map((doc) => {
         const data = doc.data();
         return {
@@ -127,7 +172,7 @@ export class AnalysisService {
     const staleMs = 3 * 60 * 1000;
     const now = Date.now();
 
-    for (const doc of snapshot.docs) {
+    for (const doc of snapshot?.docs ?? []) {
       const data = doc.data();
       const status = data.status as string | undefined;
       if (!status || !staleStatuses.has(status)) continue;
@@ -163,6 +208,56 @@ export class AnalysisService {
   ) {
     this.logger.log(`Upload request for user ${userId}`);
 
+    // Validate cheap, local, user-supplied input FIRST — before touching
+    // Firestore at all. Previously the stale/active-analysis Firestore
+    // lookups ran before any of this, so an invalid upload (wrong format,
+    // oversized, bad codec) still paid for two Firestore round-trips before
+    // being rejected, and any transient/unexpected Firestore response shape
+    // on those early calls could surface as a raw 500 instead of the
+    // intended 400 for what is actually just bad input.
+    if (file.size > 100 * 1024 * 1024) {
+      throw new BadRequestException(
+        'Video size exceeds the 100MB enterprise limit.',
+      );
+    }
+
+    const allowedMimeTypes = [
+      'video/mp4',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/avi',
+      'video/msvideo',
+      'video/webm',
+      'video/x-matroska',
+      'video/3gpp',
+      'video/x-m4v',
+      'video/ogg',
+      'video/mpeg',
+      'application/octet-stream',
+    ];
+    const fileExt = (file.originalname?.split('.').pop() || '').toLowerCase();
+    const allowedExtensions = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', '3gp', 'ogg', 'mpeg', 'mpg'];
+
+    const isAllowedMime = allowedMimeTypes.includes(file.mimetype) || file.mimetype?.startsWith('video/');
+    const isAllowedExt = allowedExtensions.includes(fileExt);
+
+    if (!isAllowedMime && !isAllowedExt) {
+      throw new BadRequestException(
+        'Unsupported video format. Please upload MP4, MOV, AVI, or WebM.',
+      );
+    }
+
+    // Validate actual video codec (not just MIME type)
+    try {
+      const codecInfo = await this.validateVideoCodec(file.buffer);
+      this.logger.log(`Video codec validation passed: ${codecInfo}`);
+    } catch (err: any) {
+      this.logger.error(`Video codec validation failed: ${err.message}`);
+      throw new BadRequestException(
+        `Unsupported video file: ${err.message}. Upload an MP4, MOV, AVI, WebM or MKV video.`,
+      );
+    }
+
     this.startAiEnginePrewarm();
 
     await this.failStaleActiveAnalysis(userId);
@@ -175,37 +270,17 @@ export class AnalysisService {
       );
     }
 
-    if (file.size > 100 * 1024 * 1024) {
-      throw new BadRequestException(
-        'Video size exceeds the 100MB enterprise limit.',
-      );
-    }
-
-    const allowedMimeTypes = [
-      'video/mp4',
-      'video/quicktime',
-      'video/x-msvideo',
-    ];
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        'Unsupported video format. Please upload MP4, MOV, or AVI.',
-      );
-    }
-
-    // Validate actual video codec (not just MIME type)
-    try {
-      const codecInfo = await this.validateVideoCodec(file.buffer);
-      this.logger.log(`Video codec validation passed: ${codecInfo}`);
-    } catch (err: any) {
-      this.logger.error(`Video codec validation failed: ${err.message}`);
-      throw new BadRequestException(
-        `Invalid video codec: ${err.message}. Use H.264, HEVC, or MPEG-4 codec.`,
-      );
-    }
-
     const analysisId = crypto.randomUUID();
     const fileExtension = file.originalname.split('.').pop() || 'mp4';
     const storagePath = `running-videos/${userId}/original/${analysisId}.${fileExtension}`;
+
+    // Save a local copy so streaming works before (or without) Firebase Storage.
+    // Only fall back to holding the buffer in memory if the disk write fails —
+    // keeping every upload (up to 100 MB) in RAM for an hour exhausts memory.
+    this.pruneLocalVideos();
+    if (!this.saveLocalVideoCopy(analysisId, file.buffer)) {
+      this.cachePendingVideo(analysisId, file);
+    }
 
     await this.firebaseService.firestore
       .collection(this.collectionName)
@@ -233,8 +308,10 @@ export class AnalysisService {
         updatedAt: new Date().toISOString(),
       });
 
-    let signedUrl: string;
-    let storageBucket: string;
+    // Fallback when Firebase Storage is unavailable: the AI engine downloads
+    // from the internal-auth source route instead of a signed URL.
+    let signedUrl = `http://localhost:${process.env.PORT || 3001}/api/analysis/${analysisId}/source`;
+    let storageBucket = 'local';
     try {
       const uploaded = await this.uploadToFirebaseStorage(
         file.buffer,
@@ -243,18 +320,12 @@ export class AnalysisService {
       );
       signedUrl = uploaded.signedUrl;
       storageBucket = uploaded.bucketName;
+      this.logger.log(`Firebase storage upload succeeded for ${analysisId}`);
     } catch (err: any) {
-      this.logger.error(`Firebase upload failed for ${analysisId}`, err);
-      await this.updateStatus(analysisId, 'FAILED', 0, {
-        errorMessage: 'Could not upload video files.',
-      });
-      throw new BadRequestException(
-        'Could not store uploaded video. Please check your file and try again.',
+      this.logger.warn(
+        `Firebase storage upload failed for ${analysisId} (${err.message}). Using local streaming fallback.`,
       );
     }
-
-    this.saveLocalVideoCopy(analysisId, file.buffer);
-    this.cachePendingVideo(analysisId, file);
 
     await this.firebaseService.firestore
       .collection(this.collectionName)
@@ -314,11 +385,35 @@ export class AnalysisService {
     throw lastError ?? new Error('All storage buckets failed');
   }
 
-  private saveLocalVideoCopy(analysisId: string, buffer: Buffer) {
+  private saveLocalVideoCopy(analysisId: string, buffer: Buffer): boolean {
     try {
       writeFileSync(join(this.localVideoDir, `${analysisId}.mp4`), buffer);
+      return true;
     } catch (err: any) {
       this.logger.warn(`Local video cache failed: ${err.message}`);
+      return false;
+    }
+  }
+
+  /** Deletes local video copies and expired in-memory buffers past retention. */
+  private pruneLocalVideos() {
+    const cutoff = Date.now() - LOCAL_VIDEO_RETENTION_MS;
+    try {
+      for (const name of readdirSync(this.localVideoDir)) {
+        const filePath = join(this.localVideoDir, name);
+        try {
+          if (statSync(filePath).mtimeMs < cutoff) unlinkSync(filePath);
+        } catch {
+          // File vanished or is locked; try again on the next upload.
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`Local video prune failed: ${err.message}`);
+    }
+
+    const now = Date.now();
+    for (const [id, entry] of this.pendingVideos) {
+      if (now > entry.expiresAt) this.pendingVideos.delete(id);
     }
   }
 
@@ -368,6 +463,8 @@ export class AnalysisService {
       new Set(
         [
           defaultBucketName,
+          'athlixir-82148.firebasestorage.app',
+          'athlixir-82148.appspot.com',
           'athlixir-sport.appspot.com',
           'athlixir-sport.firebasestorage.app',
         ].filter(Boolean),
@@ -607,13 +704,17 @@ export class AnalysisService {
     }
   }
 
-  async getAnalysis(analysisId: string) {
+  async getAnalysis(analysisId: string, requestUser: { uid?: string; sub?: string }) {
+    const userId = this.resolveUserId(requestUser);
     const doc = await this.firebaseService.firestore
       .collection(this.collectionName)
       .doc(analysisId)
       .get();
 
-    if (!doc.exists) {
+    if (!doc.exists || (doc.data() as { userId?: string }).userId !== userId) {
+      // 404 rather than 403 to avoid confirming a foreign analysis ID exists
+      // (matches the resource-enumeration-avoidance convention used by
+      // streamReport/streamVideo for the same resource type).
       throw new NotFoundException('Analysis record not found.');
     }
 
@@ -680,6 +781,10 @@ export class AnalysisService {
     }
 
     this.cancelledAnalyses.add(analysisId);
+    setTimeout(
+      () => this.cancelledAnalyses.delete(analysisId),
+      CANCELLED_MEMORY_MS,
+    ).unref();
     this.requestAiEngineCancel(analysisId).catch((err) => {
       this.logger.warn(`Background AI cancel failed for ${analysisId}`, err);
     });
@@ -724,6 +829,22 @@ export class AnalysisService {
     if (isRegression) {
       this.logger.warn(
         `Ignoring stale status downgrade for ${analysisId}: ${existingStatus} -> ${status} (${progress}%)`,
+      );
+      return;
+    }
+
+    // The server and the AI engine both report in-flight progress, and their
+    // updates can arrive out of order. Never move an in-flight analysis
+    // backwards; terminal statuses always apply.
+    const existingProgress = existingDoc.data()?.progress;
+    if (
+      !TERMINAL_ANALYSIS_STATUSES.has(status) &&
+      this.isActiveAnalysisStatus(existingStatus) &&
+      typeof existingProgress === 'number' &&
+      progress < existingProgress
+    ) {
+      this.logger.debug?.(
+        `Ignoring out-of-order update for ${analysisId}: ${existingStatus} ${existingProgress}% -> ${status} ${progress}%`,
       );
       return;
     }
@@ -1028,30 +1149,53 @@ export class AnalysisService {
 
   async streamVideo(
     analysisId: string,
-    requestUser: { uid?: string; sub?: string },
     type: 'original' | 'overlay',
+    requestUser: { uid?: string; sub?: string },
   ): Promise<{ stream: NodeJS.ReadableStream; contentType: string }> {
-    const userId = this.resolveUserId(requestUser);
-    if (!userId) {
-      throw new NotFoundException('Analysis not found.');
-    }
-
     const doc = await this.firebaseService.firestore
       .collection(this.collectionName)
       .doc(analysisId)
       .get();
 
-    if (!doc.exists) {
+    const analysis = (doc.exists ? doc.data() : null) as Record<string, unknown> | null;
+    const userId = (analysis?.userId as string) || '';
+    const authUserId = this.resolveUserId(requestUser);
+
+    // 404 for both missing and foreign records, matching getAnalysis/streamReport.
+    if (!analysis || !userId || !authUserId || authUserId !== userId) {
       throw new NotFoundException('Analysis not found.');
     }
 
-    const analysis = doc.data() as Record<string, unknown>;
-    if (analysis.userId !== userId) {
-      this.logger.warn(
-        `streamVideo user mismatch: record=${analysis.userId} token=${userId}`,
-      );
+    return this.openVideoStream(analysisId, type, analysis);
+  }
+
+  /**
+   * Source video for the AI engine (internal-auth only). Used as the download
+   * URL when the Firebase Storage upload failed and no signed URL exists.
+   */
+  async streamSourceVideoForEngine(
+    analysisId: string,
+  ): Promise<{ stream: NodeJS.ReadableStream; contentType: string }> {
+    const doc = await this.firebaseService.firestore
+      .collection(this.collectionName)
+      .doc(analysisId)
+      .get();
+    if (!doc.exists) {
       throw new NotFoundException('Analysis not found.');
     }
+    return this.openVideoStream(
+      analysisId,
+      'original',
+      doc.data() as Record<string, unknown>,
+    );
+  }
+
+  private async openVideoStream(
+    analysisId: string,
+    type: 'original' | 'overlay',
+    analysis: Record<string, unknown>,
+  ): Promise<{ stream: NodeJS.ReadableStream; contentType: string }> {
+    const userId = (analysis.userId as string) || '';
 
     if (type === 'original') {
       const local = this.streamFromLocalDisk(analysisId);
@@ -1075,9 +1219,17 @@ export class AnalysisService {
       storagePath.startsWith('http://') ||
       storagePath.startsWith('https://')
     ) {
+      // Only the AI engine's fallback overlay URL is ever stored here; refuse
+      // anything else so the secret is never sent to another host.
+      if (!this.isAiEngineUrl(storagePath)) {
+        this.logger.warn(`Refusing to stream ${type} from non-engine URL for ${analysisId}`);
+        throw new NotFoundException('Video not available.');
+      }
       this.logger.log(`Streaming ${type} from URL: ${storagePath}`);
       try {
-        const response = await fetch(storagePath);
+        const response = await fetch(storagePath, {
+          headers: { Authorization: `Bearer ${this.internalApiSecret}` },
+        });
         if (!response.ok) {
           throw new NotFoundException(
             `Video URL is not accessible: status ${response.status}`,
@@ -1126,6 +1278,25 @@ export class AnalysisService {
         ? 'Skeleton overlay not ready yet.'
         : 'Original video not found. Upload a new video.',
     );
+  }
+
+  /** Same origin as the AI engine (localhost and 127.0.0.1 treated as equal). */
+  private isAiEngineUrl(url: string): boolean {
+    try {
+      const target = new URL(url);
+      const engine = new URL(getFastApiPublicUrl());
+      const local = new Set(['localhost', '127.0.0.1']);
+      const sameHost =
+        target.hostname === engine.hostname ||
+        (local.has(target.hostname) && local.has(engine.hostname));
+      return (
+        target.protocol === engine.protocol &&
+        sameHost &&
+        target.port === engine.port
+      );
+    } catch {
+      return false;
+    }
   }
 
   private getFastApiHealthUrl(): string {

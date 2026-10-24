@@ -1,5 +1,8 @@
 """
 ATHLIXIR Progress Tracking — compare current vs previous analysis metrics.
+
+A metric is only compared when it was measured in both sessions; otherwise its
+progress fields are None instead of a delta against an implied zero.
 """
 
 from __future__ import annotations
@@ -7,12 +10,30 @@ from __future__ import annotations
 from typing import Any
 
 
-def _pct_change(current: float, previous: float) -> str | None:
-    if previous == 0:
+def _num(metrics: dict[str, Any], *keys: str) -> float | None:
+    for key in keys:
+        value = metrics.get(key)
+        if value is None:
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _pct_change(current: float | None, previous: float | None) -> str | None:
+    if current is None or previous is None or previous == 0:
         return None
     delta = ((current - previous) / previous) * 100
     sign = "+" if delta >= 0 else ""
     return f"{sign}{delta:.1f}%"
+
+
+def _delta(current: float | None, previous: float | None, ndigits: int) -> float | None:
+    if current is None or previous is None:
+        return None
+    return round(current - previous, ndigits)
 
 
 def compute_progress(
@@ -22,27 +43,29 @@ def compute_progress(
     if not previous_metrics:
         return None
 
-    cur_cadence = float(current_metrics.get("cadence") or 0)
-    prev_cadence = float(previous_metrics.get("cadence") or 0)
-    cur_gct = float(current_metrics.get("gct") or 0)
-    prev_gct = float(previous_metrics.get("gct") or 0)
-    cur_stride = float(current_metrics.get("strideLength") or current_metrics.get("stride_length") or 0)
-    prev_stride = float(previous_metrics.get("strideLength") or previous_metrics.get("stride_length") or 0)
-    cur_sym = float(current_metrics.get("symmetry") or 0)
-    prev_sym = float(previous_metrics.get("symmetry") or 0)
-    cur_eff = float(current_metrics.get("efficiencyScore") or 0)
+    cur_cadence = _num(current_metrics, "cadence")
+    prev_cadence = _num(previous_metrics, "cadence")
+    cur_gct = _num(current_metrics, "gct")
+    prev_gct = _num(previous_metrics, "gct")
+    cur_stride = _num(current_metrics, "strideLength", "stride_length")
+    prev_stride = _num(previous_metrics, "strideLength", "stride_length")
+    cur_sym = _num(current_metrics, "symmetry")
+    prev_sym = _num(previous_metrics, "symmetry")
 
-    gct_delta_ms = int(cur_gct - prev_gct)
-    gct_sign = "+" if gct_delta_ms >= 0 else ""
+    gct_delta_ms = None
+    gct_progress = None
+    if cur_gct is not None and prev_gct is not None:
+        gct_delta_ms = int(cur_gct - prev_gct)
+        gct_progress = f"{'+' if gct_delta_ms >= 0 else ''}{gct_delta_ms}ms"
 
     return {
         "cadenceProgress": _pct_change(cur_cadence, prev_cadence),
-        "gctProgress": f"{gct_sign}{gct_delta_ms}ms",
+        "gctProgress": gct_progress,
         "strideProgress": _pct_change(cur_stride, prev_stride),
-        "symmetryProgress": _pct_change(cur_sym, prev_sym) if prev_sym else None,
-        "cadenceDelta": round(cur_cadence - prev_cadence, 1),
+        "symmetryProgress": _pct_change(cur_sym, prev_sym),
+        "cadenceDelta": _delta(cur_cadence, prev_cadence, 1),
         "gctDelta": gct_delta_ms,
-        "strideDelta": round(cur_stride - prev_stride, 2),
-        "symmetryDelta": round(cur_sym - prev_sym, 1) if prev_sym else None,
+        "strideDelta": _delta(cur_stride, prev_stride, 2),
+        "symmetryDelta": _delta(cur_sym, prev_sym, 1),
         "hasPrevious": True,
     }

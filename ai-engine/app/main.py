@@ -1,8 +1,17 @@
 import os
-from fastapi import FastAPI
+
+from app.env import get_internal_secret, load_env_file
+
+# Must run before importing modules that read os.environ at import time.
+load_env_file()
+
+import re
+
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.api.analyze import router as analyze_router
+from app.api.security import check_internal_secret
 
 PRODUCTION_BACKEND_URL = "https://backend-n0z5.onrender.com"
 PRODUCTION_AI_ENGINE_URL = "https://ai-engine-4dn5.onrender.com"
@@ -50,11 +59,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+if not get_internal_secret():
+    print(
+        "[SECURITY] INTERNAL_API_SECRET is not set — internal endpoints will "
+        "reject all requests and callbacks to the backend will fail."
+    )
+
 # Ensure outputs directory exists at runtime
 os.makedirs("outputs", exist_ok=True)
 
-# Mount outputs folder to serve media static content
-app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+_OVERLAY_NAME = re.compile(r"^[A-Za-z0-9-]{1,64}_overlay\.mp4$")
+
+
+# Overlays are only kept here when the Firebase upload failed; the backend
+# proxies them to the owning user. Internal-auth only — this used to be a
+# public static mount that also exposed outputs/debug/ landmark dumps.
+@app.get("/outputs/{name}", dependencies=[Depends(check_internal_secret)])
+def get_overlay(name: str):
+    if not _OVERLAY_NAME.match(name):
+        raise HTTPException(status_code=404, detail="Not found")
+    path = os.path.join("outputs", name)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(path, media_type="video/mp4")
 
 # Register endpoints
 app.include_router(analyze_router, prefix="/api")

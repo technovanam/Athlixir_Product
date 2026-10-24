@@ -66,6 +66,8 @@ def run_biomechanics_extraction_pipeline(
             "gct": gct_data["avg"],
             "strideLength": round(stride_data["avg"], 2),
             "asymmetryIndex": asymmetry_index,
+            "gctAsymmetry": gct_asymmetry,
+            "strideAsymmetry": stride_asymmetry,
             "symmetry": round(max(0.0, 100.0 - asymmetry_index * 4.0), 1),
             "oscillation": oscillation,
             "overstrideAngle": overstride_angle,

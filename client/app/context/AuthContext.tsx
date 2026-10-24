@@ -39,6 +39,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (username: string, email: string, password: string) => Promise<void>;
+  loginAsDemo: () => Promise<void>;
   logout: () => Promise<void>;
   onboard: (workspaceData: { workspaceName: string; roleInWorkspace: string; workspaceSize?: number; industries?: string[] }) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -55,6 +56,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  config.baseURL = `${getApiBaseUrl()}/api`;
   const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -172,6 +174,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const DEMO_EMAIL = 'demo@athlixir.com';
+  const DEMO_PASSWORD = 'DemoPassword123!';
+  const DEMO_USERNAME = 'Demo Athlete';
+
+  const loginAsDemo = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      let payload: any;
+      try {
+        // 1. Try logging in directly with the seeded demo account
+        const loginRes = await api.post('/auth/login', {
+          email: DEMO_EMAIL,
+          password: DEMO_PASSWORD,
+        });
+        payload = extractAuthPayload(loginRes.data);
+      } catch (loginErr) {
+        // 2. If account does not exist yet, provision it via signup
+        const signupRes = await api.post('/auth/signup', {
+          username: DEMO_USERNAME,
+          email: DEMO_EMAIL,
+          password: DEMO_PASSWORD,
+        });
+        payload = extractAuthPayload(signupRes.data);
+      }
+
+      if (payload?.idToken) {
+        setAuthSession(payload.idToken, payload.refreshToken);
+      }
+      let userData = payload?.user;
+      userData = await fetchAndAttachProfile(userData);
+      setUser(userData);
+
+      if (userData?.onboardingCompleted) {
+        router.push('/dashboard');
+      } else {
+        router.push('/onboarding');
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Demo login is temporarily unavailable. Please try again.';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     setError(null);
     setLoading(true);
@@ -218,6 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         signup,
+        loginAsDemo,
         logout,
         onboard,
         refreshUser,

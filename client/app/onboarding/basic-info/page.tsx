@@ -5,41 +5,63 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth, api } from '../../context/AuthContext';
 import { getOnboardingProfile, unwrapApiData } from '../../utils/api';
-import { User, Mail, Calendar, MapPin, Loader2, ArrowRight, Upload, AlertCircle } from 'lucide-react';
+import { User, Mail, Loader2, Camera, AlertCircle, MapPin, Calendar, ChevronDown } from 'lucide-react';
+import MobileDatePickerModal from '../../components/ui/MobileDatePickerModal';
+import MobileDropdownModal from '../../components/ui/MobileDropdownModal';
+
+const GENDER_OPTIONS = [
+  { value: 'Male', label: 'Male', subtext: 'Biological sex calibration' },
+  { value: 'Female', label: 'Female', subtext: 'Biological sex calibration' },
+  { value: 'Other', label: 'Other', subtext: 'Custom athletic calibration' },
+];
 
 export default function BasicInfoStep() {
   const { user } = useAuth();
   const router = useRouter();
 
   const [fullName, setFullName] = useState('');
-  const [dob, setDob] = useState('');
+  const [dob, setDob] = useState('2000-05-15');
   const [gender, setGender] = useState('Male');
   const [state, setState] = useState('');
   const [city, setCity] = useState('');
   const [profilePhoto, setProfilePhoto] = useState('');
 
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isGenderModalOpen, setIsGenderModalOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Auto-fill existing status if they already filled parts of it and are resuming
   useEffect(() => {
     async function loadSavedData() {
       try {
         const response = await api.get('/onboarding/status');
         const data = getOnboardingProfile(response) as any;
-        if (data.full_name) setFullName(data.full_name);
-        if (data.dob) setDob(data.dob.split('T')[0]); // YYYY-MM-DD
+        if (data.full_name) {
+          setFullName(data.full_name);
+        } else if (user?.name || user?.username) {
+          setFullName(user.name || user.username);
+        }
+        if (data.dob) setDob(data.dob.split('T')[0]);
         if (data.gender) setGender(data.gender);
         if (data.state) setState(data.state);
         if (data.city) setCity(data.city);
         if (data.profile_photo) setProfilePhoto(data.profile_photo);
       } catch (err) {
-        // Safe to ignore on fresh profiles
+        if (user?.name || user?.username) {
+          setFullName(user.name || user.username);
+        }
       }
     }
     loadSavedData();
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    if (!fullName && (user?.name || user?.username)) {
+      setFullName(user.name || user.username);
+    }
+  }, [user, fullName]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,11 +77,7 @@ export default function BasicInfoStep() {
     formData.append('file', file);
 
     try {
-      const response = await api.post('/onboarding/upload-photo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post('/onboarding/upload-photo', formData);
       const result = unwrapApiData<{ url?: string }>(response);
       if (result?.url) {
         URL.revokeObjectURL(previewUrl);
@@ -108,172 +126,318 @@ export default function BasicInfoStep() {
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-8 animate-fadeIn relative">
-      <div>
-        <h2 className="text-xl md:text-2xl font-black tracking-wider text-white flex items-center gap-2 uppercase crt-glow-white">
-          <User className="h-6 w-6 text-[#FF4F21]" />
-          <span>Step 1: Athlete Basic Information</span>
-        </h2>
-        <p className="text-zinc-500 text-xs mt-1 font-medium">
-          Let’s set up your core athlete identity card. You can edit this anytime inside your dashboard settings.
+    <div className="w-full flex flex-col justify-center">
+      {/* Title & Subtitle */}
+      <div className="text-center select-none mb-5">
+        <h1
+          style={{
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 600,
+            fontSize: '24px',
+            lineHeight: '28px',
+            letterSpacing: '0.01em',
+            color: '#FF4F21',
+          }}
+        >
+          Basic Information
+        </h1>
+        <p
+          style={{
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 400,
+            fontSize: '14px',
+            lineHeight: '20px',
+            color: '#6E6D6D',
+            marginTop: '4px',
+          }}
+        >
+          Tell us about yourself to calibrate your athlete identity.
         </p>
       </div>
 
+      {/* Error Alert */}
       {error && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-[11px] text-red-400 animate-fadeIn">
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
-          <div>
-            <span className="font-bold text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded uppercase shrink-0 mr-2">FAIL</span>
-            {error}
-          </div>
+        <div className="mb-4 rounded-2xl border border-red-100 bg-red-50/90 p-3 text-xs text-red-600 font-medium flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+          <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-3.5">
+        
         {/* Profile Photo Uploader */}
-        <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-white/[0.05]">
-          <div className="relative group shrink-0">
-            <div className="h-20 w-20 rounded-full border border-white/[0.08] bg-[#08080C]/40 flex items-center justify-center overflow-hidden shadow-inner relative z-10">
+        <div className="flex flex-col items-center gap-2 pb-1">
+          <div className="relative">
+            <div
+              className="rounded-full flex items-center justify-center overflow-hidden relative"
+              style={{
+                width: '80px',
+                height: '80px',
+                border: '2px solid #EBEBEB',
+                backgroundColor: '#FAFAFA',
+              }}
+            >
               {profilePhoto ? (
                 profilePhoto.startsWith('blob:') || profilePhoto.startsWith('data:') ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={profilePhoto}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={profilePhoto} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
-                  <Image
-                    src={profilePhoto}
-                    alt="Profile"
-                    fill
-                    sizes="80px"
-                    unoptimized
-                    className="h-full w-full object-cover"
-                  />
+                  <Image src={profilePhoto} alt="Profile" fill sizes="80px" unoptimized className="h-full w-full object-cover" />
                 )
               ) : uploading ? (
                 <Loader2 className="h-6 w-6 animate-spin text-[#FF4F21]" />
               ) : (
-                <User className="h-8 w-8 text-zinc-600" />
+                <User className="h-8 w-8 text-[#6E6D6D]" />
               )}
             </div>
-            <div className="absolute inset-[-4px] rounded-full border border-[#FF4F21]/20 animate-[spin_10s_linear_infinite] pointer-events-none" />
-            <div className="absolute inset-[-8px] rounded-full border border-[#FF4F21]/5 animate-[spin_15s_linear_infinite_reverse] pointer-events-none" />
-          </div>
-          <div className="space-y-2 text-center sm:text-left">
-            <span className="block text-[10px] font-black uppercase tracking-widest text-zinc-400">Avatar Image</span>
-            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/[0.05] bg-white/[0.02] text-zinc-300 hover:text-white hover:border-[#FF4F21]/30 hover:bg-[#FF4F21]/5 cursor-pointer text-xs font-bold transition-all duration-300">
-              <Upload className="h-3.5 w-3.5 text-[#FF4F21]" />
-              <span>{uploading ? 'Uploading image...' : 'Upload Photo'}</span>
+            <label
+              className="absolute bottom-0 right-0 rounded-full flex items-center justify-center text-white cursor-pointer shadow-md active:scale-95 transition"
+              style={{
+                width: '28px',
+                height: '28px',
+                backgroundColor: '#FF4F21',
+                border: '2px solid #FFFFFF',
+              }}
+            >
+              <Camera size={13} />
               <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploading} />
             </label>
-            <p className="text-[9px] text-zinc-500 font-medium">Supports JPEG, PNG up to 5MB</p>
           </div>
+          <span
+            style={{
+              fontFamily: "'Mazzard', sans-serif",
+              fontSize: '12px',
+              color: '#8C8C8C',
+            }}
+          >
+            {uploading ? 'Uploading avatar...' : 'Add Profile Photo'}
+          </span>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Full Name */}
-          <div className="group">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">Full Name</label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="John Doe"
-              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-[#FF4F21] transition duration-200"
-            />
-          </div>
+        {/* Full Name */}
+        <div
+          className="flex items-center transition-all duration-200 focus-within:border-[#FF4F21] focus-within:ring-4 focus-within:ring-[#FF4F21]/15"
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            height: '56px',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #EBEBEB',
+            boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.15)',
+            borderRadius: '26px',
+            paddingLeft: '21px',
+            paddingRight: '21px',
+          }}
+        >
+          <User className="h-[22px] w-[22px] text-[#6E6D6D] shrink-0" />
+          <input
+            type="text"
+            required
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Full Name"
+            style={{
+              fontFamily: "'Mazzard', sans-serif",
+              fontSize: '15px',
+              color: '#1D1B20',
+            }}
+            className="w-full h-full bg-transparent pl-3 pr-1 placeholder-[#6E6D6D] outline-none"
+          />
+        </div>
 
-          {/* Readonly Email */}
-          <div>
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">Registered Email</label>
-            <div className="relative flex items-center">
-              <input
-                type="email"
-                readOnly
-                value={user?.email || ''}
-                className="block w-full bg-zinc-900/20 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-zinc-500 cursor-not-allowed border-dashed select-none"
-              />
-              <Mail className="absolute right-4 h-4 w-4 text-zinc-700" />
+        {/* Registered Email (Read-only) */}
+        <div
+          className="flex items-center"
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            height: '56px',
+            backgroundColor: '#FAFAFA',
+            border: '1px solid #EBEBEB',
+            borderRadius: '26px',
+            paddingLeft: '21px',
+            paddingRight: '21px',
+          }}
+        >
+          <Mail className="h-[22px] w-[22px] text-[#8C8C8C] shrink-0" />
+          <input
+            type="email"
+            readOnly
+            value={user?.email || ''}
+            style={{
+              fontFamily: "'Mazzard', sans-serif",
+              fontSize: '15px',
+              color: '#8C8C8C',
+            }}
+            className="w-full h-full bg-transparent pl-3 pr-1 outline-none cursor-not-allowed"
+          />
+        </div>
+
+        {/* Date of Birth & Gender (Custom Mobile Modals) */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* DOB Button Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsDatePickerOpen(true)}
+            style={{
+              boxSizing: 'border-box',
+              height: '56px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #EBEBEB',
+              boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.15)',
+              borderRadius: '26px',
+              paddingLeft: '16px',
+              paddingRight: '12px',
+            }}
+            className="flex items-center justify-between text-left transition-all active:scale-[0.98] cursor-pointer hover:border-[#FF4F21]"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Calendar className="h-[18px] w-[18px] text-[#6E6D6D] shrink-0" />
+              <div className="truncate">
+                <div style={{ fontFamily: "'Mazzard', sans-serif", fontSize: '10px', color: '#8C8C8C' }}>DOB</div>
+                <div style={{ fontFamily: "'Mazzard', sans-serif", fontSize: '13px', color: '#1D1B20', fontWeight: 500 }} className="truncate">
+                  {dob || 'Select Date'}
+                </div>
+              </div>
             </div>
-          </div>
+            <ChevronDown size={14} className="text-[#8C8C8C] shrink-0" />
+          </button>
 
-          {/* DOB */}
-          <div className="group">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">Date of Birth</label>
-            <input
-              type="date"
-              required
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#FF4F21] transition duration-200 cursor-pointer"
-            />
-          </div>
+          {/* Gender Button Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsGenderModalOpen(true)}
+            style={{
+              boxSizing: 'border-box',
+              height: '56px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #EBEBEB',
+              boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.15)',
+              borderRadius: '26px',
+              paddingLeft: '16px',
+              paddingRight: '12px',
+            }}
+            className="flex items-center justify-between text-left transition-all active:scale-[0.98] cursor-pointer hover:border-[#FF4F21]"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <User className="h-[18px] w-[18px] text-[#6E6D6D] shrink-0" />
+              <div className="truncate">
+                <div style={{ fontFamily: "'Mazzard', sans-serif", fontSize: '10px', color: '#8C8C8C' }}>Gender</div>
+                <div style={{ fontFamily: "'Mazzard', sans-serif", fontSize: '13px', color: '#1D1B20', fontWeight: 500 }} className="truncate">
+                  {gender}
+                </div>
+              </div>
+            </div>
+            <ChevronDown size={14} className="text-[#8C8C8C] shrink-0" />
+          </button>
+        </div>
 
-          {/* Gender */}
-          <div className="group">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">Gender</label>
-            <select
-              value={gender}
-              onChange={(e) => setGender(e.target.value)}
-              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#FF4F21] transition duration-200 appearance-none cursor-pointer"
-            >
-              <option value="Male" className="bg-[#08080C] text-white">Male</option>
-              <option value="Female" className="bg-[#08080C] text-white">Female</option>
-              <option value="Other" className="bg-[#08080C] text-white">Other</option>
-            </select>
-          </div>
-
+        {/* State & City */}
+        <div className="grid grid-cols-2 gap-3">
           {/* State */}
-          <div className="group">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">State</label>
+          <div
+            className="flex items-center transition-all duration-200 focus-within:border-[#FF4F21] focus-within:ring-4 focus-within:ring-[#FF4F21]/15"
+            style={{
+              boxSizing: 'border-box',
+              height: '56px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #EBEBEB',
+              boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.15)',
+              borderRadius: '26px',
+              paddingLeft: '16px',
+              paddingRight: '12px',
+            }}
+          >
+            <MapPin className="h-[18px] w-[18px] text-[#6E6D6D] shrink-0" />
             <input
               type="text"
               required
               value={state}
               onChange={(e) => setState(e.target.value)}
-              placeholder="California"
-              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-[#FF4F21] transition duration-200"
+              placeholder="State"
+              style={{
+                fontFamily: "'Mazzard', sans-serif",
+                fontSize: '14px',
+                color: '#1D1B20',
+              }}
+              className="w-full h-full bg-transparent pl-2 placeholder-[#6E6D6D] outline-none"
             />
           </div>
 
           {/* City */}
-          <div className="group">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2 transition-colors duration-200 group-focus-within:text-[#FF4F21]">City</label>
+          <div
+            className="flex items-center transition-all duration-200 focus-within:border-[#FF4F21] focus-within:ring-4 focus-within:ring-[#FF4F21]/15"
+            style={{
+              boxSizing: 'border-box',
+              height: '56px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #EBEBEB',
+              boxShadow: '0px 2px 2.7px rgba(0, 0, 0, 0.15)',
+              borderRadius: '26px',
+              paddingLeft: '16px',
+              paddingRight: '12px',
+            }}
+          >
             <input
               type="text"
               required
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="Los Angeles"
-              className="block w-full bg-black/40 border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-650 focus:outline-none focus:border-[#FF4F21] transition duration-200"
+              placeholder="City"
+              style={{
+                fontFamily: "'Mazzard', sans-serif",
+                fontSize: '14px',
+                color: '#1D1B20',
+              }}
+              className="w-full h-full bg-transparent pl-2 placeholder-[#6E6D6D] outline-none"
             />
           </div>
         </div>
 
-        {/* Submit Actions */}
-        <div className="flex justify-end pt-6 border-t border-white/[0.05]">
-          <button
-            type="submit"
-            disabled={loading || uploading}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#FF4F21] to-[#FF8433] hover:brightness-110 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#FF4F21]/20 active:scale-98 transition duration-200 cursor-pointer disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Saving details...</span>
-              </>
-            ) : (
-              <>
-                <span>Save & Continue</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </div>
+        {/* Submit Action */}
+        <button
+          type="submit"
+          disabled={loading || uploading}
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            height: '56px',
+            backgroundColor: '#FF4F21',
+            border: '1px solid #DDDDDD',
+            boxShadow: 'inset 0px 1px 4px rgba(255, 255, 255, 0.05)',
+            borderRadius: '26px',
+            fontFamily: "'Mazzard', sans-serif",
+            fontWeight: 600,
+            fontSize: '16px',
+            lineHeight: '24px',
+            color: '#FCFCFC',
+            marginTop: '20px',
+          }}
+          className="flex items-center justify-center active:scale-[0.98] transition-transform cursor-pointer disabled:opacity-50"
+        >
+          {loading ? 'Saving...' : 'Continue'}
+        </button>
       </form>
+
+      {/* Mobile Calendar Modal */}
+      <MobileDatePickerModal
+        isOpen={isDatePickerOpen}
+        onClose={() => setIsDatePickerOpen(false)}
+        title="Date of Birth"
+        value={dob}
+        onChange={(newDate) => setDob(newDate)}
+      />
+
+      {/* Mobile Gender Dropdown Modal */}
+      <MobileDropdownModal
+        isOpen={isGenderModalOpen}
+        onClose={() => setIsGenderModalOpen(false)}
+        title="Select Gender"
+        options={GENDER_OPTIONS}
+        selectedValue={gender}
+        onSelect={(newGender) => setGender(newGender)}
+      />
     </div>
   );
 }

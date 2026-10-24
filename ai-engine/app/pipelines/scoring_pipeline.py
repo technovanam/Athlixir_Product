@@ -24,8 +24,11 @@ def run_intelligence_pipeline(
     gender: str | None = None,
     event: str | None = None,
     previous_metrics: dict[str, Any] | None = None,
+    metric_flags: list[str] | None = None,
 ) -> dict[str, Any]:
-    benchmarks = compare_against_norms(metrics)
+    benchmarks = compare_against_norms(
+        metrics, age_group=age_group, gender=gender, event=event
+    )
 
     scores = calculate_performance_scores(metrics, benchmarks.get("percentiles", {}))
     classification = classify_athlete(scores, benchmarks)
@@ -37,7 +40,7 @@ def run_intelligence_pipeline(
         "score": injury["injuryRiskScore"],
     }
 
-    insights = generate_insights(metrics, benchmarks, scores, injury_payload)
+    insights = generate_insights(metrics, benchmarks, scores, injury_payload, metric_flags)
     recommendations = generate_biomechanics_recommendations(metrics, insights)
     progress = compute_progress(metrics, previous_metrics)
 

@@ -1,14 +1,15 @@
 import os
-import shutil
 import threading
 import time
 import requests
 import tempfile
-from fastapi import APIRouter, File, Form, UploadFile, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 from app.api.security import check_internal_secret
+from app.env import get_internal_secret
 
 from app.config import DOWNLOAD_CHUNK_SIZE
 from app.pipelines.biomechanics_pipeline import run_biomechanics_extraction_pipeline
@@ -66,10 +67,70 @@ _DEFAULT_AI_ENGINE_URL = (
     'https://ai-engine-4dn5.onrender.com' if _IS_RENDER else 'http://127.0.0.1:8000'
 )
 
+BACKEND_BASE_URL = os.environ.get('BACKEND_URL', _DEFAULT_BACKEND_URL).rstrip('/')
 NESTJS_CALLBACK_URL = f"{os.environ.get('BACKEND_URL', _DEFAULT_BACKEND_URL)}/api/analysis/callback"
 NESTJS_OVERLAY_URL = f"{os.environ.get('BACKEND_URL', _DEFAULT_BACKEND_URL)}/api/analysis/overlay"
 NESTJS_REPORT_URL = f"{os.environ.get('BACKEND_URL', _DEFAULT_BACKEND_URL)}/api/analysis/report"
 AI_ENGINE_URL = os.environ.get('AI_ENGINE_URL', _DEFAULT_AI_ENGINE_URL)
+
+OUTPUTS_DIR = "outputs"
+# Overlays are only served from local disk when the Firebase upload failed;
+# anything older than this is pruned so the disk cannot fill up.
+OUTPUT_RETENTION_SEC = int(os.environ.get("OUTPUT_RETENTION_HOURS", "24")) * 3600
+
+DEFAULT_ATHLETE_HEIGHT_M = 1.75
+
+
+def _auth_headers() -> dict:
+    return {"Authorization": f"Bearer {get_internal_secret()}"}
+
+
+def _is_backend_url(url: str) -> bool:
+    """True when url points at our backend, so the internal secret may be sent.
+
+    localhost and 127.0.0.1 are treated as the same host so local development
+    works whichever spelling each service is configured with.
+    """
+    target, backend = urlparse(url), urlparse(BACKEND_BASE_URL)
+    local = {"localhost", "127.0.0.1"}
+    same_host = target.hostname == backend.hostname or (
+        target.hostname in local and backend.hostname in local
+    )
+    return (
+        target.scheme == backend.scheme
+        and same_host
+        and (target.port or None) == (backend.port or None)
+    )
+
+
+def _video_download_headers(video_url: str) -> dict:
+    # Firebase signed URLs need no auth; the backend's fallback source route
+    # requires the internal secret, which must never be sent anywhere else.
+    return _auth_headers() if _is_backend_url(video_url) else {}
+
+
+def _athlete_height_m(ctx: AthleteContext | None) -> float:
+    height_cm = ctx.heightCm if ctx else None
+    if height_cm and 100 <= height_cm <= 250:
+        return height_cm / 100.0
+    return DEFAULT_ATHLETE_HEIGHT_M
+
+
+def _prune_old_outputs() -> None:
+    cutoff = time.time() - OUTPUT_RETENTION_SEC
+    try:
+        entries = os.scandir(OUTPUTS_DIR)
+    except FileNotFoundError:
+        return
+    with entries:
+        for entry in entries:
+            if not entry.is_file() or not entry.name.endswith("_overlay.mp4"):
+                continue
+            try:
+                if entry.stat().st_mtime < cutoff:
+                    os.remove(entry.path)
+            except OSError:
+                pass
 
 
 def _send_update(analysis_id: str, status: str, progress: int, payload: dict = None):
@@ -78,8 +139,7 @@ def _send_update(analysis_id: str, status: str, progress: int, payload: dict = N
     data = {"analysisId": analysis_id, "status": status, "progress": progress}
     if payload:
         data.update(payload)
-    secret = os.environ.get('INTERNAL_API_SECRET', '')
-    headers = {"Authorization": f"Bearer {secret}"}
+    headers = _auth_headers()
     retry_delays_sec = (0, 1, 2, 4, 8, 12)
 
     for attempt, delay in enumerate(retry_delays_sec):
@@ -98,6 +158,10 @@ def _send_update(analysis_id: str, status: str, progress: int, payload: dict = N
                 f"[AI CALLBACK] HTTP {response.status_code} for {analysis_id} "
                 f"({status}) attempt {attempt + 1}"
             )
+            # A 4xx (bad payload, auth) fails identically on every retry.
+            if 400 <= response.status_code < 500 and response.status_code not in (408, 429):
+                print(f"[AI CALLBACK] Giving up on {analysis_id}: {response.text[:300]}")
+                return
         except Exception as e:
             print(f"[AI CALLBACK ERR] {analysis_id} attempt {attempt + 1}: {e}")
 
@@ -106,12 +170,10 @@ def _upload_overlay(analysis_id: str, user_id: str, overlay_path: str) -> bool:
     if not os.path.exists(overlay_path) or os.path.getsize(overlay_path) < 1024:
         return False
     try:
-        secret = os.environ.get('INTERNAL_API_SECRET', '')
-        headers = {"Authorization": f"Bearer {secret}"}
         with open(overlay_path, "rb") as f:
             r = requests.post(
                 NESTJS_OVERLAY_URL,
-                headers=headers,
+                headers=_auth_headers(),
                 files={"file": ("skeleton_overlay.mp4", f, "video/mp4")},
                 data={"analysisId": analysis_id, "userId": user_id},
                 timeout=120,
@@ -126,11 +188,9 @@ def _upload_report(analysis_id: str, user_id: str, html: str) -> bool:
     if not html:
         return False
     try:
-        secret = os.environ.get('INTERNAL_API_SECRET', '')
-        headers = {"Authorization": f"Bearer {secret}"}
         r = requests.post(
             NESTJS_REPORT_URL,
-            headers=headers,
+            headers=_auth_headers(),
             files={"file": ("report.html", html.encode("utf-8"), "text/html")},
             data={"analysisId": analysis_id, "userId": user_id},
             timeout=60,
@@ -141,42 +201,12 @@ def _upload_report(analysis_id: str, user_id: str, html: str) -> bool:
     return False
 
 
-def _overlay_worker(analysis_id: str, user_id: str, video_path: str):
-    os.makedirs("outputs", exist_ok=True)
-    overlay_path = f"outputs/{analysis_id}_overlay.mp4"
-    try:
-        render_skeleton_overlay_video(video_path, overlay_path)
-        
-        # Build public HTTP URL
-        overlay_url = f"{AI_ENGINE_URL}/outputs/{analysis_id}_overlay.mp4"
-        
-        # Report COMPLETED immediately with the proper static HTTP URL
-        _send_update(
-            analysis_id,
-            "COMPLETED",
-            100,
-            {
-                "skeletonOverlayReady": True,
-                "skeletonOverlayPath": overlay_url,
-            },
-        )
-        
-        # Safe Firebase background upload fallback
-        try:
-            _upload_overlay(analysis_id, user_id, overlay_path)
-        except Exception as upload_err:
-            print(f"[AI OVERLAY UPLOAD BACKUP ERR] {upload_err}")
-            
-    except Exception as e:
-        print(f"[AI OVERLAY WORKER ERR] {e}")
-
-
-
 def _run_intelligence(
     metrics: dict,
     analysis_id: str,
     athlete_context: AthleteContext | None,
     previous_metrics: dict | None,
+    metric_flags: list[str] | None = None,
 ) -> dict:
     ctx = athlete_context or AthleteContext()
     return run_intelligence_pipeline(
@@ -186,6 +216,7 @@ def _run_intelligence(
         gender=ctx.gender,
         event=ctx.event,
         previous_metrics=previous_metrics,
+        metric_flags=metric_flags,
     )
 
 
@@ -200,14 +231,15 @@ def run_analysis_from_path(
     print(f"[AI PIPELINE] Processing file for {analysis_id}")
 
     try:
-        _ensure_not_cancelled(analysis_id)
-        _send_update(analysis_id, "QUEUED", 5)
+        _prune_old_outputs()
         _ensure_not_cancelled(analysis_id)
         _send_update(analysis_id, "PROCESSING_POSE", 20)
         _ensure_not_cancelled(analysis_id)
         _send_update(analysis_id, "TRACKING_LANDMARKS", 40)
 
-        result = run_biomechanics_extraction_pipeline(video_path)
+        result = run_biomechanics_extraction_pipeline(
+            video_path, athlete_height_m=_athlete_height_m(athlete_context)
+        )
         _ensure_not_cancelled(analysis_id)
         foot_strikes = result.get("footStrikes")
         result.pop("landmarkHistory", None)
@@ -216,37 +248,45 @@ def run_analysis_from_path(
 
         # Validate biomechanical metrics (V3 scientific validation layer)
         from app.validation.biomechanics_validator import validate_biomechanics_metrics
-        validated_metrics, metric_flags = validate_biomechanics_metrics(metrics)
+        validated_metrics, metric_flags = validate_biomechanics_metrics(
+            metrics, fps=result.get("fps")
+        )
 
         _send_update(analysis_id, "DETECTING_FOOT_STRIKES", 55)
-        time.sleep(0.5)
 
         _send_update(analysis_id, "CALCULATING_METRICS", 70)
         intelligence = _run_intelligence(
-            validated_metrics, analysis_id, athlete_context, previous_metrics
+            validated_metrics, analysis_id, athlete_context, previous_metrics, metric_flags
         )
         print(f"[AI PIPELINE] Intelligence ready in {time.perf_counter() - t0:.2f}s")
 
         if intelligence.get("reportHtml"):
             _upload_report(analysis_id, user_id, intelligence["reportHtml"])
 
+        _ensure_not_cancelled(analysis_id)
         _send_update(analysis_id, "GENERATING_OVERLAY", 85)
 
-        os.makedirs("outputs", exist_ok=True)
-        overlay_path = f"outputs/{analysis_id}_overlay.mp4"
+        os.makedirs(OUTPUTS_DIR, exist_ok=True)
+        overlay_path = f"{OUTPUTS_DIR}/{analysis_id}_overlay.mp4"
+        # None = keep the durable storage path the backend already recorded.
+        overlay_url: str | None = None
         try:
             render_skeleton_overlay_video(video_path, overlay_path, foot_strikes=foot_strikes)
-            overlay_url = f"{AI_ENGINE_URL}/outputs/{analysis_id}_overlay.mp4"
             skeleton_overlay_ready = True
 
-            # Upload overlay synchronously before the HTTP request finishes
-            try:
-                _upload_overlay(analysis_id, user_id, overlay_path)
-            except Exception as upload_err:
-                print(f"[AI OVERLAY UPLOAD BACKUP ERR] {upload_err}")
+            # Upload to Firebase via the backend before reporting completion. On
+            # success the backend has stored the storage path, which must not be
+            # overwritten with this instance's ephemeral disk URL.
+            if _upload_overlay(analysis_id, user_id, overlay_path):
+                try:
+                    os.remove(overlay_path)
+                except OSError:
+                    pass
+            else:
+                print(f"[AI OVERLAY] Upload failed for {analysis_id}; serving from local disk")
+                overlay_url = f"{AI_ENGINE_URL}/{OUTPUTS_DIR}/{analysis_id}_overlay.mp4"
         except Exception as e:
             print(f"[AI OVERLAY ERR] {e}")
-            overlay_url = ""
             skeleton_overlay_ready = False
 
         payload = {
@@ -289,13 +329,17 @@ def run_analysis_pipeline(
     temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
     try:
         _ensure_not_cancelled(analysis_id)
-        _send_update(analysis_id, "QUEUED", 5)
-        response = requests.get(video_url, stream=True, timeout=60)
-        response.raise_for_status()
-        for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
-            if chunk:
-                _ensure_not_cancelled(analysis_id)
-                temp_video.write(chunk)
+        with requests.get(
+            video_url,
+            headers=_video_download_headers(video_url),
+            stream=True,
+            timeout=60,
+        ) as response:
+            response.raise_for_status()
+            for chunk in response.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
+                if chunk:
+                    _ensure_not_cancelled(analysis_id)
+                    temp_video.write(chunk)
         temp_video.close()
         run_analysis_from_path(
             analysis_id,
@@ -309,15 +353,13 @@ def run_analysis_pipeline(
     except Exception as err:
         _send_update(analysis_id, "FAILED", 0, {"errorMessage": str(err)})
     finally:
-        with _active_lock:
-            _cancelled_analyses.discard(analysis_id)
-
-        def _cleanup():
-            time.sleep(120)
-            if os.path.exists(temp_video.name):
-                os.unlink(temp_video.name)
-
-        threading.Thread(target=_cleanup, daemon=True).start()
+        # The overlay is rendered synchronously, so nothing reads the
+        # downloaded video once run_analysis_from_path has returned.
+        temp_video.close()
+        try:
+            os.unlink(temp_video.name)
+        except OSError:
+            pass
 
 
 def _start_analysis_background(
@@ -358,59 +400,6 @@ def _start_analysis_background(
 
     threading.Thread(target=_run, daemon=True, name=f"analysis-{analysis_id}").start()
     return True
-
-
-def _start_upload_background(
-    analysis_id: str,
-    user_id: str,
-    temp_path: str,
-    temp_dir: str,
-):
-    with _active_lock:
-        if analysis_id in _active_analyses:
-            print(f"[AI PIPELINE] Duplicate upload ignored for {analysis_id}")
-            try:
-                os.remove(temp_path)
-                os.rmdir(temp_dir)
-            except OSError:
-                pass
-            return False
-        _active_analyses.add(analysis_id)
-
-    def _run():
-        try:
-            run_analysis_from_path(analysis_id, temp_path, user_id)
-        finally:
-            with _active_lock:
-                _active_analyses.discard(analysis_id)
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            try:
-                os.rmdir(temp_dir)
-            except OSError:
-                pass
-
-    threading.Thread(target=_run, daemon=True, name=f"upload-{analysis_id}").start()
-    return True
-
-
-@router.post("/analyze/upload", status_code=202)
-async def analyze_upload(
-    analysisId: str = Form(...),
-    userId: str = Form(...),
-    file: UploadFile = File(...),
-):
-    temp_dir = tempfile.mkdtemp(prefix="athlixir_upload_")
-    temp_path = os.path.join(temp_dir, "upload.mp4")
-    with open(temp_path, "wb") as out:
-        shutil.copyfileobj(file.file, out)
-
-    started = _start_upload_background(analysisId, userId, temp_path, temp_dir)
-    return {
-        "success": True,
-        "status": "ACCEPTED" if started else "ALREADY_RUNNING",
-        "analysisId": analysisId,
-    }
 
 
 @router.post("/analyze/cancel", dependencies=[Depends(check_internal_secret)])
